@@ -2,7 +2,7 @@
 
 Este guia explica como configurar e executar o projeto **Jogos Logísticos** em diferentes ambientes (Windows/WSL2, Linux e macOS).
 
-Recomendação: Se você usa Windowns instale o WSL2 (ubuntu) para rodar o projeto.
+Recomendação: Se você usa Windowns instale o [WSL2 (ubuntu)](https://learn.microsoft.com/pt-br/windows/wsl/install)  para rodar o projeto .
 
 ---
 
@@ -15,13 +15,40 @@ Recomendação: Se você usa Windowns instale o WSL2 (ubuntu) para rodar o proje
 
 ## 🚀 **Passo a Passo para Executar o Projeto**
 
-### **1. Clone o Repositório**
+### **🪟 Windows (com WSL2 recomendado)**
+**1. Instale [WSL2 tutorial](https://learn.microsoft.com/pt-br/windows/wsl/install).**
+**2. Comando para instalar o WL2 no PowerShell (rode como admin):**
+  ```bash
+   wsl --install
+  ```
+**3. Ja vai instalar o WSL2 mas confira usando o comando (resquisito ser WSL2):**
+ ```bash
+  wsl --set-version 
+ ```
+**4. Dentro do terminal do WSL2 navegue até  o diretorio que voce deseja clonar o repositorio.**
+**5. Clone o repositorio.**
+```bash
+git clone https://github.com/restic36/ifba-jogos-juazeiro-front.git
+cd ifba-jogos-juazeiro-front
+```
+**6. Agora a magica acontece:**
+```bash
+docker-compose up
+```
+**7.Acesse o Projeto**
+Após iniciar, acesse:
+👉 [http://localhost:5173](http://localhost:5173)
+
+---
+
+### **No caso do Windows com Docker**
+1. Clone o Repositório**
 ```bash
 git clone https://github.com/restic36/ifba-jogos-juazeiro-front.git
 cd ifba-jogos-juazeiro-front
 ```
 
-### **2. Execute com Docker**
+2. Execute com Docker**
 ```bash
 docker-compose up
 ```
@@ -40,7 +67,8 @@ Após iniciar, acesse:
 
 ## ⚙️ **Configurações por Sistema Operacional**
 
-### **🪟 Windows (com WSL2 recomendado)**
+
+### **🪟 Windows (com Docker)**
 1. Instale [Docker Desktop](https://www.docker.com/products/docker-desktop/) e ative a integração WSL2.
 2. No terminal (PowerShell ou WSL):
    ```bash
