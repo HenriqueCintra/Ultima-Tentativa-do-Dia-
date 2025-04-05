@@ -41,6 +41,11 @@ docker-compose up
 Após iniciar, acesse:
 👉 [http://localhost:5173](http://localhost:5173)
 
+**8.Abra o VS code:**
+```bash
+code
+```
+
 ---
 
 ### **No caso do Windows com Docker**
