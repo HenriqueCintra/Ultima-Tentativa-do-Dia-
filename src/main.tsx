@@ -1,9 +1,19 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HomePage } from "./pages/Home/HomePage";
+import { Login } from "./pages/auth/Login/Login";
+import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
+
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
-    <HomePage />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/cadastro" element={<Cadastro />} />
+      </Routes>
+    </BrowserRouter>
   </StrictMode>,
 );
