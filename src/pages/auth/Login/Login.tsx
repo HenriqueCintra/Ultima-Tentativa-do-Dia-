@@ -18,6 +18,11 @@ export const Login = () => {
     { id: "email", label: "email", type: "email" },
     { id: "password", label: "Senha", type: "password" },
   ];
+
+  const handleForgotPassword = (e) => {
+    e.preventDefault();
+    navigate("/forgot-password");
+  };
   return (
     <div className="bg-white flex flex-row justify-center w-full">
     <div className="w-full min-h-screen [background:linear-gradient(180deg,rgba(32,2,89,1)_0%,rgba(121,70,213,1)_100%)] relative overflow-hidden">
@@ -70,11 +75,12 @@ export const Login = () => {
 
               <div className="flex justify-end">
                 <a
-                  href="#"
-                  className="[font-family:'Silkscreen',Helvetica] font-normal text-[#167dd2] text-2xl underline"
-                >
-                  esqueci a senha
-                </a>
+                   href="#"
+  onClick={handleForgotPassword}
+  className="[font-family:'Silkscreen',Helvetica] font-normal text-[#167dd2] text-2xl underline"
+>
+  esqueci a senha
+</a>
               </div>
               <div className="flex justify-between pt-4">
                 <Button
