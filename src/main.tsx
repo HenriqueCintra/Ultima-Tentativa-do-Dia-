@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HomePage } from "./pages/Home/HomePage";
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
-
+import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword"; 
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -13,6 +13,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
