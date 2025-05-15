@@ -19,7 +19,7 @@ export const Login = () => {
     { id: "password", label: "Senha", type: "password" },
   ];
 
-  const handleForgotPassword = (e) => {
+  const handleForgotPassword = (e: { preventDefault: () => void; }) => {
     e.preventDefault();
     navigate("/forgot-password");
   };

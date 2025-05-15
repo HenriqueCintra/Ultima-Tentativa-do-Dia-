@@ -5,6 +5,7 @@ import { HomePage } from "./pages/Home/HomePage";
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
 import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword"; 
+import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -14,6 +15,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/choose-team" element={<ChooseTeam/>}/>
       </Routes>
     </BrowserRouter>
   </StrictMode>,
