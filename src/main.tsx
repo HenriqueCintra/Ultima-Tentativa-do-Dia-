@@ -5,6 +5,8 @@ import { HomePage } from "./pages/Home/HomePage";
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
 import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword"; 
+import { TutorialPage } from "./pages/Tutorial/TutorialPage";
+import { PerfilPage } from "./pages/Perfil/PerfilPage";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -14,6 +16,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/tutorial" element={<TutorialPage />} />
+        <Route path="/perfil" element={<PerfilPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
