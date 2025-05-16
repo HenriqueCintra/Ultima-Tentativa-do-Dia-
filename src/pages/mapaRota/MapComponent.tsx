@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { routes, Route, parseEstimatedTime } from './routesData'; // Importa as rotas e a função do arquivo
 
-// --- Correção para o ícone padrão do Leaflet ---
+// --- Correção para o ícone padrão do Leaflet --- aa
 import defaultIcon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
