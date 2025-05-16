@@ -4,7 +4,9 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HomePage } from "./pages/Home/HomePage";
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
-import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword";
+import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword"; 
+import { TutorialPage } from "./pages/Tutorial/TutorialPage";
+import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
@@ -17,6 +19,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/cadastro" element={<Cadastro />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:uidb64/:token" element={<ForgotPassword />} />
+          <Route path="/tutorial" element={<TutorialPage />} />
+          <Route path="/perfil" element={<PerfilPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
