@@ -8,5 +8,14 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src')
     }
+  },
+   server: {
+    proxy: {
+      '/osrm': {
+        target: 'http://router.project-osrm.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/osrm/, ''),
+      }
+    }
   }
 })
