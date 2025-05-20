@@ -1,14 +1,21 @@
-
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HomePage } from './pages/Home';
+import { VehicleSelectionPage } from './pages/escolherVeiculo';
+import { MapComponent } from './pages/mapaRota/MapComponent';
+import './App.css';
 
 function App() {
-
   return (
-    <h1 className="text font-bold bg-#FFF text-red-500">
-    Hello world!
-  </h1>
-     
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/select-vehicle" element={<VehicleSelectionPage />} />
+        <Route path="/mapa-rota" element={<MapComponent />} />
+        {/* Redirecionar para a página inicial por padrão */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
