@@ -200,194 +200,225 @@ export const MapComponent = () => {
     }
   };
 
-  return (
-    <div className="flex flex-col lg:flex-row h-screen bg-gray-100 p-4 font-sans">
-      {/* Menu Lateral */}
-      <div className="lg:w-1/4 w-full bg-white p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:mr-4">
-        <h2 className="text-xl font-bold mb-4 text-blue-800 border-b pb-2">Rotas Disponíveis</h2>
-        {routesList.map((route) => (
-          <div
-            key={route.routeId}
-            className={`p-4 mb-3 border rounded-lg cursor-pointer transition-all duration-200
-            ${selectedRoute?.routeId === route.routeId ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500' : 'border-gray-200 hover:bg-gray-50'}
-            shadow-sm`}
-            onClick={() => handleSelectRoute(route.routeId)}
-          >
-            <h3 className="font-semibold text-lg text-gray-900">{route.name}</h3>
-            <p className="text-gray-600 text-sm">
-              <span className="font-medium">Distância:</span> {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km
-            </p>
-            <p className="text-gray-600 text-sm">
-              <span className="font-medium">Tempo Estimado:</span> {route.estimatedTime}
-            </p>
-            <p className="text-gray-600 text-sm">
-              <span className="font-medium">Risco:</span>{' '}
-              <span className={`${route.safety.robberyRisk === 'Alto' ? 'text-red-600' : route.safety.robberyRisk === 'Médio' ? 'text-orange-600' : 'text-green-600'}`}>
-                {route.safety.robberyRisk}
-              </span>
-            </p>
-            <p className="text-gray-600 text-sm">
-              <span className="font-medium">Custo Estimado:</span> R${' '}
-              {calculateTotalCost(route).toFixed(2)}
-            </p>
-            <button
-              className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-colors duration-200 disabled:opacity-50"
-              onClick={(e) => { e.stopPropagation(); handleSelectRoute(route.routeId); }}
-            >
-              Ver Detalhes
-            </button>
-          </div>
-        ))}
-      </div>
+ return (
+  <div className="flex flex-col lg:flex-row h-screen p-4 font-['Silkscreen'] bg-[#200259]">
+    {/* Cabeçalho superior - "Rotas Disponíveis" e Saldo */}
+    <div className="absolute top-0 left-0 w-full flex items-center justify-between px-8 py-4 z-50">
+      {/* Botão TROCAR CARRO */}
+      <button
+        className="flex items-center px-6 py-2 bg-[#E3922A] text-black font-bold text-lg rounded-md shadow-lg
+                   hover:bg-[#FFC06F] transition-all duration-200 border-2 border-black"
+        onClick={() => alert('Funcionalidade "Trocar Carro" ainda não implementada!')} // Substitua pela sua função
+      >
+        <img src="/back_arrow_pixel.png" alt="Trocar Carro" className="h-5 mr-2" />
+        TROCAR CARRO
+      </button>
 
-      {/* Área do Mapa e Detalhes da Rota Selecionada */}
-      <div className="flex-1 bg-white rounded-lg shadow-lg p-4 flex flex-col">
-        {/* Detalhes da Rota Selecionada no Topo do Mapa */}
-        {selectedRoute && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg shadow-inner">
-            <h2 className="text-xl font-bold text-blue-800 mb-2">
-              Rota Selecionada: {selectedRoute.name}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-gray-700">
-              <p><span className="font-semibold">Distância:</span> {selectedRoute.actualDistance ? `${selectedRoute.actualDistance.toFixed(0)}` : selectedRoute.distance} km</p>
-              <p><span className="font-semibold">Tempo Estimado:</span> {selectedRoute.estimatedTime}</p>
-              <p><span className="font-semibold">Risco de Roubo:</span> <span className={`${selectedRoute.safety.robberyRisk === 'Alto' ? 'text-red-600' : selectedRoute.safety.robberyRisk === 'Médio' ? 'text-orange-600' : 'text-green-600'}`}>{selectedRoute.safety.robberyRisk}</span></p>
-              <p><span className="font-semibold">Condição da Estrada:</span> {selectedRoute.roadConditions}</p>
-              <p><span className="font-semibold">Custo Estimado:</span> R$ {calculateTotalCost(selectedRoute).toFixed(2)}</p>
-              {selectedRoute.dirtRoad && <p className="font-semibold text-red-600">Estrada de Terra: Sim ({selectedRoute.dirtRoadDetails})</p>}
-              {selectedRoute.constructionZones && <p className="font-semibold text-orange-600">Obras: {selectedRoute.constructionZones}</p>}
-              {selectedRoute.restStops && <p><span className="font-semibold">Paradas:</span> {selectedRoute.restStops}</p>}
-            </div>
+      {/* Título Rotas Disponíveis */}
+      <h1 className="text-4xl font-bold text-[#E3922A] text-center flex-1 -ml-40">
+        ROTAS DISPONÍVEIS
+      </h1>
 
-            <div className="mt-4 flex space-x-2">
-              <button
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-                onClick={() => setIsPlaying(true)}
-                disabled={isPlaying || !selectedRoute.pathCoordinates || selectedRoute.pathCoordinates.length < 2}
-              >
-                {isPlaying ? 'Viagem em Andamento...' : 'Iniciar Viagem'}
-              </button>
-              <button
-                className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-                onClick={() => setIsPlaying(false)}
-                disabled={!isPlaying}
-              >
-                Pausar Viagem
-              </button>
-              <button
-                className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                onClick={() => { setIsPlaying(false); setSelectedRoute(null); }}
-              >
-                Reiniciar Simulação
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Contêiner do Mapa */}
-        <div className="flex-1 w-full relative">
-          <MapContainer
-            center={juazeiroCoordinates} // Centraliza em Juazeiro por padrão
-            zoom={7} // Zoom inicial para ver uma área maior
-            scrollWheelZoom={true}
-            className="w-full h-full rounded-lg shadow-inner"
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-
-            {/* Controle de Visão do Mapa - ajusta o zoom e centraliza a rota selecionada */}
-            <MapViewControl route={selectedRoute} />
-
-            {selectedRoute && selectedRoute.pathCoordinates && selectedRoute.pathCoordinates.length > 1 && (
-              <Polyline
-                key={`selected-${selectedRoute.routeId}`}
-                positions={selectedRoute.pathCoordinates}
-                color={getRouteColor(selectedRoute, true)}
-                weight={6}
-                opacity={1}
-                dashArray={selectedRoute.dirtRoad ? '5, 10' : undefined}
-              >
-                <Popup>
-                  <div className="font-bold text-blue-700">{selectedRoute.name}</div>
-                  <div>Distância: {selectedRoute.actualDistance ? `${selectedRoute.actualDistance.toFixed(0)}` : selectedRoute.distance} km</div>
-                  <div>Tempo: {parseEstimatedTime(selectedRoute.estimatedTime)} horas</div>
-                  <div>Risco: {selectedRoute.safety.robberyRisk}</div>
-                  <div>Condição: {selectedRoute.roadConditions}</div>
-                  {selectedRoute.dirtRoad && <div className="text-red-600">Estrada de Terra</div>}
-                </Popup>
-              </Polyline>
-            )}
-
-            {/* Renderizar TODAS as rotas para contexto, mas destacar a selecionada */}
-            {routesList.map((route) => {
-              if (route.routeId === selectedRoute?.routeId || !route.pathCoordinates || route.pathCoordinates.length < 2) {
-                return null;
-              }
-
-              return (
-                <Polyline
-                  key={route.routeId}
-                  positions={route.pathCoordinates}
-                  color={getRouteColor(route, false)}
-                  weight={3}
-                  opacity={0.3}
-                  dashArray={route.dirtRoad ? '5, 10' : undefined}
-                >
-                  <Popup>
-                    <div className="font-bold text-blue-700">{route.name}</div>
-                    <div>Distância: {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km</div>
-                    <div>Tempo: {parseEstimatedTime(route.estimatedTime)} horas</div>
-                    <div>Risco: {route.safety.robberyRisk}</div>
-                    <div>Condição: {route.roadConditions}</div>
-                    {route.dirtRoad && <div className="text-red-600">Estrada de Terra</div>}
-                  </Popup>
-                </Polyline>
-              );
-            })}
-
-            {/* Marcadores de Pedágio para a Rota Selecionada */}
-            {selectedRoute?.tollBooths.map((toll, index) => (
-              <Marker key={`toll-${selectedRoute.routeId}-${index}`} position={toll.coordinates} icon={tollIcon}>
-                <Popup>
-                  <span className="font-bold">Pedágio:</span> {toll.location}<br />
-                  Custo por eixo: R$ {toll.costPerAxle.toFixed(2)}
-                </Popup>
-              </Marker>
-            ))}
-
-            {/* Marcadores de POIs para a Rota Selecionada */}
-            {selectedRoute?.pois && selectedRoute.pois.map((poi, index) => (
-              <Marker key={`poi-${selectedRoute.routeId}-${index}`} position={poi.coordinates} icon={getPoiIcon(poi.type)}>
-                <Popup>
-                  <span className="font-bold">{poi.location} ({poi.type === 'construction' ? 'Obra' : poi.type === 'danger' ? 'Perigo' : poi.type === 'rest' ? 'Descanso' : 'Combustível'})</span><br />
-                  {poi.description}
-                </Popup>
-              </Marker>
-            ))}
-
-            {/* Marcadores de Início e Fim (sempre visíveis) */}
-            <Marker position={juazeiroCoordinates}>
-              <Popup><span className="font-bold">Juazeiro</span><br />(Ponto de Partida)</Popup>
-            </Marker>
-            <Marker position={salvadorCoordinates}>
-              <Popup><span className="font-bold">Salvador</span><br />(Destino)</Popup>
-            </Marker>
-
-            {/* Animação do Caminhão na Rota Selecionada */}
-            {selectedRoute && isPlaying && selectedRoute.pathCoordinates && selectedRoute.pathCoordinates.length > 1 && (
-              <TruckAnimation
-                routePath={selectedRoute.pathCoordinates}
-                // Use a duração real (em segundos) se disponível, senão a estimada em horas
-                speed={(selectedRoute.actualDistance || selectedRoute.distance) / (selectedRoute.actualDuration ? selectedRoute.actualDuration / 3600 : parseEstimatedTime(selectedRoute.estimatedTime))} // Velocidade média em km/h
-                playing={isPlaying}
-                onTripEnd={handleTripEnd}
-              />
-            )}
-          </MapContainer>
-        </div>
+      {/* Saldo */}
+      <div className="bg-[#E3922A] text-black text-2xl font-bold px-6 py-2 rounded-md shadow-lg border-2 border-black">
+        R$ 6.500
       </div>
     </div>
-  );
+
+    {/* Área do Mapa e Detalhes da Rota Selecionada */}
+    <div className="flex-1 rounded-lg shadow-lg p-4 flex flex-col mt-24 lg:mr-4">
+      {/* Botões de controle da simulação */}
+      {selectedRoute && ( // Apenas exibe os botões se uma rota estiver selecionada
+        <div className="flex justify-center mb-4 space-x-4">
+          <button
+            className="px-6 py-2 bg-green-500 text-white font-bold text-lg rounded-md shadow-lg hover:bg-green-600 transition-all duration-200 border-2 border-black"
+            onClick={() => setIsPlaying(true)}
+            disabled={isPlaying || !selectedRoute.pathCoordinates || selectedRoute.pathCoordinates.length < 2}
+          >
+            {isPlaying ? 'Viagem em Andamento...' : 'INICIAR SIMULAÇÃO'}
+          </button>
+          <button
+            className="px-6 py-2 bg-yellow-500 text-black font-bold text-lg rounded-md shadow-lg hover:bg-yellow-600 transition-all duration-200 border-2 border-black"
+            onClick={() => setIsPlaying(false)}
+            disabled={!isPlaying}
+          >
+            PAUSAR
+          </button>
+          <button
+            className="px-6 py-2 bg-red-500 text-white font-bold text-lg rounded-md shadow-lg hover:bg-red-600 transition-all duration-200 border-2 border-black"
+            onClick={() => { setIsPlaying(false); /* Adicione lógica para resetar a simulação aqui, se necessário */ }}
+          >
+            REINICIAR SIMULAÇÃO
+          </button>
+        </div>
+      )}
+      {/* Contêiner do Mapa */}
+      <div className="flex-1 w-full relative bg-gray-200 rounded-lg shadow-inner border-4 border-black">
+        <MapContainer
+          center={juazeiroCoordinates} // Centraliza em Juazeiro por padrão
+          zoom={7} // Zoom inicial para ver uma área maior
+          scrollWheelZoom={true}
+          className="w-full h-full rounded-lg"
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+
+          {/* Controle de Visão do Mapa - ajusta o zoom e centraliza a rota selecionada */}
+          <MapViewControl route={selectedRoute} />
+
+          {selectedRoute && selectedRoute.pathCoordinates && selectedRoute.pathCoordinates.length > 1 && (
+            <Polyline
+              key={`selected-${selectedRoute.routeId}`}
+              positions={selectedRoute.pathCoordinates}
+              color={getRouteColor(selectedRoute, true)}
+              weight={6}
+              opacity={1}
+              dashArray={selectedRoute.dirtRoad ? '5, 10' : undefined}
+            >
+              <Popup>
+                <div className="font-bold text-blue-700">{selectedRoute.name}</div>
+                <div>Distância: {selectedRoute.actualDistance ? `${selectedRoute.actualDistance.toFixed(0)}` : selectedRoute.distance} km</div>
+                <div>Tempo: {parseEstimatedTime(selectedRoute.estimatedTime)} horas</div>
+                <div>Risco: {selectedRoute.safety.robberyRisk}</div>
+                <div>Condição: {selectedRoute.roadConditions}</div>
+                {selectedRoute.dirtRoad && <div className="text-red-600">Estrada de Terra</div>}
+              </Popup>
+            </Polyline>
+          )}
+
+          {/* Renderizar TODAS as rotas para contexto, mas destacar a selecionada */}
+          {routesList.map((route) => {
+            if (route.routeId === selectedRoute?.routeId || !route.pathCoordinates || route.pathCoordinates.length < 2) {
+              return null;
+            }
+
+            return (
+              <Polyline
+                key={route.routeId}
+                positions={route.pathCoordinates}
+                color={getRouteColor(route, false)}
+                weight={3}
+                opacity={0.3}
+                dashArray={route.dirtRoad ? '5, 10' : undefined}
+              >
+                <Popup>
+                  <div className="font-bold text-blue-700">{route.name}</div>
+                  <div>Distância: {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km</div>
+                  <div>Tempo: {parseEstimatedTime(route.estimatedTime)} horas</div>
+                  <div>Risco: {route.safety.robberyRisk}</div>
+                  <div>Condição: {route.roadConditions}</div>
+                  {route.dirtRoad && <div className="text-red-600">Estrada de Terra</div>}
+                </Popup>
+              </Polyline>
+            );
+          })}
+
+          {/* Marcadores de Pedágio para a Rota Selecionada */}
+          {selectedRoute?.tollBooths.map((toll, index) => (
+            <Marker key={`toll-${selectedRoute.routeId}-${index}`} position={toll.coordinates} icon={tollIcon}>
+              <Popup>
+                <span className="font-bold">Pedágio:</span> {toll.location}<br />
+                Custo por eixo: R$ {toll.costPerAxle.toFixed(2)}
+              </Popup>
+            </Marker>
+          ))}
+
+          {/* Marcadores de POIs para a Rota Selecionada */}
+          {selectedRoute?.pois && selectedRoute.pois.map((poi, index) => (
+            <Marker key={`poi-${selectedRoute.routeId}-${index}`} position={poi.coordinates} icon={getPoiIcon(poi.type)}>
+              <Popup>
+                <span className="font-bold">{poi.location} ({poi.type === 'construction' ? 'Obra' : poi.type === 'danger' ? 'Perigo' : poi.type === 'rest' ? 'Descanso' : 'Combustível'})</span><br />
+                {poi.description}
+              </Popup>
+            </Marker>
+          ))}
+
+          {/* Marcadores de Início e Fim (sempre visíveis) */}
+          <Marker position={juazeiroCoordinates}>
+            <Popup><span className="font-bold">Juazeiro</span><br />(Ponto de Partida)</Popup>
+          </Marker>
+          <Marker position={salvadorCoordinates}>
+            <Popup><span className="font-bold">Salvador</span><br />(Destino)</Popup>
+          </Marker>
+
+          {/* Animação do Caminhão na Rota Selecionada */}
+          {selectedRoute && isPlaying && selectedRoute.pathCoordinates && selectedRoute.pathCoordinates.length > 1 && (
+            <TruckAnimation
+              routePath={selectedRoute.pathCoordinates}
+              // Use a duração real (em segundos) se disponível, senão a estimada em horas
+              speed={(selectedRoute.actualDistance || selectedRoute.distance) / (selectedRoute.actualDuration ? selectedRoute.actualDuration / 3600 : parseEstimatedTime(selectedRoute.estimatedTime))} // Velocidade média em km/h
+              playing={isPlaying}
+              onTripEnd={handleTripEnd}
+            />
+          )}
+        </MapContainer>
+      </div>
+    </div>
+
+    {/* Menu Lateral (Painel de Combustível e Seleção de Rotas) */}
+    <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-24"> {/* Alterado para lg:ml-4 para alinhar à direita */}
+      {/* Painel de Combustível */}
+      <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
+        <h2 className="text-2xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">
+          COMBUSTÍVEL
+        </h2>
+        <p className="font-sans text-black text-lg mb-2"> {/* Fonte normal para o conteúdo */}
+          <span className="font-bold">CUSTO COMBUSTÍVEL:</span> R$ 6,00 por litro
+        </p>
+        <div className="bg-black h-px my-2"></div> {/* Linha divisória pixelada */}
+        <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">VEÍCULO: CARRETA</h3> {/* Fonte pixelada para o título */}
+        <p className="font-sans text-black text-md mb-1">- ASFALTO: 2KM/L</p> {/* Fonte normal para o conteúdo */}
+        <p className="font-sans text-black text-md mb-3">- TERRA: 2KM/L</p> {/* Fonte normal para o conteúdo */}
+
+        <button className="bg-[#E3922A] text-black font-bold py-2 px-4 rounded-md w-full mb-3 shadow-md border-2 border-black hover:bg-[#FFC06F]">
+          ABASTECER
+        </button>
+
+        <p className="font-sans text-black text-md mb-2">CAPACIDADE(L)</p> {/* Fonte normal para o conteúdo */}
+        <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black">
+          <div
+            className="bg-green-500 h-full rounded-full flex items-center justify-center text-xs font-bold text-white"
+            style={{ width: `${(220 / 495) * 100}%` }} // Exemplo: 220/495 litros
+          >
+            220/495
+          </div>
+        </div>
+      </div>
+
+      {/* Título "ESCOLHA UMA ROTA" */}
+      <h2 className="text-2xl font-['Silkscreen'] font-bold mb-4 text-white text-center border-b-2 border-white pb-2"> {/* Título em branco com fonte pixelada */}
+        ESCOLHA UMA ROTA
+      </h2>
+
+      {/* Lista de Rotas */}
+      {routesList.map((route) => (
+        <div
+          key={route.routeId}
+          className={`p-4 mb-3 rounded-lg cursor-pointer transition-all duration-200
+            ${selectedRoute?.routeId === route.routeId ? 'bg-yellow-400 border-4 border-black ring-4 ring-yellow-500' : 'bg-white border-2 border-black hover:bg-gray-200'}
+            shadow-md`}
+          onClick={() => handleSelectRoute(route.routeId)}
+        >
+          <h3 className="font-['Silkscreen'] font-bold text-2xl text-black mb-1">{route.name}</h3> {/* Título da rota pixelado */}
+          <p className="font-sans text-black text-lg"> {/* Informações da rota normal */}
+            <span className="font-bold">TEMPO ESTIMADO:</span> {route.estimatedTime}
+          </p>
+          <p className="font-sans text-black text-lg">
+            <span className="font-bold">DISTÂNCIA:</span>{" "}
+            {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km
+          </p>
+          <p className="font-sans text-black text-lg flex items-center">
+            <span className="font-bold">RISCO ENVOLVIDO:</span>{" "}
+            {/* Ícone de pneu furado ou similar se houver risco */}
+            <span className={`${route.safety.robberyRisk == 'Baixo' ? 'text-red-800' : 'text-green-800'} ml-1`}>
+              PNEU FURAR {route.safety.roadHazards}% {route.safety.roadHazards =='Baixo' ? '⚠️': '✅'}
+            </span>
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+);
 };
