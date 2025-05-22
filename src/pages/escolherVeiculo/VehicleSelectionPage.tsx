@@ -13,7 +13,7 @@ const vehicles: Vehicle[] = [
       asphalt: 4,
       dirt: 3
     },
-    image: 'src/assets/caminhao_medio.png',
+    image: 'src/assets/caminhao_pequeno.png',
     maxCapacity: 200,
     currentFuel: 50, // Começamos com 1/4 do tanque
     cost: 1500

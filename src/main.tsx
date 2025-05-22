@@ -12,13 +12,13 @@ createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        {/* <Route path="/" element={<HomePage />} /> */}
+          <Route path="/" element={<HomePage />} />  
         <Route path="/select-vehicle" element={<VehicleSelectionPage />} />
         <Route path="/mapa-rota" element={<MapComponent />} />
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/forgot-password" element={<ForgotPassword />} /> 
-        <Route path="/" element={<MapComponent />} />
+        <Route path="/mapa" element={<MapComponent />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

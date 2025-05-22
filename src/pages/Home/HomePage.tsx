@@ -14,9 +14,6 @@ export const HomePage = () => {
     navigate("/Cadastro");
   };
 
-  const handleStartGame = () => {
-    navigate("/select-vehicle");
-  };
 
   return (
     <div className="bg-white flex flex-row justify-center w-full ">
@@ -29,7 +26,7 @@ export const HomePage = () => {
                 Jogos Logisticos
               </h1>
 
-              <Card className="w-full h-[202px] mt-8 border-[3px] border-solid border-black flex items-center justify-center bg-[#fce9c4]">
+              <Card className="w-full h-[202px] mt-8 border-[3px] border-solid border-black flex items-center justify-center bg-[#ffffff]">
                 <CardContent className="p-0 flex items-center justify-center h-full">
                   <img
                     className="w-[45%] object-cover"
@@ -45,16 +42,7 @@ export const HomePage = () => {
                 as melhores rotas e faça entregas com eficiência.
               </p>
 
-              {/* Botão Iniciar Jogo */}
-              <Button 
-                onClick={handleStartGame}
-                className="w-full h-[45px] mt-4 bg-[#E3922A] hover:bg-[#FFC06F] text-[#1c1a1a] border border-solid border-black rounded-[3px]"
-              >
-                <span className="[font-family:'Silkscreen',Helvetica] font-bold text-xl flex items-center">
-                  INICIAR JOGO
-                  <ArrowRightIcon className="ml-2 w-5 h-5" />
-                </span>
-              </Button>
+            
             </div>
 
             {/* Right section */}
