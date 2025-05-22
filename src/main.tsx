@@ -8,6 +8,7 @@ import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword";
 import { TutorialPage } from "./pages/Tutorial/TutorialPage";
 import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
+import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -21,8 +22,13 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/reset-password/:uidb64/:token" element={<ForgotPassword />} />
           <Route path="/tutorial" element={<TutorialPage />} />
           <Route path="/perfil" element={<PerfilPage />} />
+          <Route path="/perfil/editar" element={<EditarPerfilPage />} />
+          <Route path="/mudar-senha" element={<ForgotPassword />} /> {}
+          <Route path="/ranking" element={<HomePage />} /> {}
+          <Route path="/game" element={<HomePage />} /> {}
+          <Route path="/games" element={<HomePage />} /> {}
         </Routes>
       </AuthProvider>
     </BrowserRouter>
-  </StrictMode>,
+  </StrictMode>
 );
