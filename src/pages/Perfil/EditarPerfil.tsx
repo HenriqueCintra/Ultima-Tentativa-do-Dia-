@@ -92,9 +92,8 @@ export const EditarPerfilPage = () => {
   };
 
   const handleExcluirEquipe = () => {
-    console.log("Excluir equipe");
-    alert("Equipe excluída!"); 
-  };
+  navigate("/perfil/excluir-equipe");
+};
 
   const handleChangePassword = () => {
     console.log("Mudar senha");
