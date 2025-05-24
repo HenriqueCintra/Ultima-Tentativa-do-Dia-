@@ -31,13 +31,20 @@ const truckIcon = L.icon({
   iconAnchor: [20, 20],
   popupAnchor: [0, -20]
 });
-
+ // rest, construction, gas, toll, danger
 // --- Ícones de POI ---
-const tollIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2852/2852936.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const dangerIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2870/2870420.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const restStopIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3233/3233066.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const constructionIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1000/1000494.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const gasStationIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2950/2950942.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const tollIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2297/2297592.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const dangerIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1008/1008928.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const restStopIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/6807/6807796.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const constructionIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4725/4725077.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const gasStationIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/465/465090.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+
+
+// --- Ícones para áreas de risco ---
+const lowRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/6276/6276686.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const mediumRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4751/4751259.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const highRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/900/900532.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const theftRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4751/4751259.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 
 // Componente para animar o caminhão
 interface TruckAnimationProps {
@@ -378,6 +385,16 @@ export const MapComponent = () => {
     }
   };
   
+  // Ícone para áreas de risco
+  const getRiskIcon = (riskLevel: 'Baixo' | 'Médio' | 'Alto'): L.Icon => {
+    switch (riskLevel) {
+      case 'Baixo': return lowRiskIcon;
+      case 'Médio': return mediumRiskIcon;
+      case 'Alto': return highRiskIcon;
+      default: return mediumRiskIcon; // Fallback
+    }
+  };
+  
   // Voltar para a tela de seleção de veículos
   const handleChangeVehicle = () => {
     navigate('/select-vehicle');
@@ -514,6 +531,21 @@ export const MapComponent = () => {
               <Popup>
                 <span className="font-bold">Pedágio:</span> {toll.location}<br />
                 Custo por eixo: R$ {toll.costPerAxle.toFixed(2)}
+              </Popup>
+            </Marker>
+          ))}
+
+          {/* Marcadores de Áreas de Risco para a Rota Selecionada */}
+          {selectedRoute?.dangerZones && selectedRoute.dangerZones.map((zone, index) => (
+            <Marker 
+              key={`danger-${selectedRoute.routeId}-${index}`} 
+              position={zone.coordinates} 
+              icon={getRiskIcon(zone.riskLevel)}
+            >
+              <Popup>
+                <span className="font-bold text-red-600">Área de risco: {zone.location}</span><br />
+                Nível de risco: {zone.riskLevel}<br />
+                {zone.description}
               </Popup>
             </Marker>
           ))}
