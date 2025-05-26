@@ -9,6 +9,7 @@ import { TutorialPage } from "./pages/Tutorial/TutorialPage";
 import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
+import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -23,6 +24,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/tutorial" element={<TutorialPage />} />
           <Route path="/perfil" element={<PerfilPage />} />
           <Route path="/perfil/editar" element={<EditarPerfilPage />} />
+          <Route path="/perfil/excluir-equipe" element={<ExcluirEquipePage />} />
           <Route path="/mudar-senha" element={<ForgotPassword />} /> {}
           <Route path="/ranking" element={<HomePage />} /> {}
           <Route path="/game" element={<HomePage />} /> {}
