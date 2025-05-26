@@ -44,11 +44,11 @@ export const PerfilPage = () => {
   });
 
   const handlePlayNow = () => {
-    navigate("/game"); 
+    navigate("/select-vehicle"); 
   };
   
   const handleContinueGame = () => {
-    navigate("/game"); 
+    navigate("/select-vehicle"); 
   };
   
   const handleCheckRanking = () => {
