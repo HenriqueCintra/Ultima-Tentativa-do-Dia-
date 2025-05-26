@@ -1,28 +1,47 @@
 import { useNavigate } from "react-router-dom";
+import { useState, useRef } from "react";
 import { Button } from "../../components/ui/button";
 import {
   Card,
   CardContent,
 } from "../../components/ui/card";
-import { PlayIcon, Trophy, TruckIcon, MapPin, DollarSign } from 'lucide-react';
+import { PlayIcon, Trophy, TruckIcon, MapPin, DollarSign, Camera } from 'lucide-react';
+
+interface UserData {
+  name: string;
+  level: number;
+  xp: number;
+  maxXp: number;
+  xpPercentage: number;
+  team: string;
+  avatar: string;
+  stats: {
+    deliveries: number;
+    distance: number;
+    earnings: number;
+    victories: number;
+  };
+}
 
 export const PerfilPage = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const userData = {
+  const [userData, setUserData] = useState<UserData>({
     name: "Aurelio de Boa",
     level: 12,
     xp: 2450,
     maxXp: 3000,
     xpPercentage: 83,
     team: "Fruit Vale",
+    avatar: "/mario.png",
     stats: {
       deliveries: 12,
       distance: 12,
       earnings: 12,
       victories: 12
     }
-  };
+  });
 
   const handlePlayNow = () => {
     navigate("/game"); 
@@ -34,6 +53,43 @@ export const PerfilPage = () => {
   
   const handleCheckRanking = () => {
     navigate("/ranking"); 
+  };
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const result = e.target?.result;
+          if (typeof result === 'string') {
+            setUserData(prev => ({
+              ...prev,
+              avatar: result
+            }));
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('Por favor, selecione apenas arquivos de imagem (PNG, JPG, GIF, etc.)');
+      }
+    }
+  };
+
+  const handleClickUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleEditProfile = () => {
+    navigate("/perfil/editar");
+  };
+
+  const handleChangePassword = () => {
+    navigate("/mudar-senha"); 
+  };
+
+  const handleLogout = () => {
+    navigate("/login");
   };
 
   const titleStyle = {
@@ -57,6 +113,15 @@ export const PerfilPage = () => {
         />
         
         {}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handlePhotoUpload}
+          accept="image/*"
+          className="hidden"
+        />
+        
+        {}
         <div className="max-w-5xl mx-auto pt-20 px-4 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
@@ -71,12 +136,24 @@ export const PerfilPage = () => {
                     
                     {}
                     <div className="mt-3 flex justify-center">
-                      <div className="w-24 h-24 rounded-full bg-teal-100 border-4 border-teal-500 flex items-center justify-center overflow-hidden">
-                        <img 
-                          src="/mario.png" 
-                          alt="Avatar" 
-                          className="w-20 h-20 object-cover"
-                        />
+                      <div className="relative">
+                        <div className="w-24 h-24 rounded-full bg-teal-100 border-4 border-teal-500 flex items-center justify-center overflow-hidden relative group">
+                          <img 
+                            src={userData.avatar} 
+                            alt="Avatar" 
+                            className="w-20 h-20 object-cover"
+                          />
+                          
+                          {}
+                          <div 
+                            className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer rounded-full"
+                            onClick={handleClickUpload}
+                          >
+                            <Camera size={20} className="text-white" />
+                          </div>
+                        </div>
+                        
+                        {}
                       </div>
                     </div>
                     
@@ -118,13 +195,15 @@ export const PerfilPage = () => {
                       <Button 
                         variant="outline" 
                         className="flex flex-col items-center justify-center h-16 border-2 border-black"
+                        onClick={handleEditProfile} 
                       >
                         <span className="text-2xl">👤</span>
-                        <span className="text-xs [font-family:'Silkscreen',Helvetica]">PERFIL</span>
+                        <span className="text-xs [font-family:'Silkscreen',Helvetica]">EDITAR PERFIL</span>
                       </Button>
                       <Button 
                         variant="outline" 
                         className="flex flex-col items-center justify-center h-16 border-2 border-black"
+                        onClick={handleChangePassword}
                       >
                         <span className="text-2xl">🔑</span>
                         <span className="text-xs [font-family:'Silkscreen',Helvetica]">SENHA</span>
@@ -132,6 +211,7 @@ export const PerfilPage = () => {
                       <Button 
                         variant="outline" 
                         className="flex flex-col items-center justify-center h-16 border-2 border-black"
+                        onClick={handleLogout}
                       >
                         <span className="text-2xl">↪️</span>
                         <span className="text-xs [font-family:'Silkscreen',Helvetica]">SAIR</span>
@@ -183,7 +263,7 @@ export const PerfilPage = () => {
               
               {}
               <div className="grid grid-cols-4 gap-3">
-                {}
+                {/* Entregas */}
                 <Card className="border-2 border-solid border-black rounded-lg overflow-hidden">
                   <CardContent className="py-3 px-4 flex flex-col items-center">
                     <TruckIcon size={24} />
@@ -194,7 +274,7 @@ export const PerfilPage = () => {
                   </CardContent>
                 </Card>
                 
-                {}
+                {/* Distância */}
                 <Card className="border-2 border-solid border-black rounded-lg overflow-hidden">
                   <CardContent className="py-3 px-4 flex flex-col items-center">
                     <MapPin size={24} color="#4ade80" />
@@ -205,7 +285,7 @@ export const PerfilPage = () => {
                   </CardContent>
                 </Card>
                 
-                {}
+                {/* Ganhos */}
                 <Card className="border-2 border-solid border-black rounded-lg overflow-hidden">
                   <CardContent className="py-3 px-4 flex flex-col items-center">
                     <DollarSign size={24} color="#eab308" />
