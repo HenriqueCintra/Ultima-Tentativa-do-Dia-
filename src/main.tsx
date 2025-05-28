@@ -10,6 +10,8 @@ import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
+import { EditarEquipePage } from "./pages/Perfil/EditarEquipe";
+import RankingPage from "./pages/Ranking/RankingPage";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -25,10 +27,11 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/perfil" element={<PerfilPage />} />
           <Route path="/perfil/editar" element={<EditarPerfilPage />} />
           <Route path="/perfil/excluir-equipe" element={<ExcluirEquipePage />} />
-          <Route path="/mudar-senha" element={<ForgotPassword />} /> {}
-          <Route path="/ranking" element={<HomePage />} /> {}
-          <Route path="/game" element={<HomePage />} /> {}
-          <Route path="/games" element={<HomePage />} /> {}
+          <Route path="/perfil/editar-equipe" element={<EditarEquipePage />} />
+          <Route path="/mudar-senha" element={<ForgotPassword />} />
+          <Route path="/ranking" element={<RankingPage />} /> {/* ✅ Mantenha apenas esta */}
+          <Route path="/game" element={<HomePage />} />
+          <Route path="/games" element={<HomePage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
