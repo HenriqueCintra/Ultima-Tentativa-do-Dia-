@@ -6,12 +6,15 @@ import { VehicleSelectionPage } from './pages/escolherVeiculo';
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
 import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword"; 
+
+import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
 import { TutorialPage } from "./pages/Tutorial/TutorialPage";
 import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
+
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -33,6 +36,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/select-vehicle" element={<VehicleSelectionPage />} />
           <Route path="/mapa-rota" element={<MapComponent />} />
           <Route path="/mapa" element={<MapComponent />} />
+          <Route path="/choose-team" element={<ChooseTeam/>}/>
         </Routes>
       </AuthProvider>
     </BrowserRouter>
