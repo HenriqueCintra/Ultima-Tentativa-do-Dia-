@@ -134,8 +134,19 @@ button:focus-visible {
     --chart-5: 340 75% 55%;
   }
 }
+/* Estilos para o mapa Leaflet */
+.leaflet-container {
+  /* A largura e altura serão controladas pelo Tailwind no MapComponent.tsx */
+  /* Remove width: 100%; height: 500px; daqui para usar as classes Tailwind */
+}
 
-
+/* Opcional: Estilos para o popup do Leaflet se quiser mais controle */
+.leaflet-popup-content-wrapper {
+  border-radius: 0.5rem; /* Arredonda as bordas do popup */
+}
+.leaflet-popup-content {
+  margin: 0; /* Remove margem padrão */
+}
 
 @layer base {
   * {

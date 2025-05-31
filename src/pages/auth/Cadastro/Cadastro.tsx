@@ -1,18 +1,86 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import { ArrowLeft, House } from 'lucide-react';
+import { ArrowLeft, House, AlertCircle } from 'lucide-react';
 import { ButtonHomeBack } from "@/components/ButtonHomeBack";
+import AuthService from "../../../api/authService";
 
 export const Cadastro = () => {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    username: "",
+    nickname: "",
+    email: "",
+    data_nascimento: "",
+    password: "",
+    password2: "",
+    first_name: "",
+    last_name: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validação básica
+    if (!formData.username || !formData.nickname || !formData.email || !formData.password || !formData.password2) {
+      setError("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (formData.password !== formData.password2) {
+      setError("As senhas não conferem");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await AuthService.register(formData);
+      setSuccess("Cadastro realizado com sucesso! Redirecionando para o login...");
+
+      // Redireciona para o login após 2 segundos
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        // Trata erros da API
+        if (typeof error.response.data === 'object') {
+          // Extrai mensagens de erro
+          const errorMessages = Object.entries(error.response.data)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("; ");
+          setError(errorMessages);
+        } else {
+          setError("Falha ao realizar cadastro. Verifique os dados.");
+        }
+      } else {
+        setError("Erro de conexão. Tente novamente mais tarde.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formFields = [
-    { id: "nome", label: "NOME", type: "text" },
+    { id: "first_name", label: "NOME", type: "text" },
     { id: "nickname", label: "NICKNAME", type: "text" },
     { id: "email", label: "EMAIL", type: "email" },
     { id: "data_nascimento", label: "DATA DE NASCIMENTO", type: "date" },
-    { id: "senha", label: "SENHA", type: "password" },
-    { id: "confirmar_senha", label: "CONFIRMAR SENHA", type: "password" },
+    { id: "username", label: "USUÁRIO", type: "text" },
+    { id: "password", label: "SENHA", type: "password" },
+    { id: "password2", label: "CONFIRMAR SENHA", type: "password" },
   ];
 
   return (
@@ -32,8 +100,8 @@ export const Cadastro = () => {
 
         {/* Botões de navegação */}
         <div className="flex gap-5 absolute top-14 left-[33px]">
-          <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft/></ButtonHomeBack>
-          <ButtonHomeBack onClick={() => navigate("/")}><House/></ButtonHomeBack>
+          <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft /></ButtonHomeBack>
+          <ButtonHomeBack onClick={() => navigate("/")}><House /></ButtonHomeBack>
         </div>
 
         {/* Card de Cadastro */}
@@ -43,8 +111,23 @@ export const Cadastro = () => {
               <h1 className="text-center text-[32px] [font-family:'Silkscreen',Helvetica] font-bold mb-8">
                 CADASTRO
               </h1>
-              
-              <form className="space-y-4">
+
+              {/* Mensagem de sucesso */}
+              {success && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+                  {success}
+                </div>
+              )}
+
+              {/* Mensagem de erro */}
+              {error && (
+                <div className="text-red-500 flex items-center gap-2 mb-4">
+                  <AlertCircle size={20} />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="grid grid-cols-2 gap-6">
                   {formFields.map((field) => (
                     <div key={field.id} className="space-y-2">
@@ -55,24 +138,31 @@ export const Cadastro = () => {
                         id={field.id}
                         type={field.type}
                         className="w-full h-[55px] rounded-xl border-2 border-solid border-black bg-white p-3 text-black [font-family:'Silkscreen',Helvetica]"
+                        value={formData[field.id as keyof typeof formData]}
+                        onChange={handleChange}
                       />
                     </div>
                   ))}
                 </div>
 
                 <div className="flex flex-col justify-between items-center pt-8">
-                  <Button 
+                  <Button
                     type="submit"
+                    disabled={loading}
                     className="w-[374px] h-[53px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[24px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105"
                   >
-                    CADASTRAR
+                    {loading ? "PROCESSANDO..." : "CADASTRAR"}
                   </Button>
+
                   <a
-                      href="/login"
-                      onClick={() => navigate("/login")}
-                      className="[font-family:'Silkscreen',Helvetica] font-normal mt-4 text-[#167dd2] text-base underline"
-                    >
-                      Já possui uma conta? Faça login
+                    href="/login"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      navigate("/login");
+                    }}
+                    className="[font-family:'Silkscreen',Helvetica] font-normal mt-4 text-[#167dd2] text-base underline"
+                  >
+                    Já possui uma conta? Faça login
                   </a>
                 </div>
               </form>
