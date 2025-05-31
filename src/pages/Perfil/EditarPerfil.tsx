@@ -57,31 +57,64 @@ export const EditarPerfilPage = () => {
   // Carrega dados do usuário quando componente monta
   useEffect(() => {
     if (user) {
+      // Converter data para formato YYYY-MM-DD se necessário
+      let dataFormatada = '';
+      if (user.data_nascimento) {
+        // Se vier no formato DD/MM/YYYY, converter para YYYY-MM-DD
+        if (user.data_nascimento.includes('/')) {
+          const [dia, mes, ano] = user.data_nascimento.split('/');
+          dataFormatada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+        }
+        // Se vier no formato YYYY-MM-DD, usar direto
+        else if (user.data_nascimento.includes('-')) {
+          dataFormatada = user.data_nascimento;
+        }
+        // Outros formatos
+        else {
+          dataFormatada = user.data_nascimento;
+        }
+      }
+
       setUserData({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         email: user.email || '',
-        data_nascimento: '' // Backend pode retornar esse campo
+        data_nascimento: dataFormatada
       });
     }
   }, [user]);
 
   // Mutation para atualizar perfil
   const updateProfileMutation = useMutation({
-    mutationFn: (data: UserEditData) => AuthService.updateProfile(data),
-    onSuccess: async () => {
+    mutationFn: (data: UserEditData) => {
+      console.log('🌐 DEBUG - Enviando requisição PATCH para /auth/perfil/ com:', data);
+      return AuthService.updateProfile(data);
+    },
+    onSuccess: async (response) => {
+      console.log('✅ DEBUG - Resposta de sucesso do backend:', response.data);
+
       // Atualiza os dados no contexto
       await refreshUser();
+
+      console.log('🔄 DEBUG - Usuário atualizado no contexto');
+
       // Invalida queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+
       // Mostra sucesso e navega
       alert("Alterações salvas com sucesso!");
       navigate("/perfil");
     },
     onError: (error: any) => {
-      console.error("Erro ao atualizar perfil:", error);
-      const errorMessage = error.response?.data?.detail || "Erro ao salvar alterações";
-      alert(errorMessage);
+      console.error("❌ DEBUG - Erro completo:", error);
+      console.error("❌ DEBUG - Resposta do servidor:", error.response?.data);
+      console.error("❌ DEBUG - Status do erro:", error.response?.status);
+
+      const errorMessage = error.response?.data?.detail ||
+        error.response?.data?.message ||
+        JSON.stringify(error.response?.data) ||
+        "Erro ao salvar alterações";
+      alert(`Erro: ${errorMessage}`);
     }
   });
 
@@ -111,6 +144,8 @@ export const EditarPerfilPage = () => {
   };
 
   const handleSalvarAlteracoes = () => {
+    console.log('💾 DEBUG - Iniciando salvamento com dados:', userData);
+
     // Valida dados básicos
     if (!userData.email.trim()) {
       alert("Email é obrigatório!");
@@ -124,6 +159,8 @@ export const EditarPerfilPage = () => {
     if (userData.last_name.trim()) dataToSend.last_name = userData.last_name.trim();
     if (userData.email.trim()) dataToSend.email = userData.email.trim();
     if (userData.data_nascimento?.trim()) dataToSend.data_nascimento = userData.data_nascimento.trim();
+
+    console.log('📤 DEBUG - Dados que serão enviados para o backend:', dataToSend);
 
     updateProfileMutation.mutate(dataToSend as UserEditData);
   };
@@ -278,6 +315,16 @@ export const EditarPerfilPage = () => {
                     />
                   </div>
                   <div>
+                    <label className={labelStyle}>USUÁRIO (não pode ser alterado)</label>
+                    <input
+                      type="text"
+                      value={user.nickname || user.username}
+                      className={`${inputStyle} bg-gray-200 cursor-not-allowed opacity-70`}
+                      disabled
+                      readOnly
+                    />
+                  </div>
+                  <div>
                     <label htmlFor="email" className={labelStyle}>EMAIL</label>
                     <input
                       type="email"
@@ -297,7 +344,11 @@ export const EditarPerfilPage = () => {
                       name="data_nascimento"
                       id="data_nascimento"
                       value={userData.data_nascimento}
-                      onChange={handleInputChange}
+                      onFocus={() => console.log('📅 DEBUG - Data atual no campo:', userData.data_nascimento)}
+                      onChange={(e) => {
+                        console.log('📅 DEBUG - Nova data selecionada:', e.target.value);
+                        handleInputChange(e);
+                      }}
                       className={inputStyle}
                     />
                   </div>

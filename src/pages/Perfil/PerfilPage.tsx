@@ -85,10 +85,10 @@ export const PerfilPage = () => {
   }
 
   // Calcula dados dinâmicos baseados no usuário real
-  const displayName = user.nickname || user.username;
-  const fullName = user.first_name && user.last_name
+  // PRIORIZAR NOME COMPLETO - se existir first_name E last_name, usa eles
+  const displayName = user.first_name && user.last_name
     ? `${user.first_name} ${user.last_name}`
-    : displayName;
+    : user.nickname || user.username;
 
   // Level e XP podem ser calculados baseado nas stats (implementação futura)
   const level = 12;
