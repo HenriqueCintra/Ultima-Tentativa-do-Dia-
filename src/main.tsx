@@ -1,40 +1,96 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { HomePage } from "./pages/Home/HomePage";
 import { VehicleSelectionPage } from './pages/escolherVeiculo';
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
-import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword"; 
+import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword";
 import { TutorialPage } from "./pages/Tutorial/TutorialPage";
 import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
 
+// Criar instância do QueryClient
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      retry: 1,
+    },
+  },
+});
+
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/cadastro" element={<Cadastro />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:uidb64/:token" element={<ForgotPassword />} />
-          <Route path="/tutorial" element={<TutorialPage />} />
-          <Route path="/perfil" element={<PerfilPage />} />
-          <Route path="/perfil/editar" element={<EditarPerfilPage />} />
-          <Route path="/perfil/excluir-equipe" element={<ExcluirEquipePage />} />
-          <Route path="/mudar-senha" element={<ForgotPassword />} /> {}
-          <Route path="/ranking" element={<HomePage />} /> {}
-          <Route path="/game" element={<HomePage />} /> {}
-          <Route path="/select-vehicle" element={<VehicleSelectionPage />} />
-          <Route path="/mapa-rota" element={<MapComponent />} />
-          <Route path="/mapa" element={<MapComponent />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <Routes>
+            {/* Rotas públicas */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/cadastro" element={<Cadastro />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:uidb64/:token" element={<ForgotPassword />} />
+            <Route path="/tutorial" element={<TutorialPage />} />
+
+            {/* Rotas protegidas */}
+            <Route path="/perfil" element={
+              <ProtectedRoute>
+                <PerfilPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/perfil/editar" element={
+              <ProtectedRoute>
+                <EditarPerfilPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/perfil/excluir-equipe" element={
+              <ProtectedRoute>
+                <ExcluirEquipePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/mudar-senha" element={
+              <ProtectedRoute>
+                <ForgotPassword />
+              </ProtectedRoute>
+            } />
+            <Route path="/ranking" element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/game" element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/select-vehicle" element={
+              <ProtectedRoute>
+                <VehicleSelectionPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/mapa-rota" element={
+              <ProtectedRoute>
+                <MapComponent />
+              </ProtectedRoute>
+            } />
+            <Route path="/mapa" element={
+              <ProtectedRoute>
+                <MapComponent />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </AuthProvider>
+      </BrowserRouter>
+      {/* DevTools apenas em desenvolvimento */}
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
   </StrictMode>
 );
