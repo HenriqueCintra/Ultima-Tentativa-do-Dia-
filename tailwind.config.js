@@ -47,6 +47,7 @@ module.exports = {
 		  sm: "calc(var(--radius) - 4px)",
 		},
 		fontFamily: {
+		pixel: ["Silkscreen", "sans-serif"],
 		  sans: [
 			"ui-sans-serif",
 			"system-ui",
@@ -65,11 +66,21 @@ module.exports = {
 			'float-left': {
 			  '0%, 100%': { transform: 'translateX(0)' },
 			  '50%': { transform: 'translateX(-350%)' }
-			}
+			},
+			'float': {
+			  '0%, 100%': { transform: 'translateY(0)' },
+			  '50%': { transform: 'translateY(-10px)' }
+			},
+			'pulse': {
+			  '0%, 100%': { opacity: 1 },
+			  '50%': { opacity: 0.8 }
+			},
 		  },
 		  animation: {
 			'float-right': 'float-right 150s ease-in-out infinite',
-			'float-left': 'float-left 150s ease-in-out infinite'
+			'float-left': 'float-left 150s ease-in-out infinite',
+			'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+			'float': 'float 6s ease-in-out infinite',
 		  },
 
 	  },

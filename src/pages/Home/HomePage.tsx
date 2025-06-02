@@ -13,6 +13,8 @@ export const HomePage = () => {
   const handleCadastro = () => {
     navigate("/Cadastro");
   };
+
+
   return (
     <div className="bg-white flex flex-row justify-center w-full ">
       <div className="bg-white py-5 [background:linear-gradient(180deg,rgba(57,189,248,1)_0%,rgba(154,102,248,1)_100%)] w-full min-h-screen relative flex flex-col items-center justify-center">
@@ -24,7 +26,7 @@ export const HomePage = () => {
                 Jogos Logisticos
               </h1>
 
-              <Card className="w-full h-[202px] mt-16 border-[3px] border-solid border-black flex items-center justify-center bg-[#fce9c4]">
+              <Card className="w-full h-[202px] mt-8 border-[3px] border-solid border-black flex items-center justify-center bg-[#ffffff]">
                 <CardContent className="p-0 flex items-center justify-center h-full">
                   <img
                     className="w-[45%] object-cover"
@@ -34,11 +36,13 @@ export const HomePage = () => {
                 </CardContent>
               </Card>
 
-              <p className="[font-family:'Silkscreen',Helvetica] font-normal text-white text-[15px] mt-1 text-center">
+              <p className="[font-family:'Silkscreen',Helvetica] font-normal text-white text-[15px] mt-3 text-center">
                 Gerencie sua frota de caminhões, escolha
                 <br />
                 as melhores rotas e faça entregas com eficiência.
               </p>
+
+            
             </div>
 
             {/* Right section */}
@@ -47,7 +51,7 @@ export const HomePage = () => {
                 Bem-vindo!
               </h2>
 
-              <div className="w-full mt-20">
+              <div className="w-full mt-16">
                 <Button 
                 onClick={handleLogin}
                 className="w-full h-[58px] bg-[#ffd700] hover:bg-[#e6c200] text-[#1c1a1a] border border-solid border-black rounded-[3px] relative">
