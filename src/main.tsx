@@ -1,5 +1,4 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HomePage } from "./pages/Home/HomePage";
 import { VehicleSelectionPage } from './pages/escolherVeiculo';
@@ -15,6 +14,8 @@ import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { EditarEquipePage } from "./pages/Perfil/EditarEquipe";
 import RankingPage from "./pages/Ranking/RankingPage";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
+import { createRoot } from "react-dom/client";
+import GameSelectionPage from "./pages/GameSelection/GameSelectionPage";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -30,7 +31,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/perfil" element={<PerfilPage />} />
           <Route path="/perfil/editar" element={<EditarPerfilPage />} />
           <Route path="/perfil/excluir-equipe" element={<ExcluirEquipePage />} />
-
+          <Route path="/game-selection" element={<GameSelectionPage />} />
           <Route path="/perfil/editar-equipe" element={<EditarEquipePage />} />
           <Route path="/mudar-senha" element={<ForgotPassword />} />
           <Route path="/ranking" element={<RankingPage />} />
