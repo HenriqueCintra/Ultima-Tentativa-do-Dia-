@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import GameCard from './components/GameCard';
 import PixelHeading from './components/PixelHeading';
 import Footer from './components/Footer';
-import { ImageIcon } from 'lucide-react';
+import { ArrowLeft, ImageIcon } from 'lucide-react';
+import { ButtonHomeBack } from '@/components/ButtonHomeBack';
 
 
 const GameSelectionScreen= () => {
@@ -55,6 +56,10 @@ const GameSelectionScreen= () => {
       className="min-h-screen bg-gradient-to-b from-purple-900 to-indigo-800 flex flex-col items-center justify-between py-12 px-4"
       style={{ fontFamily: "'Press Start 2P', cursive" }}
     >
+       <div className="flex gap-5 absolute top-14 left-[33px]">
+              <ButtonHomeBack onClick={() => navigate(-1)}><ArrowLeft /></ButtonHomeBack>
+              {/* <ButtonHomeBack onClick={() => navigate("/")}><House /></ButtonHomeBack> */}
+            </div>
       <div className="w-full max-w-6xl flex flex-col items-center">
         <PixelHeading text="ESCOLHA SEU JOGO" className="mb-12 mt-8" />
         

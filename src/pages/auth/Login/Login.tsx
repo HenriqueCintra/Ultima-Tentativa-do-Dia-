@@ -19,7 +19,7 @@ export const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   const handleForgotPassword = (e: React.MouseEvent) => {
 
     e.preventDefault();
@@ -40,7 +40,7 @@ export const Login = () => {
 
     try {
       await login(username, password);
-      navigate("/"); // Navega para a home após login bem-sucedido
+      navigate("/choose-team"); // Navega para a home após login bem-sucedido
     } catch (error: any) {
       console.error("Erro completo de login:", error);
 

@@ -69,8 +69,8 @@ export const TutorialPage = () => {
 
         {}
         <div className="flex gap-5 absolute top-14 left-[33px]">
-          <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft/></ButtonHomeBack>
-          <ButtonHomeBack onClick={() => navigate("/")}><Home/></ButtonHomeBack>
+          <ButtonHomeBack onClick={() => navigate(-1)}><ArrowLeft/></ButtonHomeBack>
+          <ButtonHomeBack onClick={() => navigate("/perfil")}><Home/></ButtonHomeBack>
         </div>
 
         {}
@@ -112,17 +112,16 @@ export const TutorialPage = () => {
             <p className="text-center [font-family:'Silkscreen',Helvetica] text-[12px] mb-6">
               AGORA QUE VOCÊ CONHECE AS REGRAS, ESTÁ PRONTO PARA O DESAFIO BOA SORTE!
             </p>
-
-            {}
-            {isLoggedIn && (
+            
               <div className="flex justify-center">
                 <Button 
-                  className="w-[230px] h-[45px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[26px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105"
+                  onClick={() => navigate("/")}
+                  className="w-[230px] px-36 h-[45px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[26px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105"
                 >
                   INICIAR JOGO
                 </Button>
               </div>
-            )}
+            
           </div>
         </div>
 

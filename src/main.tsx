@@ -12,10 +12,12 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { EditarEquipePage } from "./pages/Perfil/EditarEquipe";
+import { CriarEquipePage} from "./pages/Perfil/CriarEquipe";
 import RankingPage from "./pages/Ranking/RankingPage";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
 import { createRoot } from "react-dom/client";
 import GameSelectionPage from "./pages/GameSelection/GameSelectionPage";
+import { ApresentacaoDesafioPage} from "./pages/Desafio/ApresentacaoDesafio";
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
@@ -41,6 +43,8 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Route path="/mapa-rota" element={<MapComponent />} />
           <Route path="/mapa" element={<MapComponent />} />
           <Route path="/choose-team" element={<ChooseTeam/>}/>
+          <Route path="/create-team" element={<CriarEquipePage/>}/>
+          <Route path="/desafio" element={<ApresentacaoDesafioPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
