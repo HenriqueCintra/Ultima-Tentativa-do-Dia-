@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import Navigation from '../../components/Navigation';
 import TeamCard from '../../components/TeamCard';
 import CreateTeamButton from '../../components/CreateTeamButton';
 import SelectTeamButton from '../../components/SelectTeamButton';
 import Cloud from '../../components/Cloud';
 import { TEAMS } from '../../constants/teams';
 import { Team } from '../../types';
+import { ButtonHomeBack } from '@/components/ButtonHomeBack';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, House } from 'lucide-react';
 
 export const ChooseTeam = () =>{
   const [teams] = useState<Team[]>(TEAMS);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+   const navigate = useNavigate();
 
   const handleTeamClick = (id: string) => {
     setSelectedTeamId(id);
@@ -27,12 +30,24 @@ export const ChooseTeam = () =>{
 
   return (
     <div className="h-screen bg-gradient-to-b from-indigo-900 to-purple-700 font-pixel relative overflow-hidden flex flex-col">
-      {/* Pixel Clouds */}
-      <Cloud position="top-10 left-20" className="opacity-50 absolute" />
-      <Cloud position="bottom-20 right-10" className="opacity-50 absolute" />
+       
+       {/* Elementos de Nuvem Pixel Clouds */}
+       
+        <img
+          className="w-[375px] h-[147px] absolute top-[120px] left-[157px] object-cover animate-float-right z-0"
+          alt="Nuvem"
+          src="/nuvemleft.png"
+        />
+        <img
+          className="w-[436px] h-[170px] absolute bottom-[30px] right-[27px] object-cover animate-float-left opacity-75 scale-110 z-0"
+          alt="Nuvem"
+          src="/nuvemright.png"
+        />
       
-      {/* Navigation */}
-      <Navigation />
+            <div className="flex gap-5 absolute top-14 left-[33px]">
+              <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft /></ButtonHomeBack>
+              <ButtonHomeBack onClick={() => navigate("/")}><House /></ButtonHomeBack>
+            </div>
       
       <div className="flex-1 overflow-auto container mx-auto px-4 py-4">
         {/* Title */}
@@ -51,7 +66,7 @@ export const ChooseTeam = () =>{
         
         {/* Team List Section */}
         <div className="mb-6">
-          <h2 className="text-2xl text-center text-yellow-300 font-bold mb-4"
+          <h2 className="text-2xl text-center text-yellow-300 font-bold mb-4 z-10"
               style={{ textShadow: '2px 3px 2px black' }}>EQUIPES</h2>
           <div className="space-y-4">
             {teams.map(team => (

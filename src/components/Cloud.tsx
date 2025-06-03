@@ -4,6 +4,9 @@ interface CloudProps {
   className?: string;
   position: string;
 }
+// Essas nuvens são usadas para criar um efeito visual de nuvens pixeladas no fundo do jogo. 
+// são menores e mais simples que as nuvens do jogo, mas nao exclui a possibilidade de serem usadas no jogo, mas atualmente 
+//eelas não estão sendo utilizadas.
 
 const Cloud: React.FC<CloudProps> = ({ className, position }) => {
   return (
