@@ -19,8 +19,8 @@ export const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const handleForgotPassword = (e: React.MouseEvent) => {
+
     e.preventDefault();
     navigate("/forgot-password");
   };

@@ -169,10 +169,9 @@ export const EditarPerfilPage = () => {
     navigate(-1);
   };
 
-  const handleTeamSettings = () => {
-    console.log("Abrir configurações da equipe");
-    // TODO: Implementar tela de configurações da equipe
-  };
+const handleTeamSettings = () => {
+  navigate("/perfil/editar-equipe");
+};
 
   const handleSairDaEquipe = () => {
     console.log("Sair da equipe");
