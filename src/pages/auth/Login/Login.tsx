@@ -39,7 +39,7 @@ export const Login = () => {
 
     try {
       await login(username, password);
-      navigate("/"); // Navega para a home após login bem-sucedido
+      navigate("/perfil"); // Navega para a home após login bem-sucedido
     } catch (error: any) {
       console.error("Erro completo de login:", error);
 

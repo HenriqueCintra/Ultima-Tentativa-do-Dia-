@@ -24,6 +24,14 @@ interface RegisterData {
   data_nascimento?: string;
 }
 
+// Interface para atualização de perfil
+interface UpdateProfileData {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  data_nascimento?: string;
+}
+
 // Interface para solicitação de redefinição de senha
 interface PasswordResetRequest {
   email: string;
@@ -40,7 +48,7 @@ interface PasswordResetConfirm {
 export const AuthService = {
   // Login do usuário
   async login(credentials: LoginCredentials): Promise<TokenResponse> {
-    const response = await api.post<TokenResponse>('/api/auth/token/', credentials);
+    const response = await api.post<TokenResponse>('/auth/token/', credentials);
 
     // Armazena os tokens no localStorage
     localStorage.setItem('token', response.data.access);
@@ -51,7 +59,7 @@ export const AuthService = {
 
   // Registro de novo usuário
   async register(userData: RegisterData) {
-    return await api.post('/api/auth/registro/', userData);
+    return await api.post('/auth/registro/', userData);
   },
 
   // Logout do usuário
@@ -67,22 +75,22 @@ export const AuthService = {
 
   // Obter perfil do usuário
   async getProfile() {
-    return await api.get('/api/auth/perfil/');
+    return await api.get('/auth/perfil/');
   },
 
-  // Atualizar perfil do usuário
-  async updateProfile(userData: Partial<RegisterData>) {
-    return await api.put('/api/auth/perfil/', userData);
+  // Atualizar perfil do usuário - CORRIGIDO: PATCH em vez de PUT
+  async updateProfile(userData: UpdateProfileData) {
+    return await api.patch('/auth/perfil/', userData);
   },
 
   // Solicitar redefinição de senha
   async requestPasswordReset(data: PasswordResetRequest) {
-    return await api.post('/api/auth/password-reset/', data);
+    return await api.post('/auth/password-reset/', data);
   },
 
   // Confirmar redefinição de senha
   async confirmPasswordReset(data: PasswordResetConfirm) {
-    return await api.post('/api/auth/password-reset/confirm/', data);
+    return await api.post('/auth/password-reset/confirm/', data);
   }
 };
 
