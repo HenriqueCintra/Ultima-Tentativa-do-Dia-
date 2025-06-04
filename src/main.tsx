@@ -15,9 +15,9 @@ import { ProtectedRoute } from "./components/ProtectedRoute"; // Da sua versão 
 import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
-import { EditarEquipePage } from "./pages/Perfil/EditarEquipePage";
+import { EditarEquipePage } from "./pages/Perfil/EditarEquipe";
 import { RankingPage } from "./pages/Ranking/RankingPage";
-import { ChooseTeam } from "./pages/Team/ChooseTeam";
+import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
 
 // Criar instância do QueryClient (da sua versão HEAD)
 const queryClient = new QueryClient({
