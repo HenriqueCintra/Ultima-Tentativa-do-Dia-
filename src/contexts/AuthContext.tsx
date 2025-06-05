@@ -8,6 +8,8 @@ interface User {
   nickname: string;
   first_name?: string;
   last_name?: string;
+  data_nascimento?: string;
+  equipe?: number; // ID da equipe, pode ser null
 }
 
 interface AuthContextType {
