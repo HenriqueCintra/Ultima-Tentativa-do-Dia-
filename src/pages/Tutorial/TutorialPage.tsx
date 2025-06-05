@@ -115,7 +115,7 @@ export const TutorialPage = () => {
             
               <div className="flex justify-center">
                 <Button 
-                  onClick={() => navigate("/")}
+                  onClick={() => navigate("/desafio")}
                   className="w-[230px] px-36 h-[45px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[26px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105"
                 >
                   INICIAR JOGO
