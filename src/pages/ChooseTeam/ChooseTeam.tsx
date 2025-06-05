@@ -15,16 +15,19 @@ export const ChooseTeam = () =>{
    const navigate = useNavigate();
 
   const handleTeamClick = (id: string) => {
+    //aqui é necessario pegar o id da equipe e enviar para o backend para ser salvo no banco de dados
     setSelectedTeamId(id);
   };
 
   const handleCreateTeam = () => {
-    alert('Create new team functionality would be implemented here');
+    //aqui é necessario redirecionar para a tela de criação de equipe com o formulario de criação de equipe
+    navigate("/create-team");
   };
 
   const handleSelectTeam = () => {
     if (selectedTeamId) {
-      alert(`Selected team: ${teams.find(team => team.id === selectedTeamId)?.name}`);
+      //alert(`Selected team: ${teams.find(team => team.id === selectedTeamId)?.name}`);
+      navigate("/game-selection");
     }
   };
 
@@ -46,7 +49,7 @@ export const ChooseTeam = () =>{
       
             <div className="flex gap-5 absolute top-14 left-[33px]">
               <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft /></ButtonHomeBack>
-              <ButtonHomeBack onClick={() => navigate("/")}><House /></ButtonHomeBack>
+              {/* <ButtonHomeBack onClick={() => navigate("/")}><House /></ButtonHomeBack> */}
             </div>
       
       <div className="flex-1 overflow-auto container mx-auto px-4 py-4">

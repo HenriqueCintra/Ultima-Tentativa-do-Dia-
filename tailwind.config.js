@@ -57,6 +57,7 @@ module.exports = {
 			'"Segoe UI Symbol"',
 			'"Noto Color Emoji"',
 		  ],
+		  'press-start-2p': ['Press Start 2P', 'system-ui'],
 		},
 		keyframes: {
 			'float-right': {

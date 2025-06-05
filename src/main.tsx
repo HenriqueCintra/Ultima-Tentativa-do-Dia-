@@ -1,5 +1,4 @@
 import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Da sua versão (HEAD)
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Da sua versão (HEAD)
@@ -16,6 +15,10 @@ import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
 import { EditarEquipePage } from "./pages/Perfil/EditarEquipe";
+import { CriarEquipePage} from "./pages/Perfil/CriarEquipe";
+import { createRoot } from "react-dom/client";
+import GameSelectionPage from "./pages/GameSelection/GameSelectionPage";
+import { ApresentacaoDesafioPage} from "./pages/Desafio/ApresentacaoDesafio";
 import { RankingPage } from "./pages/Ranking/RankingPage";
 import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
 
@@ -109,6 +112,13 @@ createRoot(document.getElementById("app") as HTMLElement).render(
                 <ChooseTeam />
               </ProtectedRoute>
             } />
+            <Route path="/create-team" element={
+               <ProtectedRoute><CriarEquipePage/></ProtectedRoute>}/>
+            <Route path="/desafio" element={
+              <ProtectedRoute><ApresentacaoDesafioPage /></ProtectedRoute>} />  
+            <Route path="/game-selection" element={
+              <ProtectedRoute><GameSelectionPage /></ProtectedRoute>} />
+
           </Routes>
         </AuthProvider>
       </BrowserRouter>
