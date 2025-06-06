@@ -1,16 +1,17 @@
 import { StrictMode } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Da sua versão (HEAD)
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Da sua versão (HEAD)
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { HomePage } from "./pages/Home/HomePage";
 import { VehicleSelectionPage } from './pages/escolherVeiculo';
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
 import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword";
+import { ChangePassword } from "./pages/Perfil/ChangePassword"; 
 import { TutorialPage } from "./pages/Tutorial/TutorialPage";
 import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute"; // Da sua versão (HEAD)
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
@@ -22,7 +23,7 @@ import { ApresentacaoDesafioPage} from "./pages/Desafio/ApresentacaoDesafio";
 import { RankingPage } from "./pages/Ranking/RankingPage";
 import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
 
-// Criar instância do QueryClient (da sua versão HEAD)
+// Criar instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -34,11 +35,11 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById("app") as HTMLElement).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}> {/* Da sua versão (HEAD) */}
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            {/* Rotas públicas (combinadas de ambas) */}
+            {/* Rotas públicas */}
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
@@ -46,7 +47,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             <Route path="/reset-password/:uidb64/:token" element={<ForgotPassword />} />
             <Route path="/tutorial" element={<TutorialPage />} />
 
-            {/* Rotas protegidas (combinadas e usando seu ProtectedRoute) */}
+            {/* Rotas protegidas */}
             <Route path="/perfil" element={
               <ProtectedRoute>
                 <PerfilPage />
@@ -62,51 +63,47 @@ createRoot(document.getElementById("app") as HTMLElement).render(
                 <ExcluirEquipePage />
               </ProtectedRoute>
             } />
-            {/* Nova rota da DEV, protegida */}
             <Route path="/perfil/editar-equipe" element={
               <ProtectedRoute>
                 <EditarEquipePage />
               </ProtectedRoute>
             } />
-            <Route path="/mudar-senha" element={ // Já estava na sua versão e na dev, mantendo protegida
+            {}
+            <Route path="/mudar-senha" element={
               <ProtectedRoute>
-                <ForgotPassword />
+                <ChangePassword />
               </ProtectedRoute>
             } />
-            {/* Rota /ranking atualizada para RankingPage da DEV, protegida */}
             <Route path="/ranking" element={
               <ProtectedRoute>
                 <RankingPage />
               </ProtectedRoute>
             } />
-            {/* Rota /game da DEV (e sua), mantendo protegida */}
             <Route path="/game" element={
               <ProtectedRoute>
                 <HomePage />
               </ProtectedRoute>
             } />
-            {/* Nova rota /games da DEV, protegida */}
             <Route path="/games" element={
               <ProtectedRoute>
                 <HomePage />
               </ProtectedRoute>
             } />
-            <Route path="/select-vehicle" element={ // Já estava em ambas, mantendo protegida
+            <Route path="/select-vehicle" element={
               <ProtectedRoute>
                 <VehicleSelectionPage />
               </ProtectedRoute>
             } />
-            <Route path="/mapa-rota" element={ // Já estava em ambas, mantendo protegida
+            <Route path="/mapa-rota" element={
               <ProtectedRoute>
                 <MapComponent />
               </ProtectedRoute>
             } />
-            <Route path="/mapa" element={ // Já estava na sua versão (duplicata de mapa-rota?), mantendo protegida
+            <Route path="/mapa" element={
               <ProtectedRoute>
                 <MapComponent />
               </ProtectedRoute>
             } />
-            {/* Nova rota /choose-team da DEV, protegida */}
             <Route path="/choose-team" element={
               <ProtectedRoute>
                 <ChooseTeam />
@@ -122,7 +119,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           </Routes>
         </AuthProvider>
       </BrowserRouter>
-      {/* DevTools apenas em desenvolvimento (da sua versão HEAD) */}
+      {/* DevTools apenas em desenvolvimento */}
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   </StrictMode>
