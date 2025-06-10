@@ -120,14 +120,14 @@ export const Login = () => {
                 <div className="space-y-2">
                   <label
                     htmlFor="username"
-                    className="block [font-family:'Silkscreen',Helvetica] font-bold text-black text-[32px]"
+                    className="block [font-family:'Silkscreen',Helvetica] font-bold text-black text-[25px]"
                   >
                     Usuário
                   </label>
                   <Input
                     id="username"
                     type="text"
-                    className="h-[55px] rounded-xl border border-solid border-black"
+                    className="h-[55px] [font-family:'Silkscreen',Helvetica] rounded-xl border border-solid border-black"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
@@ -137,14 +137,15 @@ export const Login = () => {
                 <div className="space-y-2">
                   <label
                     htmlFor="password"
-                    className="block [font-family:'Silkscreen',Helvetica] font-bold text-black text-[32px]"
+                    className="block [font-family:'Silkscreen',Helvetica] font-bold text-black text-[25px]"
                   >
                     Senha
                   </label>
                   <Input
                     id="password"
                     type="password"
-                    className="h-[55px] rounded-xl border border-solid border-black"
+                    style={{ fontSize: "25px" }} // tamanho direto, ignora Tailwind
+                    className="h-[55px] text-3xl [font-family:'Silkscreen',Helvetica] rounded-xl border border-solid border-black"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -163,9 +164,9 @@ export const Login = () => {
                   <a
                     href="#"
                     onClick={handleForgotPassword}
-                    className="[font-family:'Silkscreen',Helvetica] font-normal text-[#167dd2] text-2xl underline"
+                    className="[font-family:'Silkscreen',Helvetica] font-normal text-[#167dd2] text-2xl underline text-[20px]"
                   >
-                    esqueci a senha
+                    Esqueci a senha
                   </a>
                 </div>
 
@@ -174,13 +175,13 @@ export const Login = () => {
                   <Button
                     type="button"
                     onClick={() => navigate("/cadastro")}
-                    className="w-[274px] h-[53px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[32px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105">
+                    className="w-[274px] h-[53px] text-[25px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105">
                     Cadastro
                   </Button>
                   <Button
                     type="submit"
                     disabled={loading}
-                    className="w-[274px] h-[53px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[32px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105">
+                    className="w-[274px] h-[53px] text-[25px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105">
                     {loading ? "Carregando..." : "Login"}
                   </Button>
                 </div>
