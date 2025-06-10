@@ -22,3 +22,10 @@ export interface Team {
   selected?: boolean;
   history?: TeamHistory[];
 }
+
+export interface Map {
+  id: number;
+  nome: string;
+  descricao: string;
+  rotas: any[]; // Pode ser tipado como Rota[] se necessário
+}

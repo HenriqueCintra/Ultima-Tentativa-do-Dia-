@@ -1,10 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Button } from "../../components/ui/button"; 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { TeamService } from '../../api/teamService';
+import { useAuth } from '../../contexts/AuthContext';
+import { TeamCreationData } from '../../types';
+import { Button } from "../../components/ui/button";
 import {
   Card,
   CardContent,
-} from "../../components/ui/card"; 
+} from "../../components/ui/card";
 import {
   ArrowLeft,
   Copy,
@@ -31,7 +35,14 @@ interface TeamData {
 
 export const CriarEquipePage = () => {
   const navigate = useNavigate();
-  
+  const queryClient = useQueryClient();
+  const { user, refreshUser } = useAuth();
+
+  const [teamName, setTeamName] = useState("");
+  const [teamDescription, setTeamDescription] = useState("");
+  const [newMemberName, setNewMemberName] = useState("");
+  const [isInviting, setIsInviting] = useState(false);
+
   // Inicialização com dados padrão - apenas o usuário atual como membro
   const [teamData, setTeamData] = useState<TeamData>({
     name: "",
@@ -39,7 +50,7 @@ export const CriarEquipePage = () => {
     members: [
       {
         id: "1",
-        name: "AURELIO DE BOA",
+        name: user?.nickname || "AURELIO DE BOA",
         level: 12,
         xp: 2450,
         avatar: "/avatar.jpg",
@@ -48,14 +59,26 @@ export const CriarEquipePage = () => {
     ]
   });
 
-  const [newMemberName, setNewMemberName] = useState("");
-  const [isInviting, setIsInviting] = useState(false);
+  const createTeamMutation = useMutation({
+    mutationFn: (newTeam: TeamCreationData) => TeamService.createTeam(newTeam),
+    onSuccess: async () => {
+      alert('Equipe criada com sucesso!');
+      await refreshUser(); // Atualiza os dados do usuário no contexto (agora ele tem uma equipe)
+      queryClient.invalidateQueries({ queryKey: ['teams'] }); // Invalida a query de equipes para recarregar a lista
+      navigate("/choose-team");
+    },
+    onError: (error: any) => {
+      const errorMsg = error.response?.data?.nome?.[0] || "Erro ao criar equipe.";
+      alert(`Erro: ${errorMsg}`);
+    }
+  });
 
   const handleNavigateBack = () => {
-    navigate("/choose-team"); 
+    navigate("/choose-team");
   };
 
   const handleTeamNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTeamName(e.target.value);
     setTeamData(prev => ({ ...prev, name: e.target.value }));
   };
 
@@ -64,9 +87,9 @@ export const CriarEquipePage = () => {
       alert("Digite o nome do membro para convidar");
       return;
     }
-    
+
     setIsInviting(true);
-    
+
     // Simular processo de convite
     setTimeout(() => {
       console.log(`Convite enviado para: ${newMemberName}`);
@@ -77,14 +100,11 @@ export const CriarEquipePage = () => {
   };
 
   const handleCreateTeam = () => {
-    if (!teamData.name.trim()) {
-      alert("Digite um nome para a equipe");
+    if (!teamName.trim()) {
+      alert("O nome da equipe é obrigatório.");
       return;
     }
-    
-    console.log("Nova equipe criada:", teamData);
-    //alert("Equipe criada com sucesso!");
-    navigate("/game-selection");
+    createTeamMutation.mutate({ nome: teamName, descricao: teamDescription });
   };
 
   const getRoleIcon = (role: string) => {
@@ -133,7 +153,7 @@ export const CriarEquipePage = () => {
             <ArrowLeft size={24} className="text-black" />
           </Button>
         </div>
-        
+
         {/* Main content */}
         <div className="max-w-4xl mx-auto pt-16 pb-8 px-4 relative z-10">
           <Card className="border-2 border-solid border-black rounded-lg overflow-hidden bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -153,13 +173,29 @@ export const CriarEquipePage = () => {
                     <label htmlFor="teamName" className={labelStyle}>
                       NOME DA EQUIPE
                     </label>
-                    <input 
-                      type="text" 
-                      name="teamName" 
-                      id="teamName" 
-                      value={teamData.name} 
+                    <input
+                      type="text"
+                      name="teamName"
+                      id="teamName"
+                      value={teamName}
                       onChange={handleTeamNameChange}
                       placeholder="DIGITE O NOME DA EQUIPE"
+                      className={inputStyle}
+                    />
+                  </div>
+
+                  {/* Team description */}
+                  <div>
+                    <label htmlFor="teamDescription" className={labelStyle}>
+                      DESCRIÇÃO DA EQUIPE (OPCIONAL)
+                    </label>
+                    <input
+                      type="text"
+                      name="teamDescription"
+                      id="teamDescription"
+                      value={teamDescription}
+                      onChange={(e) => setTeamDescription(e.target.value)}
+                      placeholder="DIGITE UMA DESCRIÇÃO"
                       className={inputStyle}
                     />
                   </div>
@@ -170,11 +206,11 @@ export const CriarEquipePage = () => {
                       CÓDIGO DE INVITE
                     </label>
                     <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        name="inviteCode" 
-                        id="inviteCode" 
-                        value={teamData.inviteCode} 
+                      <input
+                        type="text"
+                        name="inviteCode"
+                        id="inviteCode"
+                        value={teamData.inviteCode}
                         readOnly
                         disabled
                         className={`${inputStyle} flex-1 bg-gray-100 text-gray-500`}
@@ -193,8 +229,8 @@ export const CriarEquipePage = () => {
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {teamData.members.map((member) => (
                         <div key={member.id} className="flex items-center gap-3 bg-gray-50 border-2 border-black rounded-md p-3">
-                          <img 
-                            src={member.avatar} 
+                          <img
+                            src={member.avatar}
                             alt={`Avatar de ${member.name}`}
                             className="w-12 h-12 rounded-full border-2 border-black object-cover"
                           />
@@ -228,12 +264,12 @@ export const CriarEquipePage = () => {
                       <UserPlus size={16} className="inline mr-2" />
                       INFORMAÇÕES ADICIONAIS
                     </label>
-                    
+
                     <div className="bg-gray-50 border-2 border-black rounded-md p-4">
                       <p className={`${silkscreenFont} text-sm text-black mb-4`}>
                         AO CRIAR UMA EQUIPE:
                       </p>
-                      
+
                       <ul className="space-y-3">
                         <li className="flex items-start gap-2">
                           <span className="text-green-500 font-bold">•</span>
@@ -267,13 +303,13 @@ export const CriarEquipePage = () => {
 
               {/* Create button */}
               <div className="flex justify-center mt-8">
-                <Button 
+                <Button
                   onClick={handleCreateTeam}
-                  disabled={!teamData.name.trim()}
+                  disabled={createTeamMutation.isPending || !teamName.trim()}
                   className={`${buttonBaseStyle} px-8 py-3 bg-[#29D8FF] hover:bg-[#20B4D2] text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <Settings size={18} className="mr-2" />
-                  CRIAR EQUIPE
+                  {createTeamMutation.isPending ? 'CRIANDO...' : 'CRIAR EQUIPE'}
                 </Button>
               </div>
             </CardContent>
@@ -284,4 +320,4 @@ export const CriarEquipePage = () => {
   );
 };
 
-export default CriarEquipePage; 
+export default CriarEquipePage;
