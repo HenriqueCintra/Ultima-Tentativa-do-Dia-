@@ -18,27 +18,50 @@ const GameSelectionPage = () => {
     queryFn: GameService.getMaps,
   });
 
+  // Lógica de navegação baseada no NOME do mapa
   const handleGameClick = (map: GameMap) => {
-    // Navega para a tela de apresentação do desafio, passando os dados do mapa
-    navigate('/desafio', { state: { map } });
+    // Se o mapa for "ENTREGA EFICIENTE"
+    if (map.nome === "ENTREGA EFICIENTE") {
+      navigate('/tutorial'); // Leva para a tela de tutorial
+    } else {
+      // Para outros jogos, mostra alerta de "em desenvolvimento"
+      alert(`O jogo "${map.nome}" ainda está em desenvolvimento!`);
+      // navigate('/desafio', { state: { map } }); // Descomente quando a lógica estiver pronta
+    }
   };
 
-  const getGameConfig = (gameId: number) => {
-    // Lógica para manter as cores e ícones baseados no ID do jogo
-    switch (gameId) {
-      case 1:
+  // Função de configuração que usa o NOME do mapa vindo da API
+  const getGameConfig = (mapName: string) => {
+    // Mapeia o NOME do mapa para a configuração visual
+    switch (mapName) {
+      case "ENTREGA EFICIENTE":
         return {
           borderColor: 'border-yellow-500',
           buttonBgColor: 'bg-yellow-500',
           buttonHoverColor: 'hover:bg-yellow-600',
-          isActive: true
+          isActive: true, // Este jogo está ATIVO
         };
+      case "Centro de Distribuição":
+        return {
+          borderColor: 'border-green-400',
+          buttonBgColor: 'bg-green-300',
+          buttonHoverColor: 'hover:bg-green-400',
+          isActive: false, // Este jogo está INATIVO
+        };
+      case "Gestão de Estoque":
+        return {
+          borderColor: 'border-blue-400',
+          buttonBgColor: 'bg-blue-300',
+          buttonHoverColor: 'hover:bg-blue-400',
+          isActive: false, // Este jogo está INATIVO
+        };
+      // Configuração padrão para qualquer outro mapa que possa existir
       default:
         return {
           borderColor: 'border-gray-400',
           buttonBgColor: 'bg-gray-300',
           buttonHoverColor: 'hover:bg-gray-400',
-          isActive: false
+          isActive: false,
         };
     }
   };
@@ -79,7 +102,8 @@ const GameSelectionPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
           {maps?.map((map) => {
-            const config = getGameConfig(map.id);
+            // Passa o NOME do mapa para a função de configuração
+            const config = getGameConfig(map.nome);
             return (
               <GameCard
                 key={map.id}

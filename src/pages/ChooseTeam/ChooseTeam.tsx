@@ -63,32 +63,37 @@ export const ChooseTeam = () => {
     <div className="h-screen bg-gradient-to-b from-indigo-900 to-purple-700 font-pixel relative overflow-hidden flex flex-col">
       <img className="w-[375px] h-[147px] absolute top-[120px] left-[157px] object-cover animate-float-right z-0" alt="Nuvem" src="/nuvemleft.png" />
       <img className="w-[436px] h-[170px] absolute bottom-[30px] right-[27px] object-cover animate-float-left opacity-75 scale-110 z-0" alt="Nuvem" src="/nuvemright.png" />
-      <div className="flex gap-5 absolute top-14 left-[33px]">
-        <ButtonHomeBack onClick={() => navigate(-1)}><ArrowLeft /></ButtonHomeBack>
-        <ButtonHomeBack onClick={() => navigate("/perfil")}><House /></ButtonHomeBack>
-      </div>
-      <div className="flex-1 overflow-auto container mx-auto px-4 py-4">
-        <h1 className="text-2xl md:text-2xl text-yellow-300 font-bold text-center mt-2 mb-8 tracking-wide" style={{ textShadow: '2px 3px 2px black' }}>
-          ESCOLHA SUA EQUIPE
-        </h1>
-        <div className="bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-lg p-2.5 mb-2">
-          <CreateTeamButton onClick={handleCreateTeam} />
+
+      {/* <<< MUDANÇA: Adicionamos 'relative' e 'z-10' a este contêiner para colocá-lo na frente das nuvens */}
+      <div className="relative z-10 flex flex-col flex-1">
+        <div className="flex gap-5 absolute top-14 left-[33px]">
+          <ButtonHomeBack onClick={() => navigate(-1)}><ArrowLeft /></ButtonHomeBack>
+          <ButtonHomeBack onClick={() => navigate("/perfil")}><House /></ButtonHomeBack>
         </div>
-        <div className="mb-6">
-          <h2 className="text-2xl text-center text-yellow-300 font-bold mb-4 z-10" style={{ textShadow: '2px 3px 2px black' }}>EQUIPES</h2>
-          <div className="space-y-4">
-            {teams?.map(team => (
-              <TeamCard
-                key={team.id}
-                team={{ ...team, name: team.nome }} // Adaptando nome para o componente
-                onClick={() => handleTeamClick(team.id)}
-                selected={team.id === selectedTeamId}
-              />
-            ))}
+        <div className="flex-1 overflow-auto container mx-auto px-4 py-4">
+          <h1 className="text-2xl md:text-2xl text-yellow-300 font-bold text-center mt-2 mb-8 tracking-wide" style={{ textShadow: '2px 3px 2px black' }}>
+            ESCOLHA SUA EQUIPE
+          </h1>
+          <div className="bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-lg p-2.5 mb-2">
+            <CreateTeamButton onClick={handleCreateTeam} />
           </div>
-        </div>
-        <div className="justify-center flex">
-          <SelectTeamButton onClick={handleSelectTeam} />
+          <div className="mb-6">
+            <h2 className="text-2xl text-center text-yellow-300 font-bold mb-4 z-10" style={{ textShadow: '2px 3px 2px black' }}>EQUIPES</h2>
+            <div className="space-y-4">
+              {teams?.map(team => (
+                <TeamCard
+                  key={team.id}
+                  // Corrigindo a adaptação para o componente esperar `name` enquanto a API envia `nome`
+                  team={{ ...team, name: team.nome || 'Nome da Equipe' }}
+                  onClick={() => handleTeamClick(team.id)}
+                  selected={team.id === selectedTeamId}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="justify-center flex">
+            <SelectTeamButton onClick={handleSelectTeam} />
+          </div>
         </div>
       </div>
     </div>
