@@ -1,7 +1,8 @@
+// src/pages/mapaRota/FuelModal.tsx
+
 import React, { useState } from 'react';
 import { Vehicle } from '../../types/vehicle';
 
-// Props do componente
 interface FuelModalProps {
   vehicle: Vehicle;
   availableMoney: number;
@@ -18,11 +19,10 @@ export const FuelModal: React.FC<FuelModalProps> = ({
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle>({...vehicle});
   const [fuelAmount, setFuelAmount] = useState<'full' | 'half' | 'quarter'>('full');
   const [availableBalance, setAvailableBalance] = useState(availableMoney);
+  const [previewFuel, setPreviewFuel] = useState<number>(vehicle.currentFuel);
   
-  // Preço do diesel por litro (R$ 5,50)
   const fuelCostPerLiter = 5.5;
 
-  // Cálculo do custo do abastecimento
   const calculateFuelCost = (option: 'full' | 'half' | 'quarter') => {
     const maxCapacity = selectedVehicle.maxCapacity;
     const currentFuel = selectedVehicle.currentFuel;
@@ -46,7 +46,6 @@ export const FuelModal: React.FC<FuelModalProps> = ({
     return fuelToAdd * fuelCostPerLiter;
   };
 
-  // Handler para abastecimento
   const handleRefuel = () => {
     const cost = calculateFuelCost(fuelAmount);
     
@@ -67,12 +66,28 @@ export const FuelModal: React.FC<FuelModalProps> = ({
       setSelectedVehicle(updatedVehicle);
       setAvailableBalance(newBalance);
       
-      // Informar o componente pai sobre as mudanças
       onRefuel(updatedVehicle, newBalance);
     } else {
       alert('Saldo insuficiente para abastecer!');
     }
   };
+
+  const calculatePreviewFuel = (option: 'full' | 'half' | 'quarter'): number => {
+    const max = selectedVehicle.maxCapacity;
+    const current = selectedVehicle.currentFuel;
+
+    switch (option) {
+      case 'full':
+        return max;
+      case 'half':
+        // Correção: a pré-visualização deve mostrar o resultado final, não o máximo entre o atual e o alvo.
+        return max / 2;
+      case 'quarter':
+        return max / 4;
+    }
+    return current; // Fallback
+  };
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4 overflow-y-auto">
@@ -84,10 +99,8 @@ export const FuelModal: React.FC<FuelModalProps> = ({
           SALDO: R$ {availableBalance.toFixed(2)}
         </p>
 
-        {/* Informações do veículo */}
         <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Imagem do veículo */}
             <div className="flex justify-center items-center md:w-1/3">
               <img 
                 src={selectedVehicle.image} 
@@ -110,25 +123,30 @@ export const FuelModal: React.FC<FuelModalProps> = ({
                 
                 <div>
                   <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">COMBUSTÍVEL</h3>
-                  <p className="font-sans text-black text-md mb-1">ATUAL: {selectedVehicle.currentFuel}L</p>
+                  <p className="font-sans text-black text-md mb-1">ATUAL: {selectedVehicle.currentFuel.toFixed(0)}L</p>
                   <p className="font-sans text-black text-md mb-3">MÁXIMO: {selectedVehicle.maxCapacity}L</p>
                 </div>
               </div>
               
-              {/* Barra de combustível */}
               <p className="font-sans text-black text-md mb-2">NÍVEL DO TANQUE</p>
-              <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black mb-4">
+              <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black mb-4 relative">
+                {/* Barra do combustível atual */}
                 <div
-                  className="bg-green-500 h-full rounded-full flex items-center justify-center text-xs font-bold text-white"
+                  className="bg-green-500 h-full rounded-l-full transition-all duration-300"
                   style={{ width: `${(selectedVehicle.currentFuel / selectedVehicle.maxCapacity) * 100}%` }}
-                >
-                  {selectedVehicle.currentFuel}/{selectedVehicle.maxCapacity}
+                ></div>
+                {/* Barra da pré-visualização */}
+                <div
+                  className="bg-yellow-400 h-full absolute top-0 left-0 rounded-full opacity-70 transition-all duration-300"
+                  style={{ width: `${(previewFuel / selectedVehicle.maxCapacity) * 100}%` }}
+                ></div>
+                 <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-black">
+                   {selectedVehicle.currentFuel.toFixed(0)} / {selectedVehicle.maxCapacity}L
                 </div>
               </div>
             </div>
           </div>
           
-          {/* Opções de abastecimento */}
           <div className="mt-4">
             <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">ABASTECER</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -139,19 +157,31 @@ export const FuelModal: React.FC<FuelModalProps> = ({
               <div className="md:col-span-2">
                 <div className="flex space-x-2 mb-2">
                   <button 
-                    onClick={() => setFuelAmount('quarter')} 
+                    onClick={() => {
+                      const newPreview = calculatePreviewFuel('quarter');
+                      setFuelAmount('quarter');
+                      setPreviewFuel(newPreview);
+                    }}
                     className={`flex-1 py-2 border-2 border-black rounded-md ${fuelAmount === 'quarter' ? 'bg-[#E3922A]' : 'bg-gray-200'}`}
                   >
                     1/4
                   </button>
-                  <button 
-                    onClick={() => setFuelAmount('half')} 
+                   <button 
+                      onClick={() => {
+                        const newPreview = calculatePreviewFuel('half');
+                        setFuelAmount('half');
+                        setPreviewFuel(newPreview);
+                      }} 
                     className={`flex-1 py-2 border-2 border-black rounded-md ${fuelAmount === 'half' ? 'bg-[#E3922A]' : 'bg-gray-200'}`}
                   >
                     1/2
                   </button>
                   <button 
-                    onClick={() => setFuelAmount('full')} 
+                    onClick={() => {
+                      const newPreview = calculatePreviewFuel('full');
+                      setFuelAmount('full');
+                      setPreviewFuel(newPreview);
+                    }}
                     className={`flex-1 py-2 border-2 border-black rounded-md ${fuelAmount === 'full' ? 'bg-[#E3922A]' : 'bg-gray-200'}`}
                   >
                     CHEIO
@@ -175,7 +205,6 @@ export const FuelModal: React.FC<FuelModalProps> = ({
           </div>
         </div>
         
-        {/* Botões de ação */}
         <div className="flex justify-center">
           <button 
             onClick={onClose}
@@ -187,4 +216,4 @@ export const FuelModal: React.FC<FuelModalProps> = ({
       </div>
     </div>
   );
-}; 
+};
