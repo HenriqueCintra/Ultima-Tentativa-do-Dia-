@@ -90,9 +90,10 @@ createRoot(document.getElementById("app") as HTMLElement).render(
               </ProtectedRoute>
             } />
             <Route path="/select-vehicle" element={
-              <ProtectedRoute>
-                <VehicleSelectionPage />
-              </ProtectedRoute>
+              // <ProtectedRoute>
+              //   <VehicleSelectionPage />
+              // </ProtectedRoute>
+              <VehicleSelectionPage />
             } />
             <Route path="/mapa-rota" element={
               <ProtectedRoute>
