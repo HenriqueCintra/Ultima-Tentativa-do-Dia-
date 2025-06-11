@@ -18,6 +18,7 @@ export const FuelModal: React.FC<FuelModalProps> = ({
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle>({...vehicle});
   const [fuelAmount, setFuelAmount] = useState<'full' | 'half' | 'quarter'>('full');
   const [availableBalance, setAvailableBalance] = useState(availableMoney);
+  const [previewFuel, setPreviewFuel] = useState<number>(vehicle.currentFuel);
   
   // Preço do diesel por litro (R$ 5,50)
   const fuelCostPerLiter = 5.5;
@@ -74,6 +75,21 @@ export const FuelModal: React.FC<FuelModalProps> = ({
     }
   };
 
+  const calculatePreviewFuel = (option: 'full' | 'half' | 'quarter'): number => {
+  const max = selectedVehicle.maxCapacity;
+  const current = selectedVehicle.currentFuel;
+
+  switch (option) {
+    case 'full':
+      return max;
+    case 'half':
+      return Math.max(current, max / 2);
+    case 'quarter':
+      return Math.max(current, max / 4);
+  }
+  };
+
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4 overflow-y-auto">
       <div className="bg-[#200259] rounded-lg shadow-2xl border-4 border-black max-w-4xl w-full p-6 my-8">
@@ -110,7 +126,7 @@ export const FuelModal: React.FC<FuelModalProps> = ({
                 
                 <div>
                   <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">COMBUSTÍVEL</h3>
-                  <p className="font-sans text-black text-md mb-1">ATUAL: {selectedVehicle.currentFuel}L</p>
+                  <p className="font-sans text-black text-md mb-1">ATUAL: {previewFuel.toFixed(2)}L</p>
                   <p className="font-sans text-black text-md mb-3">MÁXIMO: {selectedVehicle.maxCapacity}L</p>
                 </div>
               </div>
@@ -120,7 +136,7 @@ export const FuelModal: React.FC<FuelModalProps> = ({
               <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black mb-4">
                 <div
                   className="bg-green-500 h-full rounded-full flex items-center justify-center text-xs font-bold text-white"
-                  style={{ width: `${(selectedVehicle.currentFuel / selectedVehicle.maxCapacity) * 100}%` }}
+                  style={{ width: `${(previewFuel / selectedVehicle.maxCapacity) * 100}%` }}
                 >
                   {selectedVehicle.currentFuel}/{selectedVehicle.maxCapacity}
                 </div>
@@ -139,19 +155,28 @@ export const FuelModal: React.FC<FuelModalProps> = ({
               <div className="md:col-span-2">
                 <div className="flex space-x-2 mb-2">
                   <button 
-                    onClick={() => setFuelAmount('quarter')} 
+                    onClick={() => {
+                      setFuelAmount('quarter');
+                      setPreviewFuel(calculatePreviewFuel('quarter'));
+                    }}
                     className={`flex-1 py-2 border-2 border-black rounded-md ${fuelAmount === 'quarter' ? 'bg-[#E3922A]' : 'bg-gray-200'}`}
                   >
                     1/4
                   </button>
-                  <button 
-                    onClick={() => setFuelAmount('half')} 
+                   <button 
+                      onClick={() => {
+                        setFuelAmount('half');
+                        setPreviewFuel(calculatePreviewFuel('half'));
+                      }} 
                     className={`flex-1 py-2 border-2 border-black rounded-md ${fuelAmount === 'half' ? 'bg-[#E3922A]' : 'bg-gray-200'}`}
                   >
                     1/2
                   </button>
                   <button 
-                    onClick={() => setFuelAmount('full')} 
+                    onClick={() => {
+                      setFuelAmount('full');
+                      setPreviewFuel(calculatePreviewFuel('full'));
+                    }}
                     className={`flex-1 py-2 border-2 border-black rounded-md ${fuelAmount === 'full' ? 'bg-[#E3922A]' : 'bg-gray-200'}`}
                   >
                     CHEIO

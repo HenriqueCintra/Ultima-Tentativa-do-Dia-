@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 export interface TeamHistory {
   id: string;
   name: string;

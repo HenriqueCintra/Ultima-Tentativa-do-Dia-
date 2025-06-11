@@ -12,7 +12,7 @@ export interface Route {
   tollBooths: {
     totalCost: number; location: string; costPerAxle: number; totalCostExample4Axles: number; coordinates: [number, number] 
 }[];
-  speedLimits: { road: string; limit: string,  value?: number, coordinates?: [number,number] }[];
+  speedLimits: { road: string; limit: string }[];
   safety: { robberyRisk: 'Baixo' | 'Médio' | 'Alto'; roadHazards: string };
   dirtRoad: boolean;
   dirtRoadDetails?: string;
@@ -104,36 +104,7 @@ export const routes: Route[] = [
       },  // Lon, Lat
     ],
     speedLimits: [
-      { 
-        road: "BR-407", 
-        limit: "80 km/h",
-        value: 80,
-        coordinates:[-9.990413, -40.239591],
-      },
-      { 
-        road: "BR-407", 
-        limit: "80 km/h",
-        value: 80,
-        coordinates:[-11.817558, -39.375948],
-      },
-      { 
-        road: "BR-407", 
-        limit: "60 km/h",
-        value: 60,
-        coordinates: [-10.517028, -40.142195]
-      },
-      { 
-        road: "BR-324", 
-        limit: "100 km/h",
-        value: 100,
-        coordinates: [-12.743087, -38.437596]
-      },
-      { 
-        road: "BR-324", 
-        limit: "50 km/h",
-        value: 50,
-        coordinates: [-12.447111365070798, -38.71353301661456]
-      }
+      { road: "BR-407", limit: "80-100 km/h" }, { road: "BR-324", limit: "100-110 km/h" }
     ],
     safety: { robberyRisk: "Médio", roadHazards: "Tráfego intenso na BR-324 (Feira-Salvador). Risco de animais na BR-407." },
     dirtRoad: false,
@@ -141,8 +112,8 @@ export const routes: Route[] = [
     constructionZones: "Manutenção pontual na BR-324.",
     restStops: [
           {
-            location: "Limite de velocidade de 50km/h",
-            description: "radares pela rodovia de 50km/h",
+            location: "BR-324 - Pedágio 02 - Via Bahia (Amélia Rodrigues)",
+            description: "Pedágio 02 - Via Bahia (Amélia Rodrigues) colocar aqui o custo por eixo",
             coordinates: [-38.71353301661456,  -12.447111365070798],  //-12.447111365070798, -38.71353301661456
             type: "gas"
           },
@@ -1349,32 +1320,6 @@ export const routes: Route[] = [
   {
     routeId: 2,
     name: "Rota Alternativa: Juazeiro-Salvador (Evitando Rodovias Expressas)",
-    speedLimits: [
-      { 
-        road: "BR-235", 
-        limit: "80 km/h",
-        value: 80,
-        coordinates: [-9.460458, -40.429308]
-      },
-      { 
-        road: "BR-235", 
-        limit: "40 km/h",
-        value: 40,
-        coordinates:  [-12.193182, -38.418788]
-      },
-      { 
-        road: "BR-110", 
-        limit: "60 km/h",
-        value: 60,
-        coordinates: [-11.225797, -38.485761]
-      },
-      { 
-        road: "BR-324", 
-        limit: "100 km/h",
-        value: 100,
-        coordinates: [-12.5778, -38.5405]
-      }
-    ],
     distance: 529,
     estimatedTime: "7h50min",
     estimatedTimeHours: parseEstimatedTime("7h50min"),
@@ -1418,7 +1363,9 @@ export const routes: Route[] = [
       //   totalCost: 0
       // },  // Lon, Lat // Lon, Lat
     ],
-    
+    speedLimits: [
+      { road: "BR-407 (ou paralelas)", limit: "70-90 km/h" }, { road: "BR-324 (ou paralelas)", limit: "70-90 km/h" }
+    ],
     safety: { robberyRisk: "Médio", roadHazards: "Qualidade variável em trechos alternativos, travessias urbanas frequentes." },
     dirtRoad: true, // Maior chance de encontrar trechos assim
     dirtRoadDetails: "Possíveis trechos de terra/asfalto ruim em vias locais ou paralelas às BRs principais.",
@@ -3534,38 +3481,6 @@ export const routes: Route[] = [
   },
   {
     routeId: 3,
-    speedLimits: [
-      { 
-        road: "BR-407", 
-        limit: "80 km/h",
-        value: 80,
-        coordinates:[-9.990413, -40.239591],
-      },
-      { 
-        road: "BR-407", 
-        limit: "80 km/h",
-        value: 80,
-        coordinates:[-11.817558, -39.375948],
-      },
-      { 
-        road: "BR-407", 
-        limit: "60 km/h",
-        value: 60,
-        coordinates: [-10.517028, -40.142195]
-      },
-      { 
-        road: "BR-324", 
-        limit: "100 km/h",
-        value: 100,
-        coordinates: [-12.743087, -38.437596]
-      },
-      { 
-        road: "BR-324", 
-        limit: "40 km/h",
-        value: 40,
-        coordinates: [-12.630725, -38.622729]
-      }
-    ],
     name: "Rota Econômica: Juazeiro-Salvador (Evitando Pedágios)",
     distance: 533,
     estimatedTime: "8h20min",
@@ -3593,7 +3508,9 @@ export const routes: Route[] = [
       },  // Lon, Lat
      
     ],
-    
+    speedLimits: [
+      { road: "BR-407", limit: "80-100 km/h" }, { road: "BA/Municipais (desvios)", limit: "40-60 km/h" }
+    ],
     safety: { robberyRisk: "Médio", roadHazards: "Desvios por estradas locais com baixa manutenção, má sinalização." },
     dirtRoad: true,
     dirtRoadDetails: "Alta probabilidade de trechos de terra/ruins nos desvios.",
@@ -5429,32 +5346,6 @@ export const routes: Route[] = [
   },
   {
     routeId: 4,
-    speedLimits: [
-      { 
-        road: "BR-324", 
-        limit: "100 km/h",
-        value: 100,
-        coordinates: [-9.961578, -39.228228]
-      },
-      { 
-        road: "BR-324", 
-        limit: "100 km/h",
-        value: 100,
-        coordinates: [-10.961665, -38.791498]
-      },
-      { 
-        road: "BR-324", 
-        limit: "80 km/h",
-        value: 80,
-        coordinates: [-12.5778, -38.5405]
-      },
-      { 
-        road: "BR-324", 
-        limit: "50 km/h",
-        value: 50,
-        coordinates: [-12.7905, -38.4055]
-      }
-    ],
     name: "Rota via Uauá: Juazeiro-Salvador (BR-235, BR-116, BR-324)",
     distance: 558,
     estimatedTime: "8h28min",
@@ -5494,6 +5385,9 @@ export const routes: Route[] = [
         location: "Pedágio da Rodovia CIA", costPerAxle: 3.50, totalCostExample4Axles: 14.00, coordinates: [-12.847055107561344, -38.36165344035957],
         totalCost: 0
       },
+    ],
+    speedLimits: [
+      { road: "BR-235", limit: "60-80 km/h (variável)" }, { road: "BR-116", limit: "80-100 km/h" }, { road: "BR-324", limit: "100-110 km/h" }
     ],
     safety: { robberyRisk: "Médio", roadHazards: "BR-235: trechos com pavimento irregular/obras. BR-116: tráfego intenso." },
     dirtRoad: true, // Trechos da BR-235 podem não estar 100% pavimentados

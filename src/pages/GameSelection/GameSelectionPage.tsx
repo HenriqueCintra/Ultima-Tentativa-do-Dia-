@@ -1,3 +1,5 @@
+// src/pages/GameSelection/GameSelectionPage.tsx
+
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { useQuery } from '@tanstack/react-query';

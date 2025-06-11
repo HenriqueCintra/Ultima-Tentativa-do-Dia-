@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TeamService } from '../../api/teamService';
-import { Team } from '../../types';
+import { Team } from '../../types'; // Este tipo precisa ser ajustado como discutimos.
 import { useAuth } from '../../contexts/AuthContext';
 import TeamCard from '../../components/TeamCard';
 import CreateTeamButton from '../../components/CreateTeamButton';
@@ -25,7 +25,7 @@ export const ChooseTeam = () => {
     queryFn: TeamService.getTeams,
   });
 
-  // Mutação para entrar em uma equipe (caso precise dessa lógica aqui)
+  // Mutação para entrar em uma equipe
   const joinTeamMutation = useMutation({
     mutationFn: (code: string) => TeamService.joinTeam(code),
     onSuccess: async () => {
@@ -48,10 +48,9 @@ export const ChooseTeam = () => {
   const handleSelectTeam = () => {
     const team = teams?.find(t => t.id === selectedTeamId);
     if (team) {
-      // A lógica de "entrar" na equipe deve ser feita aqui se o usuário ainda não tiver uma
-      // Por simplicidade, vamos assumir que o backend associa o usuário ao selecionar
-      // ou que isso será feito em outra tela. Apenas navegamos.
-      // Para uma integração completa, poderíamos chamar joinTeamMutation.mutate(team.codigo);
+      // Aqui a lógica futura de entrar na equipe pode ser adicionada,
+      // por exemplo, usando o código de convite da equipe.
+      // joinTeamMutation.mutate(team.codigo_convite);
       navigate("/game-selection");
     }
   };
@@ -64,7 +63,6 @@ export const ChooseTeam = () => {
       <img className="w-[375px] h-[147px] absolute top-[120px] left-[157px] object-cover animate-float-right z-0" alt="Nuvem" src="/nuvemleft.png" />
       <img className="w-[436px] h-[170px] absolute bottom-[30px] right-[27px] object-cover animate-float-left opacity-75 scale-110 z-0" alt="Nuvem" src="/nuvemright.png" />
 
-      {/* <<< MUDANÇA: Adicionamos 'relative' e 'z-10' a este contêiner para colocá-lo na frente das nuvens */}
       <div className="relative z-10 flex flex-col flex-1">
         <div className="flex gap-5 absolute top-14 left-[33px]">
           <ButtonHomeBack onClick={() => navigate(-1)}><ArrowLeft /></ButtonHomeBack>
@@ -84,7 +82,8 @@ export const ChooseTeam = () => {
                 <TeamCard
                   key={team.id}
                   // Corrigindo a adaptação para o componente esperar `name` enquanto a API envia `nome`
-                  team={{ ...team, name: team.nome || 'Nome da Equipe' }}
+                  // Lembre-se de corrigir o componente TeamCard para usar `nome` diretamente
+                  team={{ ...team, name: team.nome || 'Nome da Equipe' }} 
                   onClick={() => handleTeamClick(team.id)}
                   selected={team.id === selectedTeamId}
                 />

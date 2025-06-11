@@ -46,15 +46,7 @@ const mediumRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512
 const highRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/900/900532.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const theftRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4751/4751259.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 
-// --- Ícones de velocidade ---
- const speedLimitIcon20 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1670/1670172.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon40 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/5124/5124881.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon50 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/752/752738.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon60 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/15674/15674424.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon80 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3897/3897785.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon100 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/10392/10392769.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-
- // Componente para animar o caminhão
+// Componente para animar o caminhão
 interface TruckAnimationProps {
   routePath: [number, number][];
   speed: number; // Velocidade média em km/h
@@ -403,19 +395,6 @@ export const MapComponent = () => {
     }
   };
   
-  // Ícone para limites de velocidade
-  const getSpeedLimitIcon = (speed: number): L.Icon => {
-    switch (speed) {
-      case 20: return speedLimitIcon20;
-      case 40: return speedLimitIcon40;
-      case 50: return speedLimitIcon50;
-      case 60: return speedLimitIcon60;
-      case 80: return speedLimitIcon80;
-      case 100: return speedLimitIcon100;
-      default: return speedLimitIcon60; // ícone padrão caso a velocidade não corresponda
-    }
-  };
-  
   // Voltar para a tela de seleção de veículos
   const handleChangeVehicle = () => {
     navigate('/select-vehicle');
@@ -579,22 +558,6 @@ export const MapComponent = () => {
                 {poi.description}
               </Popup>
             </Marker>
-          ))}
-
-          {/* Marcadores de Velocidade para a Rota Selecionada */}
-          {selectedRoute?.speedLimits.map((speedLimit, index) => (
-            speedLimit.coordinates && (
-              <Marker
-                key={`speed-${selectedRoute.routeId}-${index}`}
-                position={speedLimit.coordinates}
-                icon={getSpeedLimitIcon(speedLimit.value ?? 60)}
-              >
-                <Popup>
-                  <span className="font-bold">Limite de Velocidade:</span><br />
-                  {speedLimit.limit} na {speedLimit.road}
-                </Popup>
-              </Marker>
-            )
           ))}
 
           {/* Marcadores de Início e Fim (sempre visíveis) */}
