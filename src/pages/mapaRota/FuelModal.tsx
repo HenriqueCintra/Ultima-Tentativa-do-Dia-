@@ -95,9 +95,10 @@ export const FuelModal: React.FC<FuelModalProps> = ({
         <h1 className="text-2xl font-['Silkscreen'] font-bold text-[#E3922A] text-center mb-4">
           ABASTECER VEÍCULO
         </h1>
-        <p className="text-xl font-['Silkscreen'] text-white text-center mb-4">
-          SALDO: R$ {availableBalance.toFixed(2)}
-        </p>
+        <p className="font-['Silkscreen'] text-white text-center text-md font-bold text-xl">
+            Saldo após: R$ {(availableMoney - calculateFuelCost(fuelAmount)).toFixed(2)}
+          </p>
+
 
         <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
           <div className="flex flex-col md:flex-row gap-4">
