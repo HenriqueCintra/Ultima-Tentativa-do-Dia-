@@ -126,12 +126,17 @@ export const VehicleSelectionPage = () => {
     setShowConfirmation(true);
   };
 
-  const handleConfirm = () => {
-    const selectedVehicle = vehicles[selectedIndex];
-    if (selectedVehicle.cost <= availableMoney) {
-      navigate('/mapaRota');
-    }
-  };
+   const handleConfirm = () => {
+    const selectedVehicle = vehicles[selectedIndex];
+    if (selectedVehicle.cost <= availableMoney) {
+      navigate('/mapa-rota', {
+        state: {
+          selectedVehicle: selectedVehicle,
+          availableMoney: availableMoney - selectedVehicle.cost
+        }
+      });
+    }
+  };
 
   return (
     <div className="bg-sky-100 min-h-screen flex flex-col items-center justify-center px-4 py-8">
