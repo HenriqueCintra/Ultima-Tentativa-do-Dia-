@@ -46,9 +46,10 @@ const vehicles: Vehicle[] = [
     capacity: 60,
     consumption: { asphalt: 2, dirt: 1.5 },
     image: carretaPng,
-    maxCapacity: 495,
+    maxCapacity: 500,
     currentFuel: 120,
     cost: 4500
+
   },
   {
     id: 'caminhao_medio',
