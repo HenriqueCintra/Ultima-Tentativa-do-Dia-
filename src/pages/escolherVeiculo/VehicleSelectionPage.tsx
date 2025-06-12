@@ -30,8 +30,43 @@ import carretaPng from '@/assets/carreta.png';
 import camhionetePng from '@/assets/caminhonete.png';
 
 const vehicles: Vehicle[] = [
-    // ... seus dados de veículos permanecem os mesmos
-    {id:'caminhao_pequeno',name:'Caminhão Pequeno',capacity:20,consumption:{asphalt:4,dirt:3},image:camihaoPequenoPng,maxCapacity:200,currentFuel:50,cost:1500},{id:'carreta',name:'Carreta',capacity:60,consumption:{asphalt:2,dirt:1.5},image:carretaPng,maxCapacity:495,currentFuel:120,cost:4500},{id:'caminhao_medio',name:'Caminhão Médio',capacity:40,consumption:{asphalt:3,dirt:2},image:caminhaoMedioPng,maxCapacity:300,currentFuel:75,cost:2500},{id:'caminhonete',name:'Caminhonete',capacity:10,consumption:{asphalt:8,dirt:6},image:camhionetePng,maxCapacity:100,currentFuel:25,cost:800},
+    
+  {
+    id: 'caminhao_pequeno',
+    name: 'Caminhão Pequeno',
+    capacity: 20,
+    consumption: { asphalt: 4, dirt: 3 },
+    image: camihaoPequenoPng,
+    maxCapacity: 200,
+    currentFuel: 50, cost: 1500
+  },
+  {
+    id: 'carreta',
+    name: 'Carreta',
+    capacity: 60,
+    consumption: { asphalt: 2, dirt: 1.5 },
+    image: carretaPng,
+    maxCapacity: 495,
+    currentFuel: 120,
+    cost: 4500
+  },
+  {
+    id: 'caminhao_medio',
+    name: 'Caminhão Médio',
+    capacity: 40,
+    consumption: { asphalt: 3, dirt: 2 },
+    image: caminhaoMedioPng,
+    maxCapacity: 300,
+    currentFuel: 75,
+    cost: 2500
+  },
+  {
+    id: 'caminhonete',
+    name: 'Caminhonete', capacity: 10,
+    consumption: { asphalt: 8, dirt: 6 },
+    image: camhionetePng, maxCapacity: 100,
+    currentFuel: 25, cost: 800
+  },
 ];
 
 const VehicleCard: React.FC<{
