@@ -49,72 +49,82 @@ createRoot(document.getElementById("app") as HTMLElement).render(
 
             {/* Rotas protegidas */}
             <Route path="/perfil" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <PerfilPage />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/perfil/editar" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <EditarPerfilPage />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/perfil/excluir-equipe" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <ExcluirEquipePage />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/perfil/editar-equipe" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <EditarEquipePage />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             {}
             <Route path="/mudar-senha" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <ChangePassword />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/ranking" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <RankingPage />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/game" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <HomePage />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/games" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <HomePage />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/select-vehicle" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <VehicleSelectionPage />
-              </ProtectedRoute>
+             </ProtectedRoute>
+              
             } />
             <Route path="/mapa-rota" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <MapComponent />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/mapa" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <MapComponent />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/choose-team" element={
-              <ProtectedRoute>
+             <ProtectedRoute>
                 <ChooseTeam />
-              </ProtectedRoute>
+             </ProtectedRoute>
             } />
             <Route path="/create-team" element={
-               <ProtectedRoute><CriarEquipePage/></ProtectedRoute>}/>
+              <ProtectedRoute>
+                <CriarEquipePage/>
+               </ProtectedRoute>
+              }/>
             <Route path="/desafio" element={
-              <ProtectedRoute><ApresentacaoDesafioPage /></ProtectedRoute>} />  
+             <ProtectedRoute>
+               <ApresentacaoDesafioPage />
+              </ProtectedRoute>
+             } />  
             <Route path="/game-selection" element={
-              <ProtectedRoute><GameSelectionPage /></ProtectedRoute>} />
+             <ProtectedRoute>
+               <GameSelectionPage />
+             </ProtectedRoute>
+             } />
 
           </Routes>
         </AuthProvider>

@@ -41,10 +41,14 @@ export interface Route {
   }[];
 
   // Limites de velocidade por estrada
-  speedLimits: {
-    road: string;
-    limit: string;
-  }[];
+   speedLimits: { 
+    road: string; 
+    limit: string, 
+     value?: number, 
+     coordinates?: [number,number] 
+    }[];
+
+
 
   // Informações de segurança
   safety: {
@@ -180,9 +184,37 @@ export const routes: Route[] = [
       }
     ],
 
-    speedLimits: [
-      { road: "BR-407", limit: "80-100 km/h" },
-      { road: "BR-324", limit: "100-110 km/h" }
+   speedLimits: [
+      { 
+        road: "BR-407", 
+        limit: "80 km/h",
+        value: 80,
+        coordinates:[-9.990413, -40.239591],
+      },
+      { 
+        road: "BR-407", 
+        limit: "80 km/h",
+        value: 80,
+        coordinates:[-11.817558, -39.375948],
+      },
+      { 
+        road: "BR-407", 
+        limit: "60 km/h",
+        value: 60,
+        coordinates: [-10.517028, -40.142195]
+      },
+      { 
+        road: "BR-324", 
+        limit: "100 km/h",
+        value: 100,
+        coordinates: [-12.743087, -38.437596]
+      },
+      { 
+        road: "BR-324", 
+        limit: "50 km/h",
+        value: 50,
+        coordinates: [-12.447111365070798, -38.71353301661456]
+      }
     ],
 
     safety: {
@@ -196,8 +228,8 @@ export const routes: Route[] = [
     constructionZones: "Manutenção pontual na BR-324.",
 
     restStops: [{
-      location: "BR-324 - Pedágio 02 - Via Bahia (Amélia Rodrigues)",
-      description: "Pedágio 02 - Via Bahia (Amélia Rodrigues) colocar aqui o custo por eixo",
+         location: "Limite de velocidade de 50km/h",
+         description: "radares pela rodovia de 50km/h",
       coordinates: [-12.447111365070798, -38.71353301661456],
       type: "gas"
     }],
@@ -276,8 +308,30 @@ export const routes: Route[] = [
     ],
 
     speedLimits: [
-      { road: "BR-407 (ou paralelas)", limit: "70-90 km/h" },
-      { road: "BR-324 (ou paralelas)", limit: "70-90 km/h" }
+      { 
+        road: "BR-235", 
+        limit: "80 km/h",
+        value: 80,
+        coordinates: [-9.460458, -40.429308]
+      },
+      { 
+        road: "BR-235", 
+        limit: "40 km/h",
+        value: 40,
+        coordinates:  [-12.193182, -38.418788]
+      },
+      { 
+        road: "BR-110", 
+        limit: "60 km/h",
+        value: 60,
+        coordinates: [-11.225797, -38.485761]
+      },
+      { 
+        road: "BR-324", 
+        limit: "100 km/h",
+        value: 100,
+        coordinates: [-12.5778, -38.5405]
+      }
     ],
 
     safety: {
@@ -379,9 +433,37 @@ export const routes: Route[] = [
       totalCost: 0
     }],
 
-    speedLimits: [
-      { road: "BR-407", limit: "80-100 km/h" },
-      { road: "BA/Municipais (desvios)", limit: "40-60 km/h" }
+   speedLimits: [
+      { 
+        road: "BR-407", 
+        limit: "80 km/h",
+        value: 80,
+        coordinates:[-9.990413, -40.239591],
+      },
+      { 
+        road: "BR-407", 
+        limit: "80 km/h",
+        value: 80,
+        coordinates:[-11.817558, -39.375948],
+      },
+      { 
+        road: "BR-407", 
+        limit: "60 km/h",
+        value: 60,
+        coordinates: [-10.517028, -40.142195]
+      },
+      { 
+        road: "BR-324", 
+        limit: "100 km/h",
+        value: 100,
+        coordinates: [-12.743087, -38.437596]
+      },
+      { 
+        road: "BR-324", 
+        limit: "40 km/h",
+        value: 40,
+        coordinates: [-12.630725, -38.622729]
+      }
     ],
 
     safety: {
@@ -525,10 +607,31 @@ export const routes: Route[] = [
       }
     ],
 
-    speedLimits: [
-      { road: "BR-235", limit: "60-80 km/h (variável)" },
-      { road: "BR-116", limit: "80-100 km/h" },
-      { road: "BR-324", limit: "100-110 km/h" }
+   speedLimits: [
+      { 
+        road: "BR-324", 
+        limit: "100 km/h",
+        value: 100,
+        coordinates: [-9.961578, -39.228228]
+      },
+      { 
+        road: "BR-324", 
+        limit: "100 km/h",
+        value: 100,
+        coordinates: [-10.961665, -38.791498]
+      },
+      { 
+        road: "BR-324", 
+        limit: "80 km/h",
+        value: 80,
+        coordinates: [-12.5778, -38.5405]
+      },
+      { 
+        road: "BR-324", 
+        limit: "50 km/h",
+        value: 50,
+        coordinates: [-12.7905, -38.4055]
+      }
     ],
 
     safety: {

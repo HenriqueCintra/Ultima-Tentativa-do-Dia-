@@ -22,7 +22,7 @@ let DefaultIcon = L.icon({
   popupAnchor: [1, -34]
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-// --- Fim da Correção do Ícone ---
+
 
 // --- Ícones Customizados ---
 import truckIconSvg from '@/assets/truck-solid.svg';
@@ -45,6 +45,29 @@ const gasStationIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512
 const lowRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/6276/6276686.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const mediumRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4751/4751259.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const highRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/900/900532.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+
+// --- Ícones de velocidade ---
+ const speedLimitIcon20 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1670/1670172.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon40 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/5124/5124881.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon50 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/752/752738.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon60 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/15674/15674424.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon80 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3897/3897785.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon100 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/10392/10392769.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+
+
+
+  // logica para obter o ícone de limite de velocidade
+  const getSpeedLimitIcon = (speed: number): L.Icon => {
+    switch (speed) {
+      case 20: return speedLimitIcon20;
+      case 40: return speedLimitIcon40;
+      case 50: return speedLimitIcon50;
+      case 60: return speedLimitIcon60;
+      case 80: return speedLimitIcon80;
+      case 100: return speedLimitIcon100;
+      default: return speedLimitIcon60; // ícone padrão caso a velocidade não corresponda
+    }
+  };
 
 // NOVA INTERFACE PARA OS SEGMENTOS RENDERIZÁVEIS
 interface RenderSegment {
@@ -525,6 +548,21 @@ export const MapComponent = () => {
               </Popup>
             </Polyline>
           ))}
+          {/* Marcadores de Velocidade para a Rota Selecionada */}
+          {selectedRoute?.speedLimits.map((speedLimit, index) => (
+            speedLimit.coordinates && (
+              <Marker
+                key={`speed-${selectedRoute.routeId}-${index}`}
+                position={speedLimit.coordinates}
+                icon={getSpeedLimitIcon(speedLimit.value ?? 60)}
+              >
+                <Popup>
+                  <span className="font-bold">Limite de Velocidade:</span><br />
+                  {speedLimit.limit} na {speedLimit.road}
+                </Popup>
+              </Marker>
+            )
+          ))}
 
           {/* Renderiza os marcadores */}
           {selectedRoute?.tollBooths.map((toll, index) => <Marker key={`toll-${index}`} position={toll.coordinates as L.LatLngTuple} icon={tollIcon}><Popup>{toll.location}</Popup></Marker>)}
@@ -579,7 +617,7 @@ export const MapComponent = () => {
         <h2 className="text-2xl font-['Silkscreen'] font-bold mb-4 text-white text-center border-b-2 border-white pb-2">
           ESCOLHA UMA ROTA
         </h2>
-
+   
         {routesList.map((route) => (
           <div
             key={route.routeId}
