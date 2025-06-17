@@ -294,6 +294,7 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
 };
 
 export const MapComponent = () => {
+  const [simulatedTime, setSimulatedTime] = useState<number>(0);
   const location = useLocation();
   const navigate = useNavigate();
   const juazeiroCoordinates: [number, number] = [-9.44977115369502, -40.52422616182216];
@@ -302,6 +303,23 @@ export const MapComponent = () => {
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [routesList] = useState<Route[]>(routes);
+
+  useEffect(() => {
+  let interval: NodeJS.Timeout;
+
+  if (isPlaying) {
+    const start = Date.now();
+    interval = setInterval(() => {
+      const elapsedRealMs = Date.now() - start;
+      const accelerationFactor = 8 / 3;
+      const simulatedMinutes = (elapsedRealMs / 60000) * accelerationFactor;
+      setSimulatedTime(simulatedMinutes);
+    }, 1000);
+  }
+
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
 
   // Estado para veículo e saldo
   const [vehicle, setVehicle] = useState<Vehicle>(() => {
@@ -419,6 +437,7 @@ export const MapComponent = () => {
       setSelectedRoute(routeToSelect);
       setIsPlaying(false);
       setInitialMapViewSet(false);
+      setSimulatedTime(0);
     }
   }, [routesList]);
 
@@ -498,6 +517,11 @@ export const MapComponent = () => {
             >
               {isPlaying ? 'EM ANDAMENTO' : 'INICIAR'}
             </button>
+            {isPlaying && (
+              <div className="px-4 py-2 bg-white text-black font-['Silkscreen'] text-md rounded shadow-md border-2 border-black">
+                Tempo: {Math.floor(simulatedTime / 60).toString().padStart(2, '0')}h:{Math.floor(simulatedTime % 60).toString().padStart(2, '0')}
+              </div>
+            )}
             <button
               className="px-4 py-2 bg-yellow-500 text-black font-bold text-md rounded-md shadow-lg hover:bg-yellow-600 transition-all duration-200 border-2 border-black"
               onClick={() => setIsPlaying(false)}
