@@ -42,7 +42,7 @@ export const ChooseTeam = () => {
   };
 
   const handleCreateTeam = () => {
-    navigate("/perfil/criar-equipe");
+    navigate("/create-team");
   };
 
   const handleSelectTeam = () => {
