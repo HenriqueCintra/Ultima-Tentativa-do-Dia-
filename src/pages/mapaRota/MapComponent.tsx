@@ -106,6 +106,7 @@ interface TruckAnimationProps {
   dirtSegments: DirtSegment[];
   onEventTriggered: () => void;
   onDistanceUpdate: (distance: number) => void;
+  dangerZones: Route['dangerZones'];
 }
 
 const TruckAnimation: React.FC<TruckAnimationProps> = ({
@@ -121,7 +122,8 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   // --- NOVAS PROPS DA FASE 3 ---
   dirtSegments,
   onEventTriggered,
-  onDistanceUpdate
+  onDistanceUpdate,
+  dangerZones,
 }) => {
   const truckRef = useRef<L.Marker>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -157,6 +159,16 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
         currentDistanceKm < segment.endKm
     ) || null;
   }, [dirtSegments]);
+
+  const getCurrentDangerZone = useCallback((currentDistanceKm: number) => {
+    const DANGER_ZONE_RADIUS_KM = 10;
+
+    return dangerZones?.find(zone => {
+      // Assumindo que zone tem uma propriedade startKm
+      const startKm = zone.startKm || 150; // valor padrão se não tiver
+      return currentDistanceKm >= startKm && currentDistanceKm < startKm + DANGER_ZONE_RADIUS_KM;
+    });
+  }, [dangerZones]);
 
   // Calcular consumo de combustível com base no tipo de estrada - FASE 3: Melhorado
   const calculateFuelConsumption = useCallback((distanceTraveled: number, currentDistanceKm: number) => {
@@ -284,6 +296,28 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
       }
     }
 
+    // --- FASE 4: VERIFICAÇÃO DE EVENTOS EM ZONAS DE PERIGO ---
+    const currentDangerZone = getCurrentDangerZone(totalDistanceTraveledRef.current);
+
+    if (currentDangerZone && !currentDirtSegment) { // Só verifica se não estiver em terra
+      if (totalDistanceTraveledRef.current - lastEventCheckDistance.current >= EVENT_CHECK_INTERVAL_KM) {
+        lastEventCheckDistance.current = totalDistanceTraveledRef.current;
+
+        let eventChance = 0.1; // Chance base
+        if (currentDangerZone.riskLevel === 'Médio') eventChance = 0.25;
+        if (currentDangerZone.riskLevel === 'Alto') eventChance = 0.40;
+
+        console.log(`[TruckAnimation] Verificando evento em Zona de Perigo (${totalDistanceTraveledRef.current.toFixed(1)}km)`);
+        console.log(`[TruckAnimation] Chance de assalto: ${(eventChance * 100).toFixed(1)}%`);
+
+        if (Math.random() < eventChance) {
+          console.log(`[TruckAnimation] 🚨 EVENTO DE ROUBO ACIONADO!`);
+          onEventTriggered(); // Reutiliza a mesma função!
+          return;
+        }
+      }
+    }
+
     // Atualizar o combustível a cada 1km ou quando o combustível estiver abaixo de 10%
     if (totalDistanceTraveledRef.current - lastFuelUpdateRef.current >= 1 ||
       currentFuelRef.current <= (vehicle.maxCapacity * 0.1)) {
@@ -325,10 +359,11 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
     updateFuel,
     vehicle.maxCapacity,
     onFuelEmpty,
-    // --- NOVAS DEPENDÊNCIAS DA FASE 3 ---
     getCurrentDirtSegment,
     onEventTriggered,
-    onDistanceUpdate
+    onDistanceUpdate,
+    getCurrentDangerZone,
+    dangerZones,
   ]);
 
   // Iniciar ou reiniciar a animação quando o estado de playing mudar
@@ -760,7 +795,6 @@ export const MapComponent = () => {
           />
           <MapViewControl route={selectedRoute} />
 
-          {/* Renderiza as rotas não selecionadas (sombreadas) */}
           {routesList.map((route) => {
             if (route.routeId === selectedRoute?.routeId || !route.pathCoordinates || route.pathCoordinates.length < 2) {
               return null;
@@ -774,7 +808,6 @@ export const MapComponent = () => {
             );
           })}
 
-          {/* Renderiza a rota selecionada em segmentos */}
           {renderedSegments.map((segment, index) => (
             <Polyline
               key={`segment-${selectedRoute?.routeId}-${index}`}
@@ -789,7 +822,6 @@ export const MapComponent = () => {
               </Popup>
             </Polyline>
           ))}
-          {/* Marcadores de Velocidade para a Rota Selecionada */}
           {selectedRoute?.speedLimits.map((speedLimit, index) => (
             speedLimit.coordinates && (
               <Marker
@@ -805,13 +837,25 @@ export const MapComponent = () => {
             )
           ))}
 
-          {/* Renderiza os marcadores */}
           {selectedRoute?.tollBooths.map((toll, index) => <Marker key={`toll-${index}`} position={toll.coordinates as L.LatLngTuple} icon={tollIcon}><Popup>{toll.location}</Popup></Marker>)}
-          {selectedRoute?.dangerZones?.map((zone, index) => <Marker key={`danger-${index}`} position={zone.coordinates as L.LatLngTuple} icon={getRiskIcon(zone.riskLevel)}><Popup>{zone.description}</Popup></Marker>)}
+          {selectedRoute?.dangerZones?.map((zone, index) => (
+            <Marker
+              key={`danger-zone-${selectedRoute.routeId}-${index}`}
+              position={zone.coordinates as L.LatLngTuple}
+              icon={getRiskIcon(zone.riskLevel)}
+            >
+              <Popup>
+                <div className="font-['Silkscreen'] text-sm">
+                  <p className="font-bold text-red-600">ZONA DE PERIGO</p>
+                  <p>{zone.description}</p>
+                  <p className="mt-1">Risco: <span className="font-bold">{zone.riskLevel}</span></p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
           <Marker position={juazeiroCoordinates}><Popup>Ponto de Partida: Juazeiro</Popup></Marker>
           <Marker position={salvadorCoordinates}><Popup>Destino: Salvador</Popup></Marker>
 
-          {/* Componente de animação do caminhão - FASE 3: Novas props adicionadas */}
           {selectedRoute?.pathCoordinates && (
             <TruckAnimation
               routePath={selectedRoute.pathCoordinates}
@@ -823,10 +867,10 @@ export const MapComponent = () => {
               routeDistance={selectedRoute.actualDistance || selectedRoute.distance}
               setCurrentFuel={(fuel) => setVehicle(prev => ({ ...prev, currentFuel: fuel }))}
               isDirtRoad={selectedRoute.dirtRoad || false}
-              {/* --- NOVAS PROPS DA FASE 3 --- */}
               dirtSegments={selectedRoute.dirtSegments || []}
               onEventTriggered={handleEventTriggered}
               onDistanceUpdate={setTotalDistanceTraveled}
+              dangerZones={selectedRoute.dangerZones || []}
             />
           )}
         </MapContainer>
@@ -884,7 +928,6 @@ export const MapComponent = () => {
         ))}
       </div>
 
-      {/* --- FASE 3: MODAL DE EVENTO --- */}
       {showEventModal && activeEvent && (
         <EventModal
           eventData={activeEvent}
