@@ -12,7 +12,6 @@ import { ArrowLeft } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { GameService } from '@/api/gameService';
 
-// --- Correção para o ícone padrão do Leaflet ---
 import defaultIcon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
@@ -25,7 +24,6 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- Ícones Customizados ---
 import truckIconSvg from '@/assets/truck-solid.svg';
 
 const truckIcon = L.icon({
@@ -82,7 +80,6 @@ interface EventData {
   }>;
 }
 
-// COMPONENTE TRUCK ANIMATION - APENAS UMA MUDANÇA: distanceRef em vez de onDistanceUpdate
 interface TruckAnimationProps {
   routePath: [number, number][];
   speed: number;
@@ -95,7 +92,7 @@ interface TruckAnimationProps {
   isDirtRoad: boolean;
   dirtSegments: DirtSegment[];
   onEventTriggered: () => void;
-  distanceRef: React.MutableRefObject<number>; // ÚNICA MUDANÇA: usar ref em vez de callback
+  onDistanceUpdate: (distance: number) => void;
   dangerZones: Route['dangerZones'];
 }
 
@@ -106,12 +103,10 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   onTripEnd,
   onFuelEmpty,
   vehicle,
-  routeDistance,
   setCurrentFuel,
-  isDirtRoad,
   dirtSegments,
   onEventTriggered,
-  distanceRef,
+  onDistanceUpdate,
   dangerZones,
 }) => {
   const truckRef = useRef<L.Marker>(null);
@@ -124,50 +119,49 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   const totalDistanceTraveledRef = useRef<number>(0);
   const lastFuelUpdateRef = useRef<number>(0);
   const currentFuelRef = useRef<number>(vehicle.currentFuel);
-  const lastEventCheckDistance = useRef<number>(0);
+  const lastEventCheckRef = useRef<number>(0);
+
+  const [currentPosition, setCurrentPosition] = useState<[number, number]>(() =>
+    routePath && routePath.length > 0 ? routePath[0] : [0, 0]
+  );
 
   const visualizationSpeedFactor = 300;
   const EVENT_CHECK_INTERVAL_KM = 5;
 
-  const vehicleIcon = useMemo(() => {
-    return L.icon({
-      iconUrl: vehicle.image,
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-      popupAnchor: [0, -20]
-    });
-  }, [vehicle.image]);
+  const vehicleIcon = useMemo(() => L.icon({
+    iconUrl: vehicle.image,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20]
+  }), [vehicle.image]);
 
-  const getCurrentDirtSegment = useCallback((currentDistanceKm: number): DirtSegment | null => {
-    return dirtSegments.find(
-      (segment) =>
-        currentDistanceKm >= segment.startKm &&
-        currentDistanceKm < segment.endKm
+  const getCurrentDirtSegment = useCallback((currentDistanceKm: number) => {
+    return dirtSegments.find(segment =>
+      currentDistanceKm >= segment.startKm && currentDistanceKm < segment.endKm
     ) || null;
   }, [dirtSegments]);
 
   const getCurrentDangerZone = useCallback((currentDistanceKm: number) => {
     const DANGER_ZONE_RADIUS_KM = 10;
-    return dangerZones?.find(zone => {
-      const startKm = zone.startKm || 150;
-      return currentDistanceKm >= startKm && currentDistanceKm < startKm + DANGER_ZONE_RADIUS_KM;
-    });
+    return dangerZones?.find(zone =>
+      currentDistanceKm >= zone.startKm &&
+      currentDistanceKm < zone.startKm + DANGER_ZONE_RADIUS_KM
+    );
   }, [dangerZones]);
 
-  const calculateFuelConsumption = useCallback((distanceTraveled: number, currentDistanceKm: number) => {
-    const currentDirtSegment = getCurrentDirtSegment(currentDistanceKm);
-    const isOnDirt = currentDirtSegment !== null;
-    const consumption = isOnDirt || (dirtSegments.length === 0 && isDirtRoad)
-      ? vehicle.consumption.dirt
-      : vehicle.consumption.asphalt;
+  const calculateFuelConsumption = useCallback((distanceTraveled: number) => {
+    const currentDirtSegment = getCurrentDirtSegment(totalDistanceTraveledRef.current);
+    const consumption = currentDirtSegment ? vehicle.consumption.dirt : vehicle.consumption.asphalt;
     return distanceTraveled / consumption;
-  }, [getCurrentDirtSegment, dirtSegments.length, isDirtRoad, vehicle.consumption]);
+  }, [getCurrentDirtSegment, vehicle.consumption]);
 
-  const updateFuel = useCallback((distanceTraveled: number, currentDistanceKm: number) => {
-    const fuelConsumed = calculateFuelConsumption(distanceTraveled, currentDistanceKm);
+  const updateFuel = useCallback((distanceTraveled: number) => {
+    const fuelConsumed = calculateFuelConsumption(distanceTraveled);
     const newFuel = Math.max(0, currentFuelRef.current - fuelConsumed);
+
     currentFuelRef.current = newFuel;
     setCurrentFuel(newFuel);
+
     if (newFuel <= 0) {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -180,7 +174,7 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   }, [calculateFuelConsumption, onFuelEmpty, setCurrentFuel]);
 
   const animateTruck = useCallback(() => {
-    if (!playing || !truckRef.current || !routePath || routePath.length < 2) {
+    if (!playing || !routePath || routePath.length < 2) {
       return;
     }
 
@@ -220,43 +214,46 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
     const segmentDistanceKm = segmentDistanceMeters / 1000;
 
     const currentDirtSegment = getCurrentDirtSegment(totalDistanceTraveledRef.current);
-    const effectiveSpeed = currentDirtSegment
-      ? speed * currentDirtSegment.speedFactor
-      : speed;
+    const effectiveSpeed = currentDirtSegment ? speed * currentDirtSegment.speedFactor : speed;
 
     const timeToCompleteMsec = (segmentDistanceKm / effectiveSpeed) * 3600 * 1000;
     const adjustedTimeToCompleteMsec = timeToCompleteMsec / visualizationSpeedFactor;
 
-    segmentProgress.current = adjustedTimeToCompleteMsec > 0 ? Math.min(elapsed / adjustedTimeToCompleteMsec, 1) : 1;
+    segmentProgress.current = Math.min(elapsed / adjustedTimeToCompleteMsec, 1);
 
-    const previousProgress = adjustedTimeToCompleteMsec > 0 ? (elapsed - deltaTime) / adjustedTimeToCompleteMsec : 0;
+    const previousProgress = (elapsed - deltaTime) / adjustedTimeToCompleteMsec;
     const previousDistanceFraction = Math.min(previousProgress, 1);
     const currentDistanceFraction = segmentProgress.current;
     const distanceDiff = currentDistanceFraction - previousDistanceFraction;
     const distanceThisFrameKm = segmentDistanceKm * distanceDiff;
 
     totalDistanceTraveledRef.current += distanceThisFrameKm;
-    // ÚNICA MUDANÇA: usar ref em vez de callback para evitar re-renderização
-    distanceRef.current = totalDistanceTraveledRef.current;
+    onDistanceUpdate(totalDistanceTraveledRef.current);
 
-    if (currentDirtSegment) {
-      if (totalDistanceTraveledRef.current - lastEventCheckDistance.current >= EVENT_CHECK_INTERVAL_KM) {
-        lastEventCheckDistance.current = totalDistanceTraveledRef.current;
-        if (Math.random() < currentDirtSegment.eventChance) {
-          onEventTriggered();
-          return;
-        }
-      }
-    }
+    if (totalDistanceTraveledRef.current - lastEventCheckRef.current >= EVENT_CHECK_INTERVAL_KM) {
+      lastEventCheckRef.current = totalDistanceTraveledRef.current;
 
-    const currentDangerZone = getCurrentDangerZone(totalDistanceTraveledRef.current);
-    if (currentDangerZone && !currentDirtSegment) {
-      if (totalDistanceTraveledRef.current - lastEventCheckDistance.current >= EVENT_CHECK_INTERVAL_KM) {
-        lastEventCheckDistance.current = totalDistanceTraveledRef.current;
+      const currentDangerZone = getCurrentDangerZone(totalDistanceTraveledRef.current);
+
+      if (currentDangerZone) {
         let eventChance = 0.1;
         if (currentDangerZone.riskLevel === 'Médio') eventChance = 0.25;
         if (currentDangerZone.riskLevel === 'Alto') eventChance = 0.40;
-        if (Math.random() < currentDangerZone.eventChance) {
+
+        if (Math.random() < eventChance) {
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+          }
+          onEventTriggered();
+          return;
+        }
+      } else if (currentDirtSegment) {
+        if (Math.random() < currentDirtSegment.eventChance) {
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+          }
           onEventTriggered();
           return;
         }
@@ -267,7 +264,8 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
       currentFuelRef.current <= (vehicle.maxCapacity * 0.1)) {
       const distanceSinceLastUpdate = totalDistanceTraveledRef.current - lastFuelUpdateRef.current;
       lastFuelUpdateRef.current = totalDistanceTraveledRef.current;
-      if (updateFuel(distanceSinceLastUpdate, totalDistanceTraveledRef.current)) {
+
+      if (updateFuel(distanceSinceLastUpdate)) {
         return;
       }
     }
@@ -276,6 +274,7 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
       currentSegment.current += 1;
       segmentProgress.current = 0;
       startTimeRef.current = now;
+
       if (currentSegment.current < routePath.length - 1) {
         animationFrameRef.current = requestAnimationFrame(animateTruck);
       } else {
@@ -286,40 +285,39 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
 
     const newLat = startPoint[0] + (endPoint[0] - startPoint[0]) * segmentProgress.current;
     const newLng = startPoint[1] + (endPoint[1] - startPoint[1]) * segmentProgress.current;
-    const newPosition = L.latLng(newLat, newLng);
+    setCurrentPosition([newLat, newLng]);
 
-    truckRef.current.setLatLng(newPosition);
     animationFrameRef.current = requestAnimationFrame(animateTruck);
   }, [
-    playing,
-    routePath,
-    speed,
-    onTripEnd,
-    updateFuel,
-    vehicle.maxCapacity,
-    onFuelEmpty,
-    getCurrentDirtSegment,
-    onEventTriggered,
-    distanceRef, // MUDANÇA: usar distanceRef
-    getCurrentDangerZone,
-    dangerZones,
+    playing, routePath, speed, onTripEnd, updateFuel, vehicle.maxCapacity,
+    onFuelEmpty, getCurrentDirtSegment, getCurrentDangerZone, onEventTriggered, onDistanceUpdate
   ]);
+
+  const resetAnimation = useCallback(() => {
+    currentSegment.current = 0;
+    segmentProgress.current = 0;
+    startTimeRef.current = 0;
+    lastTimeRef.current = 0;
+    totalDistanceTraveledRef.current = 0;
+    lastFuelUpdateRef.current = 0;
+    lastEventCheckRef.current = 0;
+    currentFuelRef.current = vehicle.currentFuel;
+
+    if (routePath && routePath.length > 0) {
+      setCurrentPosition(routePath[0]);
+    }
+  }, [vehicle.currentFuel, routePath]);
+
+  useEffect(() => {
+    if (routePath && routePath.length > 0) {
+      setCurrentPosition(routePath[0]);
+    }
+  }, [routePath]);
 
   useEffect(() => {
     if (playing && routePath && routePath.length > 1) {
-      if (!truckRef.current || (currentSegment.current === 0 && segmentProgress.current === 0)) {
-        truckRef.current?.setLatLng(L.latLng(routePath[0][0], routePath[0][1]));
-      }
-
-      if (currentSegment.current === 0 && segmentProgress.current === 0) {
-        totalDistanceTraveledRef.current = 0;
-        lastFuelUpdateRef.current = 0;
-        lastEventCheckDistance.current = 0;
-        currentFuelRef.current = vehicle.currentFuel;
-      }
-
-      if (segmentProgress.current === 0) {
-        startTimeRef.current = 0;
+      if (totalDistanceTraveledRef.current === 0) {
+        resetAnimation();
       }
 
       animationFrameRef.current = requestAnimationFrame(animateTruck);
@@ -333,13 +331,13 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [playing, routePath, animateTruck, vehicle.currentFuel]);
+  }, [playing, animateTruck, resetAnimation]);
 
   if (!routePath || routePath.length === 0) return null;
 
   return (
     <Marker
-      position={routePath[0]}
+      position={currentPosition}
       icon={vehicleIcon}
       ref={truckRef}
     >
@@ -393,7 +391,6 @@ const EventModal: React.FC<{
 };
 
 export const MapComponent = () => {
-  const [simulatedTime, setSimulatedTime] = useState<number>(0);
   const location = useLocation();
   const navigate = useNavigate();
   const juazeiroCoordinates: [number, number] = [-9.44977115369502, -40.52422616182216];
@@ -405,38 +402,6 @@ export const MapComponent = () => {
   const [totalDistanceTraveled, setTotalDistanceTraveled] = useState<number>(0);
   const [showEventModal, setShowEventModal] = useState(false);
   const [activeEvent, setActiveEvent] = useState<EventData | null>(null);
-
-  // ÚNICA ADIÇÃO: ref para comunicação sem re-renderização
-  const truckDistanceRef = useRef<number>(0);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      const start = Date.now();
-      interval = setInterval(() => {
-        const elapsedRealMs = Date.now() - start;
-        const accelerationFactor = 8 / 3;
-        const simulatedMinutes = (elapsedRealMs / 60000) * accelerationFactor;
-        setSimulatedTime(simulatedMinutes);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
-  // ÚNICA ADIÇÃO: sincronização da distância
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    if (isPlaying) {
-      intervalId = setInterval(() => {
-        setTotalDistanceTraveled(truckDistanceRef.current);
-      }, 1000);
-    }
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [isPlaying]);
 
   const [vehicle, setVehicle] = useState<Vehicle>(() => {
     if (location.state && location.state.selectedVehicle) {
@@ -504,6 +469,13 @@ export const MapComponent = () => {
     fetchNextEventMutation.mutate();
   }, [fetchNextEventMutation]);
 
+  const handleDistanceUpdate = useCallback((distance: number) => {
+    setTotalDistanceTraveled(prevDistance => {
+      const diff = Math.abs(distance - prevDistance);
+      return diff > 0.1 ? distance : prevDistance;
+    });
+  }, []);
+
   function MapViewControl({ route }: { route: Route | null }) {
     const map = useMapEvents({});
     useEffect(() => {
@@ -570,9 +542,7 @@ export const MapComponent = () => {
       setSelectedRoute(routeToSelect);
       setIsPlaying(false);
       setInitialMapViewSet(false);
-      setSimulatedTime(0);
       setTotalDistanceTraveled(0);
-      truckDistanceRef.current = 0;
     }
   }, [routesList]);
 
@@ -645,8 +615,6 @@ export const MapComponent = () => {
             </button>
             {isPlaying && (
               <div className="px-4 py-2 bg-white text-black font-['Silkscreen'] text-md rounded shadow-md border-2 border-black">
-                Tempo: {Math.floor(simulatedTime / 60).toString().padStart(2, '0')}h:{Math.floor(simulatedTime % 60).toString().padStart(2, '0')}
-                <br />
                 <span className="text-xs">Distância: {totalDistanceTraveled.toFixed(1)}km</span>
               </div>
             )}
@@ -745,7 +713,7 @@ export const MapComponent = () => {
               isDirtRoad={selectedRoute.dirtRoad || false}
               dirtSegments={selectedRoute.dirtSegments || []}
               onEventTriggered={handleEventTriggered}
-              distanceRef={truckDistanceRef}
+              onDistanceUpdate={handleDistanceUpdate}
               dangerZones={selectedRoute.dangerZones || []}
             />
           )}
