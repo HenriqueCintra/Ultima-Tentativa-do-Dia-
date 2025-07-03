@@ -127,23 +127,36 @@ export const VehicleSelectionPage = () => {
   };
 
    const handleConfirm = () => {
-    const selectedVehicle = vehicles[selectedIndex];
-    if (selectedVehicle.cost <= availableMoney) {
-      navigate('/mapa-rota', {
-        state: {
-          selectedVehicle: selectedVehicle,
-          availableMoney: availableMoney - selectedVehicle.cost
-        }
-      });
-    }
-  };
+    const selectedVehicle = vehicles[selectedIndex];
+    if (selectedVehicle.cost <= availableMoney) {
+      navigate('/mapa-rota', {
+        state: {
+        selectedVehicle: selectedVehicle,
+        availableMoney: availableMoney - selectedVehicle.cost
+      }
+    });
+    }
+  };
 
   return (
     <div className="bg-sky-100 min-h-screen flex flex-col items-center justify-center px-4 py-8">
+
+      {/* Botão de Voltar */}
+      <div className="absolute top-4 left-4">
+        <Button
+          onClick={() => navigate(-1)}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md font-['Silkscreen'] h-10"
+        >
+          ← Voltar
+        </Button>
+      </div>
+
        
-      <div className="font-['Silkscreen'] text-lg absolute top-4 right-4">
+       {/* Saldo disponível */}
+      <div className="absolute top-4 right-4 font-['Silkscreen'] bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md flex items-center justify-center h-10">
         R$ {availableMoney.toLocaleString()}
       </div>
+
 
        
       <h1 className="font-['Silkscreen'] text-3xl mb-8 text-center">
@@ -231,4 +244,3 @@ export const VehicleSelectionPage = () => {
     </div>
   );
 };
-

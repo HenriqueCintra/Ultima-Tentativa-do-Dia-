@@ -590,11 +590,14 @@ export const MapComponent = () => {
       <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20">
         <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
           <h2 className="text-xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">COMBUSTÍVEL</h2>
-          <p className="font-sans text-black text-lg mb-2"><span className="font-bold">PREÇO DO DIESEL:</span> R$ 5,50 por litro</p>
+          <p className="font-['Silkscreen'] text-black font-bold mb-2">
+            <span className="font-['Silkscreen']">PREÇO DO DIESEL:</span>{' '}
+            <span className="font-light">R$ 5,50 por litro</span>
+          </p>
           <div className="bg-black h-px my-2"></div>
           <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">VEÍCULO: {vehicle.name.toUpperCase()}</h3>
-          <p className="font-sans text-black text-md mb-1">- ASFALTO: {vehicle.consumption.asphalt}KM/L</p>
-          <p className="font-sans text-black text-md mb-3">- TERRA: {vehicle.consumption.dirt}KM/L</p>
+          <p className="font-['Silkscreen'] text-black text-md mb-1">- ASFALTO: {vehicle.consumption.asphalt}KM/L</p>
+          <p className="font-['Silkscreen'] text-black text-md mb-3">- TERRA: {vehicle.consumption.dirt}KM/L</p>
 
           <button
             className="bg-[#E3922A] text-black font-bold py-2 px-4 rounded-md w-full mb-3 shadow-md border-2 border-black hover:bg-[#FFC06F]"
@@ -603,7 +606,7 @@ export const MapComponent = () => {
             ABASTECER
           </button>
 
-          <p className="font-sans text-black text-md mb-2">NÍVEL DO TANQUE</p>
+          <p className="font-['Silkscreen'] text-black text-md mb-2">NÍVEL DO TANQUE</p>
           <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black">
             <div
               className="bg-green-500 h-full rounded-full flex items-center justify-center text-xs font-bold text-white"
@@ -614,7 +617,7 @@ export const MapComponent = () => {
           </div>
         </div>
 
-        <h2 className="text-2xl font-['Silkscreen'] font-bold mb-4 text-white text-center border-b-2 border-white pb-2">
+        <h2 className="text-1xl font-['Silkscreen'] font-bold mb-4 text-white text-center border-b-2 border-white pb-2">
           ESCOLHA UMA ROTA
         </h2>
    
@@ -626,12 +629,27 @@ export const MapComponent = () => {
               shadow-md`}
             onClick={() => handleSelectRoute(route.routeId)}
           >
-            <h3 className="font-['Silkscreen'] font-bold text-2xl text-black mb-1">{route.name}</h3>
-            <p className="font-sans text-black text-lg"><span className="font-bold">TEMPO ESTIMADO:</span> {route.estimatedTime}</p>
-            <p className="font-sans text-black text-lg"><span className="font-bold">DISTÂNCIA:</span> {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km</p>
-            <p className="font-sans text-black text-lg flex items-center">
-              <span className="font-bold">RISCO ENVOLVIDO:</span>
-              <span className={`${route.safety.robberyRisk === 'Baixo' ? 'text-green-800' : 'text-red-800'} ml-1`}>
+            <h2 className="font-['Silkscreen'] text-1xl text-black font-bold mb-1">{route.name}</h2>
+            <p className="font-['Silkscreen'] text-black text-1xl">
+              <span>TEMPO ESTIMADO:</span>{' '}
+              <span className="font-light">{route.estimatedTime}</span>
+            </p>
+
+            <p className="font-['Silkscreen'] text-black text-1xl">
+              <span>DISTÂNCIA:</span>{' '}
+              <span className="font-light">
+                {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km
+              </span>
+            </p>
+
+            <p className="font-['Silkscreen'] text-black text-1xl flex items-center">
+              <span>RISCO ENVOLVIDO:</span>
+              <span
+                className={`
+                  font-light ml-1
+                  ${route.safety.robberyRisk === 'Baixo' ? 'text-green-800' : 'text-red-800'}
+                `}
+              >
                 {route.safety.robberyRisk} {route.safety.robberyRisk === 'Baixo' ? '✅' : '⚠️'}
               </span>
             </p>
