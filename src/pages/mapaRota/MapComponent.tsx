@@ -4,9 +4,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { routes, Route, parseEstimatedTime, DirtSegment } from './routesData'; // Importe DirtSegment
+import { Route } from './routesData';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FuelModal } from './FuelModal';
 import { Vehicle } from '../../types/vehicle';
 import { ArrowLeft } from 'lucide-react';
 
@@ -25,14 +24,6 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 
 // --- Ícones Customizados ---
-import truckIconSvg from '@/assets/truck-solid.svg';
-
-const truckIcon = L.icon({
-  iconUrl: truckIconSvg,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20]
-});
 // rest, construction, gas, toll, danger
 const tollIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2297/2297592.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const dangerIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1008/1008928.png', iconSize: [30, 30], iconAnchor: [15, 15] });
@@ -84,7 +75,6 @@ interface TruckAnimationProps {
   onTripEnd: () => void;
   onFuelEmpty: () => void;
   vehicle: Vehicle;
-  routeDistance: number;
   setCurrentFuel: (fuel: number) => void;
   isDirtRoad: boolean;
 }
@@ -96,7 +86,6 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   onTripEnd,
   onFuelEmpty,
   vehicle,
-  routeDistance,
   setCurrentFuel,
   isDirtRoad
 }) => {
@@ -293,16 +282,28 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   );
 };
 
-export const MapComponent = () => {
+interface MapComponentProps {
+  preSelectedRoute?: Route | null;
+  preSelectedVehicle?: Vehicle | null;
+  preAvailableMoney?: number;
+  showControls?: boolean;
+}
+
+export const MapComponent: React.FC<MapComponentProps> = ({
+  preSelectedRoute = null,
+  preSelectedVehicle = null,
+  preAvailableMoney = null,
+  showControls = true
+}) => {
   const [simulatedTime, setSimulatedTime] = useState<number>(0);
   const location = useLocation();
   const navigate = useNavigate();
   const juazeiroCoordinates: [number, number] = [-9.44977115369502, -40.52422616182216];
   const salvadorCoordinates: [number, number] = [-12.954121960174133, -38.47128319030249];
 
-  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  // Dados recebidos da tela anterior ou props
+  const selectedRoute = preSelectedRoute || location.state?.selectedRoute || null;
   const [isPlaying, setIsPlaying] = useState(false);
-  const [routesList] = useState<Route[]>(routes);
 
   useEffect(() => {
   let interval: NodeJS.Timeout;
@@ -323,24 +324,29 @@ export const MapComponent = () => {
 
   // Estado para veículo e saldo
   const [vehicle, setVehicle] = useState<Vehicle>(() => {
+    if (preSelectedVehicle) {
+      return preSelectedVehicle;
+    }
     if (location.state && location.state.selectedVehicle) {
       return location.state.selectedVehicle;
     }
-    navigate('/select-vehicle');
-    // Retornar um veículo padrão enquanto redireciona
+    if (showControls) {
+      navigate('/routes');
+    }
+    // Retornar um veículo padrão
     return { id: 'carreta', name: 'Carreta', capacity: 60, consumption: { asphalt: 2, dirt: 1.5 }, image: '/carreta.png', maxCapacity: 495, currentFuel: 120, cost: 4500 };
   });
 
   // Estado para o saldo disponível
-  const [availableMoney, setAvailableMoney] = useState<number>(() => {
+  const [availableMoney] = useState<number>(() => {
+    if (preAvailableMoney !== null) {
+      return preAvailableMoney;
+    }
     if (location.state && location.state.availableMoney !== undefined) {
       return location.state.availableMoney;
     }
     return 5500; // Valor padrão
   });
-
-  // Estado para controlar a exibição do modal de abastecimento
-  const [showFuelModal, setShowFuelModal] = useState(false);
 
   // Estado para controlar a exibição do modal de fim de jogo
   const [showGameOverModal, setShowGameOverModal] = useState(false);
@@ -386,9 +392,9 @@ export const MapComponent = () => {
     const totalDistance = selectedRoute.actualDistance || selectedRoute.distance;
     let lastIndex = 0;
 
-    const sortedDirtSegments = (selectedRoute.dirtSegments || []).sort((a, b) => a.startKm - b.startKm);
+    const sortedDirtSegments = (selectedRoute.dirtSegments || []).sort((a: any, b: any) => a.startKm - b.startKm);
 
-    sortedDirtSegments.forEach(dirtSegment => {
+    sortedDirtSegments.forEach((dirtSegment: any) => {
       const startIndex = Math.floor((dirtSegment.startKm / totalDistance) * totalPoints);
       const endIndex = Math.floor((dirtSegment.endKm / totalDistance) * totalPoints);
 
@@ -430,35 +436,12 @@ export const MapComponent = () => {
 
   }, [selectedRoute]);
 
-
-  const handleSelectRoute = useCallback((routeId: number) => {
-    const routeToSelect = routesList.find(r => r.routeId === routeId);
-    if (routeToSelect) {
-      setSelectedRoute(routeToSelect);
-      setIsPlaying(false);
-      setInitialMapViewSet(false);
-      setSimulatedTime(0);
-    }
-  }, [routesList]);
-
   const handleTripEnd = useCallback(() => {
     setIsPlaying(false);
     alert('Viagem concluída!');
   }, []);
 
-  // Determinar a cor da rota não selecionada
-  const getUnselectedRouteColor = (): string => '#94a3b8'; // Cinza claro
 
-  // Ícone para POI
-  const getPoiIcon = (type: 'construction' | 'danger' | 'rest' | 'gas'): L.Icon => {
-    switch (type) {
-      case 'construction': return constructionIcon;
-      case 'danger': return dangerIcon;
-      case 'rest': return restStopIcon;
-      case 'gas': return gasStationIcon;
-      default: return DefaultIcon;
-    }
-  };
 
   // Ícone para áreas de risco
   const getRiskIcon = (riskLevel: 'Baixo' | 'Médio' | 'Alto'): L.Icon => {
@@ -470,17 +453,13 @@ export const MapComponent = () => {
     }
   };
 
-  const handleChangeVehicle = () => {
-    navigate('/select-vehicle');
-  };
-
-  const handleOpenFuelModal = () => {
-    setShowFuelModal(true);
-  };
-
-  const handleRefuel = (updatedVehicle: Vehicle, newBalance: number) => {
-    setVehicle(updatedVehicle);
-    setAvailableMoney(newBalance);
+  const handleChangeRoute = () => {
+    navigate('/routes', {
+      state: {
+        selectedVehicle: vehicle,
+        availableMoney: availableMoney
+      }
+    });
   };
 
   const handleFuelEmpty = useCallback(() => {
@@ -491,24 +470,26 @@ export const MapComponent = () => {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen p-4 font-['Silkscreen'] bg-[#200259]">
-      <div className="absolute top-0 left-0 w-full flex items-center justify-between px-8 py-4 z-40">
-        <button
-          className="flex items-center px-6 py-2 bg-[#E3922A] text-black font-bold text-lg rounded-md shadow-lg
-                   hover:bg-[#FFC06F] transition-all duration-200 border-2 border-black"
-          onClick={handleChangeVehicle}
-        >
-          <ArrowLeft /> TROCAR VEÍCULOS
-        </button>
-        <h1 className="text-3xl font-bold text-[#E3922A] text-center flex-1 -ml-16">
-          ROTAS DISPONÍVEIS
-        </h1>
-        <div className="bg-[#E3922A] text-black text-2xl font-bold px-6 py-2 rounded-md shadow-lg border-2 border-black">
-          R$ {availableMoney.toFixed(2)}
+      {showControls && (
+        <div className="absolute top-0 left-0 w-full flex items-center justify-between px-8 py-4 z-40">
+          <button
+            className="flex items-center px-6 py-2 bg-[#E3922A] text-black font-bold text-lg rounded-md shadow-lg
+                     hover:bg-[#FFC06F] transition-all duration-200 border-2 border-black"
+            onClick={handleChangeRoute}
+          >
+            <ArrowLeft /> TROCAR ROTA
+          </button>
+          <h1 className="text-3xl font-bold text-[#E3922A] text-center flex-1 -ml-16">
+            {selectedRoute?.name || 'MAPA DA ROTA'}
+          </h1>
+          <div className="bg-[#E3922A] text-black text-2xl font-bold px-6 py-2 rounded-md shadow-lg border-2 border-black">
+            R$ {availableMoney.toFixed(2)}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="flex-1 w-full relative bg-gray-200 rounded-lg shadow-inner border-4 border-black mt-20">
-        {selectedRoute && (
+              <div className={`flex-1 w-full relative bg-gray-200 rounded-lg shadow-inner border-4 border-black ${showControls ? 'mt-20' : ''}`}>
+        {selectedRoute && showControls && (
           <div className="absolute top-4 right-4 flex space-x-2 z-[1000]">
             <button
               className="px-4 py-2 bg-green-500 text-white font-bold text-md rounded-md shadow-lg hover:bg-green-600 transition-all duration-200 border-2 border-black"
@@ -516,6 +497,18 @@ export const MapComponent = () => {
               disabled={isPlaying || !selectedRoute.pathCoordinates || selectedRoute.pathCoordinates.length < 2 || vehicle.currentFuel <= 0}
             >
               {isPlaying ? 'EM ANDAMENTO' : 'INICIAR'}
+            </button>
+            <button
+              className="px-4 py-2 bg-blue-500 text-white font-bold text-md rounded-md shadow-lg hover:bg-blue-600 transition-all duration-200 border-2 border-black"
+              onClick={() => navigate('/game', { 
+                state: { 
+                  vehicle, 
+                  availableMoney 
+                } 
+              })}
+              disabled={!selectedRoute || vehicle.currentFuel <= 0}
+            >
+              JOGO 2D
             </button>
             {isPlaying && (
               <div className="px-4 py-2 bg-white text-black font-['Silkscreen'] text-md rounded shadow-md border-2 border-black">
@@ -543,19 +536,7 @@ export const MapComponent = () => {
           />
           <MapViewControl route={selectedRoute} />
 
-          {/* Renderiza as rotas não selecionadas (sombreadas) */}
-          {routesList.map((route) => {
-            if (route.routeId === selectedRoute?.routeId || !route.pathCoordinates || route.pathCoordinates.length < 2) {
-              return null;
-            }
-            return (
-              <Polyline
-                key={`unselected-${route.routeId}`}
-                positions={route.pathCoordinates as L.LatLngExpression[]}
-                pathOptions={{ color: getUnselectedRouteColor(), weight: 3, opacity: 0.3 }}
-              />
-            );
-          })}
+          {/* Apenas a rota selecionada será exibida */}
 
           {/* Renderiza a rota selecionada em segmentos */}
           {renderedSegments.map((segment, index) => (
@@ -573,7 +554,7 @@ export const MapComponent = () => {
             </Polyline>
           ))}
           {/* Marcadores de Velocidade para a Rota Selecionada */}
-          {selectedRoute?.speedLimits.map((speedLimit, index) => (
+          {selectedRoute?.speedLimits.map((speedLimit: any, index: number) => (
             speedLimit.coordinates && (
               <Marker
                 key={`speed-${selectedRoute.routeId}-${index}`}
@@ -589,8 +570,8 @@ export const MapComponent = () => {
           ))}
 
           {/* Renderiza os marcadores */}
-          {selectedRoute?.tollBooths.map((toll, index) => <Marker key={`toll-${index}`} position={toll.coordinates as L.LatLngTuple} icon={tollIcon}><Popup>{toll.location}</Popup></Marker>)}
-          {selectedRoute?.dangerZones?.map((zone, index) => <Marker key={`danger-${index}`} position={zone.coordinates as L.LatLngTuple} icon={getRiskIcon(zone.riskLevel)}><Popup>{zone.description}</Popup></Marker>)}
+          {selectedRoute?.tollBooths.map((toll: any, index: number) => <Marker key={`toll-${index}`} position={toll.coordinates as L.LatLngTuple} icon={tollIcon}><Popup>{toll.location}</Popup></Marker>)}
+          {selectedRoute?.dangerZones?.map((zone: any, index: number) => <Marker key={`danger-${index}`} position={zone.coordinates as L.LatLngTuple} icon={getRiskIcon(zone.riskLevel)}><Popup>{zone.description}</Popup></Marker>)}
           <Marker position={juazeiroCoordinates}><Popup>Ponto de Partida: Juazeiro</Popup></Marker>
           <Marker position={salvadorCoordinates}><Popup>Destino: Salvador</Popup></Marker>
 
@@ -603,7 +584,6 @@ export const MapComponent = () => {
               onTripEnd={handleTripEnd}
               onFuelEmpty={handleFuelEmpty}
               vehicle={vehicle}
-              routeDistance={selectedRoute.actualDistance || selectedRoute.distance}
               setCurrentFuel={(fuel) => setVehicle(prev => ({ ...prev, currentFuel: fuel }))}
               isDirtRoad={selectedRoute.dirtRoad || false}
             />
@@ -611,57 +591,50 @@ export const MapComponent = () => {
         </MapContainer>
       </div>
 
-      <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20">
-        <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
-          <h2 className="text-xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">COMBUSTÍVEL</h2>
-          <p className="font-sans text-black text-lg mb-2"><span className="font-bold">PREÇO DO DIESEL:</span> R$ 5,50 por litro</p>
-          <div className="bg-black h-px my-2"></div>
-          <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">VEÍCULO: {vehicle.name.toUpperCase()}</h3>
-          <p className="font-sans text-black text-md mb-1">- ASFALTO: {vehicle.consumption.asphalt}KM/L</p>
-          <p className="font-sans text-black text-md mb-3">- TERRA: {vehicle.consumption.dirt}KM/L</p>
+      {showControls && (
+        <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20">
+          <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
+            <h2 className="text-xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">
+              INFORMAÇÕES DA ROTA
+            </h2>
+            
+            {selectedRoute && (
+              <div>
+                <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">
+                  {selectedRoute.name.toUpperCase()}
+                </h3>
+                <p className="font-sans text-black text-md mb-1">
+                  <span className="font-bold">TEMPO ESTIMADO:</span> {selectedRoute.estimatedTime}
+                </p>
+                <p className="font-sans text-black text-md mb-1">
+                  <span className="font-bold">DISTÂNCIA:</span> {selectedRoute.actualDistance ? `${selectedRoute.actualDistance.toFixed(0)}` : selectedRoute.distance} km
+                </p>
+                <p className="font-sans text-black text-md mb-3">
+                  <span className="font-bold">RISCO:</span> {selectedRoute.safety.robberyRisk}
+                </p>
+              </div>
+            )}
 
-          <button
-            className="bg-[#E3922A] text-black font-bold py-2 px-4 rounded-md w-full mb-3 shadow-md border-2 border-black hover:bg-[#FFC06F]"
-            onClick={() => setShowFuelModal(true)}
-          >
-            ABASTECER
-          </button>
+            <div className="bg-black h-px my-4"></div>
+            
+            <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">
+              VEÍCULO: {vehicle.name.toUpperCase()}
+            </h3>
+            <p className="font-sans text-black text-md mb-1">- ASFALTO: {vehicle.consumption.asphalt}KM/L</p>
+            <p className="font-sans text-black text-md mb-3">- TERRA: {vehicle.consumption.dirt}KM/L</p>
 
-          <p className="font-sans text-black text-md mb-2">NÍVEL DO TANQUE</p>
-          <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black">
-            <div
-              className="bg-green-500 h-full rounded-full flex items-center justify-center text-xs font-bold text-white"
-              style={{ width: `${(vehicle.currentFuel / vehicle.maxCapacity) * 100}%` }}
-            >
-              {vehicle.currentFuel.toFixed(0)}/{vehicle.maxCapacity}
+            <p className="font-sans text-black text-md mb-2">NÍVEL DO TANQUE</p>
+            <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black">
+              <div
+                className="bg-green-500 h-full rounded-full flex items-center justify-center text-xs font-bold text-white"
+                style={{ width: `${(vehicle.currentFuel / vehicle.maxCapacity) * 100}%` }}
+              >
+                {vehicle.currentFuel.toFixed(0)}/{vehicle.maxCapacity}L
+              </div>
             </div>
           </div>
         </div>
-
-        <h2 className="text-2xl font-['Silkscreen'] font-bold mb-4 text-white text-center border-b-2 border-white pb-2">
-          ESCOLHA UMA ROTA
-        </h2>
-   
-        {routesList.map((route) => (
-          <div
-            key={route.routeId}
-            className={`p-4 mb-3 rounded-lg cursor-pointer transition-all duration-200
-              ${selectedRoute?.routeId === route.routeId ? 'bg-yellow-400 border-4 border-black ring-4 ring-yellow-500' : 'bg-white border-2 border-black hover:bg-gray-200'}
-              shadow-md`}
-            onClick={() => handleSelectRoute(route.routeId)}
-          >
-            <h3 className="font-['Silkscreen'] font-bold text-2xl text-black mb-1">{route.name}</h3>
-            <p className="font-sans text-black text-lg"><span className="font-bold">TEMPO ESTIMADO:</span> {route.estimatedTime}</p>
-            <p className="font-sans text-black text-lg"><span className="font-bold">DISTÂNCIA:</span> {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km</p>
-            <p className="font-sans text-black text-lg flex items-center">
-              <span className="font-bold">RISCO ENVOLVIDO:</span>
-              <span className={`${route.safety.robberyRisk === 'Baixo' ? 'text-green-800' : 'text-red-800'} ml-1`}>
-                {route.safety.robberyRisk} {route.safety.robberyRisk === 'Baixo' ? '✅' : '⚠️'}
-              </span>
-            </p>
-          </div>
-        ))}
-      </div>
+      )}
 
       {showGameOverModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4">
@@ -677,14 +650,7 @@ export const MapComponent = () => {
         </div>
       )}
 
-      {showFuelModal && (
-        <FuelModal
-          vehicle={vehicle}
-          availableMoney={availableMoney}
-          onRefuel={handleRefuel}
-          onClose={() => setShowFuelModal(false)}
-        />
-      )}
+
     </div>
   );
 };

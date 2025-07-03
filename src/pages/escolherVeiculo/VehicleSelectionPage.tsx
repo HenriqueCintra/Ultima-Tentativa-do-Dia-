@@ -34,9 +34,9 @@ const getVehicleImage = (modelName: string) => {
   switch (modelName.toLowerCase()) {
     case 'caminhonete':
       return camhionetePng;
-    case 'van':
+    case 'caminhao pequeno':
       return camihaoPequenoPng;
-    case 'caminhão médio':
+    case 'caminhao medio':
       return caminhaoMedioPng;
     case 'carreta':
       return carretaPng;
@@ -158,7 +158,7 @@ export const VehicleSelectionPage = () => {
     if (selectedIndex === null) return; // Proteção extra
     const selectedVehicle = vehicles[selectedIndex];
     if (selectedVehicle.cost <= availableMoney) {
-      navigate('/mapa-rota', {
+      navigate('/routes', {
         state: {
           selectedVehicle: selectedVehicle,
           availableMoney: availableMoney - selectedVehicle.cost
