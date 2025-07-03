@@ -471,7 +471,7 @@ export const MapComponent = () => {
   }, []);
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen p-4 font-['Silkscreen'] bg-[#200259]">
+    <div className="flex flex-col lg:flex-row h-screen p-4 font-['Silkscreen'] bg-sky-100">
       <div className="absolute top-0 left-0 w-full flex items-center justify-between px-8 py-4 z-40">
         <button
           className="flex items-center px-6 py-2 bg-[#E3922A] text-black font-bold text-lg rounded-md shadow-lg
@@ -480,9 +480,13 @@ export const MapComponent = () => {
         >
           <ArrowLeft /> TROCAR VEÍCULOS
         </button>
-        <h1 className="text-3xl font-bold text-[#E3922A] text-center flex-1 -ml-16">
+        <h1
+          className="text-4xl text-[#E3922A] text-center flex-1 -ml-16 font-bold"
+          style={{ WebkitTextStroke: '1px black' }}
+        >
           ROTAS DISPONÍVEIS
         </h1>
+
         <div className="bg-[#E3922A] text-black text-2xl font-bold px-6 py-2 rounded-md shadow-lg border-2 border-black">
           R$ {availableMoney.toFixed(2)}
         </div>
@@ -587,7 +591,7 @@ export const MapComponent = () => {
         </MapContainer>
       </div>
 
-      <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20">
+      <div className="lg:w-1/4 w-full p-4 rounded-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20">
         <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
           <h2 className="text-xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">COMBUSTÍVEL</h2>
           <p className="font-sans text-black text-lg mb-2"><span className="font-bold">PREÇO DO DIESEL:</span> R$ 5,50 por litro</p>
@@ -614,7 +618,7 @@ export const MapComponent = () => {
           </div>
         </div>
 
-        <h2 className="text-2xl font-['Silkscreen'] font-bold mb-4 text-white text-center border-b-2 border-white pb-2">
+        <h2 className="text-2xl font-['Silkscreen'] font-bold mb-4 text-black text-center border-b-2 border-black pb-2">
           ESCOLHA UMA ROTA
         </h2>
    
