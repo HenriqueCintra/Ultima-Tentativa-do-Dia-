@@ -334,7 +334,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       navigate('/routes');
     }
     // Retornar um veículo padrão
-    return { id: 'carreta', name: 'Carreta', capacity: 60, consumption: { asphalt: 2, dirt: 1.5 }, image: '/carreta.png', maxCapacity: 495, currentFuel: 120, cost: 4500 };
+    return { id: 'carreta', name: 'Carreta', capacity: 60, consumption: { asphalt: 2, dirt: 1.5 }, image: '/carreta.png', maxCapacity: 495, currentFuel: 0, cost: 4500 };
   });
 
   // Estado para o saldo disponível

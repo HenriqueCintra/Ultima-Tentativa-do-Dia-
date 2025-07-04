@@ -113,7 +113,7 @@ export const VehicleSelectionPage = () => {
           },
           image: getVehicleImage(apiVehicle.modelo),
           maxCapacity: apiVehicle.capacidade_combustivel,
-          currentFuel: apiVehicle.capacidade_combustivel,
+          currentFuel: 0, // Tanque sempre vazio - usuário deve abastecer
           cost: parseFloat(apiVehicle.preco),
         }));
 

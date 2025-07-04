@@ -8,7 +8,14 @@ export const FuelPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Dados recebidos da tela anterior
-  const vehicle = location.state?.selectedVehicle || location.state?.vehicle || { id: 'carreta', name: 'Carreta', capacity: 60, consumption: { asphalt: 2, dirt: 1.5 }, image: '/carreta.png', maxCapacity: 495, currentFuel: 120, cost: 4500 };
+  const receivedVehicle = location.state?.selectedVehicle || location.state?.vehicle || { id: 'carreta', name: 'Carreta', capacity: 60, consumption: { asphalt: 2, dirt: 1.5 }, image: '/carreta.png', maxCapacity: 495, currentFuel: 0, cost: 4500 };
+  
+  // Garantir que o veículo sempre comece com tanque vazio na página de combustível
+  const vehicle = {
+    ...receivedVehicle,
+    currentFuel: 0 // Tanque sempre vazio para forçar decisão do usuário
+  };
+  
   const availableMoney = location.state?.availableMoney || 5500;
   const selectedRoute = location.state?.selectedRoute;
 
@@ -23,27 +30,24 @@ export const FuelPage: React.FC = () => {
   const [selectedVehicle] = useState<Vehicle>({ ...vehicle });
   const [fuelAmount, setFuelAmount] = useState<'full' | 'half' | 'quarter'>('full');
   const [availableBalance] = useState(availableMoney);
-  const [previewFuel, setPreviewFuel] = useState<number>(vehicle.currentFuel);
+  const [previewFuel, setPreviewFuel] = useState<number>(vehicle.maxCapacity); // Preview inicia com a opção 'full' selecionada
 
   const fuelCostPerLiter = 5.5;
 
   const calculateFuelCost = (option: 'full' | 'half' | 'quarter') => {
     const maxCapacity = selectedVehicle.maxCapacity;
-    const currentFuel = selectedVehicle.currentFuel;
-
     let fuelToAdd = 0;
 
+    // Como o tanque sempre começa vazio, calculamos a quantidade total desejada
     switch (option) {
       case 'full':
-        fuelToAdd = maxCapacity - currentFuel;
+        fuelToAdd = maxCapacity;
         break;
       case 'half':
-        fuelToAdd = (maxCapacity / 2) - currentFuel;
-        if (fuelToAdd < 0) fuelToAdd = 0;
+        fuelToAdd = maxCapacity / 2;
         break;
       case 'quarter':
-        fuelToAdd = (maxCapacity / 4) - currentFuel;
-        if (fuelToAdd < 0) fuelToAdd = 0;
+        fuelToAdd = maxCapacity / 4;
         break;
     }
 
@@ -54,11 +58,12 @@ export const FuelPage: React.FC = () => {
     const cost = calculateFuelCost(fuelAmount);
 
     if (cost <= availableBalance) {
+      // Calcular o novo combustível baseado na opção selecionada
       const newCurrentFuel = fuelAmount === 'full'
         ? selectedVehicle.maxCapacity
         : fuelAmount === 'half'
-          ? Math.max(selectedVehicle.currentFuel, selectedVehicle.maxCapacity / 2)
-          : Math.max(selectedVehicle.currentFuel, selectedVehicle.maxCapacity / 4);
+          ? selectedVehicle.maxCapacity / 2
+          : selectedVehicle.maxCapacity / 4;
 
       const updatedVehicle = {
         ...selectedVehicle,
@@ -101,8 +106,9 @@ export const FuelPage: React.FC = () => {
         return max / 2;
       case 'quarter':
         return max / 4;
+      default:
+        return 0; // Tanque vazio por padrão
     }
-    return selectedVehicle.currentFuel;
   };
 
   const goBack = () => {
@@ -110,155 +116,219 @@ export const FuelPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#200259] p-4 font-['Silkscreen']">
-      <div className="absolute top-0 left-0 w-full flex items-center justify-between px-8 py-4 z-40">
-        <button
-          className="flex items-center px-6 py-2 bg-[#E3922A] text-black font-bold text-lg rounded-md shadow-lg
-                   hover:bg-[#FFC06F] transition-all duration-200 border-2 border-black"
-          onClick={goBack}
-        >
-          <ArrowLeft /> VOLTAR
-        </button>
-        <h1 className="text-3xl font-bold text-[#E3922A] text-center flex-1 -ml-16">
-          ABASTECIMENTO
-        </h1>
-        <div className="bg-[#E3922A] text-black text-2xl font-bold px-6 py-2 rounded-md shadow-lg border-2 border-black">
-          R$ {availableBalance.toFixed(2)}
+    <div className="min-h-screen bg-gradient-to-br from-[#200259] to-[#300369] font-['Silkscreen']">
+      {/* Header compacto */}
+      <div className="bg-[#200259] border-b-4 border-[#E3922A] px-3 py-2 shadow-lg">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <button
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#E3922A] text-black font-bold text-sm rounded-md shadow-lg
+                     hover:bg-[#FFC06F] transition-all duration-200 border-2 border-black"
+            onClick={goBack}
+          >
+            <ArrowLeft size={16} /> VOLTAR
+          </button>
+          
+          <h1 className="text-lg lg:text-xl font-bold text-[#E3922A] text-center flex items-center gap-2">
+            ⛽ ABASTECIMENTO
+          </h1>
+          
+          <div className="bg-gradient-to-r from-[#E3922A] to-[#FFC06F] text-black text-sm lg:text-base font-bold px-3 py-1.5 rounded-md shadow-lg border-2 border-black">
+            R$ {availableBalance.toFixed(2)}
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-center min-h-screen pt-20">
-        <div className="bg-[#200259] rounded-lg shadow-2xl border-4 border-black max-w-4xl w-full p-6">
-          <h2 className="text-2xl font-['Silkscreen'] font-bold text-[#E3922A] text-center mb-4">
-            DESEJA ABASTECER SEU VEÍCULO?
-          </h2>
-          
-          <div className="text-center mb-6">
-            <p className="font-['Silkscreen'] text-white text-xl font-bold">
-              Saldo após abastecimento: R$ {(availableBalance - calculateFuelCost(fuelAmount)).toFixed(2)}
-            </p>
+             {/* Conteúdo principal */}
+      <div className="h-[calc(100vh-60px)] max-h-[calc(100vh-60px)] overflow-hidden p-2">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg shadow-2xl border-2 border-[#E3922A] w-full h-full p-3 backdrop-blur-sm flex flex-col">
+          {/* Header compacto da seção */}
+          <div className="bg-gradient-to-r from-[#E3922A] to-[#FFC06F] text-black p-2 rounded-lg mb-2 border border-black flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-['Silkscreen'] font-bold flex items-center gap-1">
+                🚛 ABASTECER VEÍCULO?
+              </h2>
+              <p className="font-['Silkscreen'] text-xs font-bold flex items-center gap-1">
+                💰 Saldo final: <span className="text-green-800">R$ {(availableBalance - calculateFuelCost(fuelAmount)).toFixed(2)}</span>
+              </p>
+            </div>
           </div>
 
-          <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex justify-center items-center md:w-1/3">
-                <img
-                  src={selectedVehicle.image}
-                  alt={selectedVehicle.name}
-                  className="h-40 object-contain"
-                />
-              </div>
-
-              <div className="md:w-2/3">
-                <h3 className="text-xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">
-                  {selectedVehicle.name.toUpperCase()}
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">CONSUMO</h4>
-                    <p className="font-sans text-black text-md mb-1">- ASFALTO: {selectedVehicle.consumption.asphalt}KM/L</p>
-                    <p className="font-sans text-black text-md mb-3">- TERRA: {selectedVehicle.consumption.dirt}KM/L</p>
+          {/* Layout otimizado sem scroll */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {/* Seção principal em uma linha */}
+            <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+              
+              {/* Card do veículo elegante */}
+              <div className="lg:w-3/5 bg-gradient-to-br from-[#FFC06F] via-[#FFD700] to-[#FFA500] p-4 rounded-xl shadow-xl border-2 border-[#E3922A]">
+                <div className="bg-black bg-opacity-10 rounded-lg p-3 h-full flex flex-col">
+                  
+                  {/* Header do veículo */}
+                  <div className="flex items-center justify-center mb-3">
+                    <h3 className="text-lg font-['Silkscreen'] font-bold text-black bg-white bg-opacity-80 px-4 py-2 rounded-full border-2 border-black shadow-md">
+                      🚛 {selectedVehicle.name.toUpperCase()}
+                    </h3>
                   </div>
+                  
+                  {/* Layout horizontal com imagem e informações */}
+                  <div className="flex gap-4 flex-1">
+                    {/* Imagem do veículo */}
+                    <div className="w-2/5 flex items-center justify-center bg-white bg-opacity-30 rounded-lg p-3 shadow-inner">
+                      <img
+                        src={selectedVehicle.image}
+                        alt={selectedVehicle.name}
+                        className="max-h-20 lg:max-h-24 object-contain filter drop-shadow-lg"
+                      />
+                    </div>
+                    
+                    {/* Informações técnicas */}
+                    <div className="w-3/5 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Consumo */}
+                        <div className="bg-green-500 bg-opacity-20 p-2 rounded-lg border border-green-600">
+                          <h4 className="font-['Silkscreen'] text-sm font-bold text-green-900 mb-1 text-center">⛽ CONSUMO</h4>
+                          <p className="text-xs text-green-800 text-center">🛣️ {selectedVehicle.consumption.asphalt} KM/L</p>
+                          <p className="text-xs text-green-800 text-center">🌄 {selectedVehicle.consumption.dirt} KM/L</p>
+                        </div>
+                        
+                        {/* Capacidade */}
+                        <div className="bg-blue-500 bg-opacity-20 p-2 rounded-lg border border-blue-600">
+                          <h4 className="font-['Silkscreen'] text-sm font-bold text-blue-900 mb-1 text-center">🗜️ TANQUE</h4>
+                          <p className="text-xs text-blue-800 text-center">📊 0L</p>
+                          <p className="text-xs text-blue-800 text-center">🏁 {selectedVehicle.maxCapacity}L</p>
+                        </div>
+                      </div>
 
-                  <div>
-                    <h4 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">COMBUSTÍVEL</h4>
-                    <p className="font-sans text-black text-md mb-1">ATUAL: {selectedVehicle.currentFuel.toFixed(0)}L</p>
-                    <p className="font-sans text-black text-md mb-3">MÁXIMO: {selectedVehicle.maxCapacity}L</p>
+                      {/* Barra de combustível melhorada */}
+                      <div className="bg-white bg-opacity-40 p-2 rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-['Silkscreen'] text-black text-sm font-bold">⛽ NÍVEL DO TANQUE</p>
+                          <p className="text-sm font-bold text-black">0L → {previewFuel.toFixed(0)}L / {selectedVehicle.maxCapacity}L</p>
+                        </div>
+                        
+                        <div className="w-full bg-gray-200 rounded-full h-5 border-2 border-black relative overflow-hidden shadow-inner">
+                          {/* Barra vazia (fundo branco quando não há combustível) */}
+                          <div className="w-full h-full bg-white rounded-full"></div>
+                          
+                          {/* Barra de preview - quantidade que será abastecida (verde) */}
+                          <div
+                            className="bg-gradient-to-r from-green-400 via-green-500 to-green-600 h-full absolute top-0 left-0 transition-all duration-700 ease-out"
+                            style={{ width: `${(previewFuel / selectedVehicle.maxCapacity) * 100}%` }}
+                          ></div>
+                          
+                          {/* Marcadores de divisão */}
+                          <div className="absolute inset-0 flex justify-between items-center px-2">
+                            <div className="w-0.5 h-3 bg-gray-600 opacity-50"></div>
+                            <div className="w-0.5 h-3 bg-gray-600 opacity-50"></div>
+                            <div className="w-0.5 h-3 bg-gray-600 opacity-50"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                <p className="font-sans text-black text-md mb-2">NÍVEL DO TANQUE</p>
-                <div className="w-full bg-gray-300 rounded-full h-6 border-2 border-black mb-4 relative">
-                  {/* Barra do combustível atual */}
-                  <div
-                    className="bg-green-500 h-full rounded-l-full transition-all duration-300"
-                    style={{ width: `${(selectedVehicle.currentFuel / selectedVehicle.maxCapacity) * 100}%` }}
-                  ></div>
-                  {/* Barra da pré-visualização */}
-                  <div
-                    className="bg-yellow-400 h-full absolute top-0 left-0 rounded-full opacity-70 transition-all duration-300"
-                    style={{ width: `${(previewFuel / selectedVehicle.maxCapacity) * 100}%` }}
-                  ></div>
-                  <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-black">
-                    {selectedVehicle.currentFuel.toFixed(0)} / {selectedVehicle.maxCapacity}L
+              {/* Painel de abastecimento */}
+              <div className="lg:w-2/5 bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 p-4 rounded-xl shadow-xl border-2 border-orange-600">
+                <div className="bg-white bg-opacity-10 rounded-lg p-3 h-full flex flex-col">
+                  
+                  {/* Header */}
+                  <div className="text-center mb-3">
+                    <h4 className="font-['Silkscreen'] text-lg font-bold text-white bg-black bg-opacity-30 px-3 py-2 rounded-lg border border-white">
+                      ⛽ POSTO DE COMBUSTÍVEL
+                    </h4>
+                  </div>
+                  
+                  {/* Preço em destaque */}
+                  <div className="bg-red-600 text-white p-3 rounded-lg mb-3 text-center border-2 border-red-800 shadow-md">
+                    <p className="font-['Silkscreen'] text-sm font-bold">
+                      💵 DIESEL: R$ {fuelCostPerLiter.toFixed(2)}/LITRO
+                    </p>
+                  </div>
+
+                  {/* Opções de abastecimento */}
+                  <div className="space-y-2 mb-3">
+                    <p className="font-['Silkscreen'] text-white text-sm font-bold text-center">ESCOLHA A QUANTIDADE:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => {
+                          const newPreview = calculatePreviewFuel('quarter');
+                          setFuelAmount('quarter');
+                          setPreviewFuel(newPreview);
+                        }}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                          fuelAmount === 'quarter' 
+                            ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105' 
+                            : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        1/4 TANQUE
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newPreview = calculatePreviewFuel('half');
+                          setFuelAmount('half');
+                          setPreviewFuel(newPreview);
+                        }}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                          fuelAmount === 'half' 
+                            ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105' 
+                            : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        1/2 TANQUE
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newPreview = calculatePreviewFuel('full');
+                          setFuelAmount('full');
+                          setPreviewFuel(newPreview);
+                        }}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${
+                          fuelAmount === 'full' 
+                            ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105' 
+                            : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                        }`}
+                      >
+                        TANQUE CHEIO
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Custo total em destaque */}
+                  <div className="bg-green-600 text-white p-3 rounded-lg text-center border-2 border-green-800 shadow-md mt-auto">
+                    <p className="font-['Silkscreen'] text-lg font-bold">
+                      💰 TOTAL: R$ {calculateFuelCost(fuelAmount).toFixed(2)}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4">
-              <h4 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">OPÇÕES DE ABASTECIMENTO</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="font-sans text-black text-md mb-2">PREÇO DO DIESEL: R$ {fuelCostPerLiter.toFixed(2)}/L</p>
-                </div>
-
-                <div className="md:col-span-2">
-                  <div className="flex space-x-2 mb-2">
-                    <button
-                      onClick={() => {
-                        const newPreview = calculatePreviewFuel('quarter');
-                        setFuelAmount('quarter');
-                        setPreviewFuel(newPreview);
-                      }}
-                      className={`flex-1 py-2 border-2 border-black rounded-md font-bold ${fuelAmount === 'quarter' ? 'bg-[#E3922A] text-black' : 'bg-gray-200 text-black'}`}
-                    >
-                      1/4
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newPreview = calculatePreviewFuel('half');
-                        setFuelAmount('half');
-                        setPreviewFuel(newPreview);
-                      }}
-                      className={`flex-1 py-2 border-2 border-black rounded-md font-bold ${fuelAmount === 'half' ? 'bg-[#E3922A] text-black' : 'bg-gray-200 text-black'}`}
-                    >
-                      1/2
-                    </button>
-                    <button
-                      onClick={() => {
-                        const newPreview = calculatePreviewFuel('full');
-                        setFuelAmount('full');
-                        setPreviewFuel(newPreview);
-                      }}
-                      className={`flex-1 py-2 border-2 border-black rounded-md font-bold ${fuelAmount === 'full' ? 'bg-[#E3922A] text-black' : 'bg-gray-200 text-black'}`}
-                    >
-                      CHEIO
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <p className="font-sans text-black text-md font-bold text-xl">
-                  Custo: R$ {calculateFuelCost(fuelAmount).toFixed(2)}
-                </p>
-              </div>
+            {/* Botões de ação elegantes */}
+            <div className="flex justify-center gap-4 mt-4 flex-shrink-0">
+              <button
+                onClick={handleSkipFuel}
+                className="bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 text-white font-bold py-3 px-8 rounded-xl shadow-xl border-2 border-gray-600 
+                         hover:from-gray-600 hover:via-gray-700 hover:to-gray-800 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+              >
+                ⏭️ PULAR ABASTECIMENTO
+              </button>
+              <button
+                onClick={handleRefuel}
+                disabled={calculateFuelCost(fuelAmount) > availableBalance}
+                className={`font-bold py-3 px-8 rounded-xl shadow-xl border-2 transition-all duration-200 transform hover:scale-105 flex items-center gap-2 ${
+                  calculateFuelCost(fuelAmount) > availableBalance 
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed border-gray-500' 
+                    : 'bg-gradient-to-r from-[#E3922A] via-[#FFC06F] to-[#FFD700] text-black border-[#E3922A] hover:from-[#FFC06F] hover:via-[#FFD700] hover:to-[#FFED4E]'
+                }`}
+              >
+                ⛽ ABASTECER AGORA
+              </button>
             </div>
-          </div>
-
-          <div className="flex justify-center space-x-4">
-            <button
-              onClick={handleSkipFuel}
-              className="bg-gray-600 text-white font-bold py-3 px-8 rounded-md shadow-md border-2 border-black hover:bg-gray-700 transition-all duration-200"
-            >
-              PULAR ABASTECIMENTO
-            </button>
-            <button
-              onClick={handleRefuel}
-              disabled={calculateFuelCost(fuelAmount) > availableBalance}
-              className={`font-bold py-3 px-8 rounded-md shadow-md border-2 border-black transition-all duration-200 ${
-                calculateFuelCost(fuelAmount) > availableBalance 
-                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
-                  : 'bg-[#E3922A] text-black hover:bg-[#FFC06F]'
-              }`}
-            >
-              ABASTECER
-            </button>
           </div>
         </div>
       </div>
     </div>
-  );
+      );
 }; 

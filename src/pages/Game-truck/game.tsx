@@ -70,7 +70,7 @@ export function GameScene() {
     console.warn("Nenhum veículo encontrado, redirecionando...");
     // Se não houver dados, redirecionar para seleção de veículo
     navigate('/select-vehicle');
-    return { id: 'default', name: 'Caminhão Padrão', capacity: 1000, consumption: { asphalt: 3, dirt: 2 }, image: '/assets/truck.png', maxCapacity: 100, currentFuel: 75, cost: 1000 };
+    return { id: 'default', name: 'Caminhão Padrão', capacity: 1000, consumption: { asphalt: 3, dirt: 2 }, image: '/assets/truck.png', maxCapacity: 100, currentFuel: 0, cost: 1000 };
   });
 
   const [money, setMoney] = useState(() => {
