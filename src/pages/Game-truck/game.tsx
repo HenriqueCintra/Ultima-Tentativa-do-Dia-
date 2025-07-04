@@ -235,7 +235,7 @@ export function GameScene() {
     const pathCoords = selectedRoute.pathCoordinates;
     const totalSegments = pathCoords.length - 1;
     
-    // Velocidade calibrada para completar a rota em ~3 minutos (180 segundos)
+    // Velocidade calibrada para completar a rota em ~3 minutos (180 segundos) AJUSTE DE DURAÇÃO DO JOGO
     const targetDurationSeconds = 180;
     const segmentsPerSecond = totalSegments / targetDurationSeconds;
     const segmentSpeed = segmentsPerSecond * deltaTime; // Segmentos por frame

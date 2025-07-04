@@ -126,7 +126,7 @@ export const GameMiniMap: React.FC<GameMiniMapProps> = ({
   return (
     <div className={className} style={{ position: 'relative' }}>
       {/* Overlay com informações */}
-      <div style={{
+      {/* <div style={{
         position: 'absolute',
         top: '5px',
         left: '5px',
@@ -140,7 +140,7 @@ export const GameMiniMap: React.FC<GameMiniMapProps> = ({
         textAlign: 'center'
       }}>
         <div>{progress.toFixed(1)}% Concluído</div>
-      </div>
+      </div> */}
 
       <MapContainer
         center={startCoord}
