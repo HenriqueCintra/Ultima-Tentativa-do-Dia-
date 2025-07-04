@@ -38,7 +38,7 @@ export const Login = () => {
 
     try {
       await login(username, password);
-      navigate("/choose-team");
+      navigate("/ranking");
     } catch (error: any) {
       console.error("Erro completo de login:", error);
       if (error.response && error.response.status === 401) {
