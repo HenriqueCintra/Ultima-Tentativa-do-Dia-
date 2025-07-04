@@ -2,20 +2,20 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
-import { ArrowLeft, House, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { ButtonHomeBack } from "@/components/ButtonHomeBack";
 import AuthService from "../../../api/authService";
 
 export const Cadastro = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    first_name: "",
     username: "",
-    nickname: "",
     email: "",
     data_nascimento: "",
     password: "",
     password2: "",
-    first_name: "",
+    nickname: "", // Será preenchido automaticamente com o valor do username
     last_name: ""
   });
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,7 @@ export const Cadastro = () => {
     e.preventDefault();
 
     // Validação básica
-    if (!formData.username || !formData.nickname || !formData.email || !formData.password || !formData.password2) {
+    if (!formData.first_name || !formData.username || !formData.email || !formData.password || !formData.password2) {
       setError("Por favor, preencha todos os campos obrigatórios");
       return;
     }
@@ -46,7 +46,13 @@ export const Cadastro = () => {
     setSuccess("");
 
     try {
-      await AuthService.register(formData);
+      // Envia nickname igual ao username para satisfazer o backend
+      const dataToSend = {
+        ...formData,
+        nickname: formData.username
+      };
+      
+      await AuthService.register(dataToSend);
       setSuccess("Cadastro realizado com sucesso! Redirecionando para o login...");
 
       // Redireciona para o login após 2 segundos
@@ -73,12 +79,12 @@ export const Cadastro = () => {
     }
   };
 
+  // 6 inputs na ordem solicitada: nome, usuário, email, data nascimento, senha, confirmar senha
   const formFields = [
     { id: "first_name", label: "NOME", type: "text" },
-    { id: "nickname", label: "NICKNAME", type: "text" },
+    { id: "username", label: "USUÁRIO", type: "text" },
     { id: "email", label: "EMAIL", type: "email" },
     { id: "data_nascimento", label: "DATA DE NASCIMENTO", type: "date" },
-    { id: "username", label: "USUÁRIO", type: "text" },
     { id: "password", label: "SENHA", type: "password" },
     { id: "password2", label: "CONFIRMAR SENHA", type: "password" },
   ];
@@ -98,10 +104,9 @@ export const Cadastro = () => {
           src="/nuvemright.png"
         />
 
-        {/* Botões de navegação */}
-        <div className="flex gap-5 absolute top-14 left-[33px]">
+        {/* Botão de navegação */}
+        <div className="absolute top-14 left-[33px]">
           <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft /></ButtonHomeBack>
-          <ButtonHomeBack onClick={() => navigate("/")}><House /></ButtonHomeBack>
         </div>
 
         {/* Card de Cadastro */}
