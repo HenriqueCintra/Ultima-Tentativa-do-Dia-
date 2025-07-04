@@ -42,6 +42,9 @@ export function GameScene() {
   const currentPathIndexRef = useRef(0); // Ref para uso dentro do onUpdate do Kaboom
   const gameSpeedMultiplier = useRef(1); // Multiplicador de velocidade baseado na rota
   const obstacleTimerRef = useRef(0); // Timer para criação de obstáculos
+  // Cooldown curto após uma colisão para evitar detecções duplicadas
+  const collisionCooldownRef = useRef(0);
+  const obstacleSystemLockedRef = useRef(false); // Sistema travado durante eventos
   const handleResizeRef = useRef<(() => void) | null>(null); // Ref para função de resize
   
   // Novos estados para melhorias
@@ -90,7 +93,7 @@ export function GameScene() {
     const savedProgressData = location.state?.savedProgress;
     
     if (savedProgressData) {
-      console.log("Carregando progresso salvo:", savedProgressData);
+      // Log de carregamento removido
       
       // Restaurar estados salvos
       setCurrentFuel(savedProgressData.currentFuel);
@@ -177,7 +180,7 @@ export function GameScene() {
 
   // Sincronizar progresso para debug
   useEffect(() => {
-    console.log(`Progress Update: ${progress.toFixed(1)}% - PathIndex: ${currentPathIndex} - PathProgress: ${pathProgressRef.current.toFixed(3)}`);
+    // Debug removido
   }, [progress, currentPathIndex]);
 
   // Verificar condições de game over
@@ -245,17 +248,14 @@ export function GameScene() {
       currentPathIndexRef.current += 1;
       setCurrentPathIndex(currentPathIndexRef.current);
       pathProgressRef.current = 0;
-      console.log(`Avançando para segmento ${currentPathIndexRef.current}/${totalSegments}`);
+      // Log de segmento removido
     }
     
     // Calcular progresso total: (segmentos completos + progresso no segmento atual) / total
     const totalProgress = (currentPathIndexRef.current + pathProgressRef.current) / totalSegments;
     const progressPercent = Math.min(100, Math.max(0, totalProgress * 100));
     
-    // Log apenas a cada 10% de progresso para reduzir spam
-    if (Math.floor(progressPercent / 10) !== Math.floor(progressRef.current / 10)) {
-      console.log(`Progresso: ${progressPercent.toFixed(1)}% (segmento ${currentPathIndexRef.current}/${totalSegments}) - segmentSpeed: ${segmentSpeed.toFixed(6)}`);
-    }
+    // Log de progresso removido
     
     return progressPercent;
   };
@@ -546,22 +546,36 @@ scene("main", () => {
     ScaleComp
   > & { collided: boolean; };
 
-  // Declarar o array de obstáculos fora da lógica de criação
+  // Sistema de gestão de obstáculos mais robusto
   const obstacles: Obstacle[] = [];
-  const maxObstacles = 1; // Apenas um obstáculo por vez na tela
-  const obstacleSpawnInterval = 8; // Intervalo em segundos para criar novos obstáculos (aumentado para 8s)
+  const maxObstacles = 1;
+  const obstacleSpawnInterval = 10; // Aumentar para 10 segundos
+  let lastObstacleCreatedTime = 0; // Timestamp da última criação
   
-  // Função para criar um novo obstáculo
+  // Função para criar um novo obstáculo (simplificada)
   const createObstacle = () => {
-    if (obstacles.length >= maxObstacles) return; // Não criar se já tem o máximo
+    const currentTime = Date.now();
     
-    // Posicionar obstáculo na mesma área da pista onde está o caminhão
+    // Verificações básicas (sistema já deve estar travado quando chega aqui)
+    if (obstacles.length >= maxObstacles) {
+      console.log("🚫 Limite de obstáculos atingido:", obstacles.length);
+      return;
+    }
+    
+    // Verificar tempo mínimo entre criações
+    if (currentTime - lastObstacleCreatedTime < 3000) {
+      console.log("🚫 Muito cedo para criar obstáculo:", currentTime - lastObstacleCreatedTime, "ms");
+      return;
+    }
+    
+    // Posicionar obstáculo bem longe da tela inicial para evitar colisão imediata
     const roadYPosition = height() * 0.68; // Mesma posição Y da pista do caminhão (ajustada)
     const obstacleScale = Math.min(width() / 1365, height() / 762) * 0.12; // Escala um pouco menor
+    const safeDistance = width() + 300; // Distância segura da borda direita da tela
     
     const obs = add([
       sprite("obstacle"),
-      pos(width() + Math.random() * 100, roadYPosition + Math.random() * 40 - 20), // Variação pequena na posição Y
+      pos(safeDistance + Math.random() * 200, roadYPosition + Math.random() * 40 - 20), // Posição mais distante e com variação
       area(),
       body(),
       z(1),
@@ -571,11 +585,9 @@ scene("main", () => {
     ]) as Obstacle;
 
     obstacles.push(obs);
-    console.log("Novo obstáculo criado. Total:", obstacles.length);
+    lastObstacleCreatedTime = Date.now();
+    console.log("🔴 Novo obstáculo criado. Total:", obstacles.length, "Posição:", obs.pos.x, obs.pos.y);
   };
-
-  // Criar obstáculo inicial
-    createObstacle();
 
   onUpdate(() => {
     // DEBUG: Verificar se o jogo está pausado
@@ -584,6 +596,12 @@ scene("main", () => {
     }
 
     const deltaTime = dt();
+
+    // Reduzir o cooldown (se houver) a cada frame, mas não deixar ficar negativo
+    if (collisionCooldownRef.current > 0) {
+      collisionCooldownRef.current = Math.max(0, collisionCooldownRef.current - deltaTime);
+    }
+
     const moveAmount = -speed * deltaTime;
 
     bg1.move(moveAmount, 0);
@@ -592,11 +610,36 @@ scene("main", () => {
     // Atualizar timer para criação de obstáculos
     obstacleTimerRef.current += deltaTime;
     
-    // Criar novos obstáculos periodicamente (apenas se não há nenhum na tela)
-    if (obstacleTimerRef.current >= obstacleSpawnInterval && obstacles.length === 0) {
+    // Sistema de criação de obstáculos ULTRA rigoroso - apenas UM por vez
+    const canCreateObstacle = (
+      obstacleTimerRef.current >= obstacleSpawnInterval &&
+      obstacles.length === 0 &&
+      !eventoAtual &&
+      !processingEvent.current &&
+      !obstacleSystemLockedRef.current &&
+      collisionCooldownRef.current === 0
+    );
+    
+    if (canCreateObstacle) {
+      // TRAVAR IMEDIATAMENTE para evitar criações múltiplas
+      obstacleSystemLockedRef.current = true;
+      console.log("⏰ Condições atendidas - TRAVANDO sistema e criando obstáculo");
+      console.log("📊 Estado atual:", {
+        timer: obstacleTimerRef.current.toFixed(2),
+        obstaculos: obstacles.length,
+        evento: !!eventoAtual,
+        processing: processingEvent.current,
+        cooldown: collisionCooldownRef.current
+      });
+      
       createObstacle();
-      obstacleTimerRef.current = 0; // Resetar timer
-      console.log("Novo obstáculo criado. Timer resetado.");
+      obstacleTimerRef.current = -10; // Resetar com delay muito longo
+      
+      // Destravar após o obstáculo ser criado e posicionado
+      setTimeout(() => {
+        obstacleSystemLockedRef.current = false;
+        console.log("🔓 Sistema destravado após criação de obstáculo");
+      }, 2000); // 2 segundos para garantir que o obstáculo foi criado e posicionado
     }
 
     // Processar obstáculos existentes (iteração reversa para remoção segura)
@@ -609,27 +652,43 @@ scene("main", () => {
       if (obs.pos.x < -obs.width - 100) {
         obs.destroy(); // Destruir o objeto do jogo
         obstacles.splice(i, 1); // Remover do array
-        console.log("Obstáculo removido da tela. Total restante:", obstacles.length);
+        console.log("🗑️ Obstáculo removido da tela. Total restante:", obstacles.length);
         continue;
       }
 
-      // Verificar colisão apenas para obstáculos visíveis na tela e não colididos
-      // E apenas se não há evento ativo no momento
-      if (obs.pos.x > -obs.width && obs.pos.x < width() && !obs.collided && !eventoAtual && !processingEvent.current && car.isColliding(obs)) {
+      // Verificar colisão apenas para obstáculos que estão efetivamente na área de jogo
+      // e não colididos, com verificações mais rigorosas
+      const obstacleInGameArea = obs.pos.x > 0 && obs.pos.x < width() - 50; // Margem de segurança
+      const obstacleVisible = obs.pos.x > -obs.width && obs.pos.x < width();
+      
+      if (
+        collisionCooldownRef.current === 0 &&
+        obstacleVisible &&
+        obstacleInGameArea &&
+        !obs.collided &&
+        !eventoAtual &&
+        !processingEvent.current &&
+        car.isColliding(obs)
+      ) {
         const eventoSorteado = eventos[Math.floor(Math.random() * eventos.length)];
 
+        // TRAVAR SISTEMA COMPLETAMENTE durante colisão
+        obstacleSystemLockedRef.current = true;
         processingEvent.current = true; // Marcar que está processando evento
         setEventoAtual(eventoSorteado);
         obs.collided = true; // Marcar como colidido
         gamePaused.current = true; // Pausar o jogo
         collidedObstacle.current = obs; // Armazenar o obstáculo colidido
 
+        console.log("💥 COLISÃO DETECTADA! Obstáculo pos:", obs.pos.x, obs.pos.y, "Caminhão pos:", car.pos.x, car.pos.y);
+        console.log("🔍 Estado antes da colisão - cooldown:", collisionCooldownRef.current, "eventoAtual:", !!eventoAtual, "processing:", processingEvent.current);
+
         // Remover o obstáculo imediatamente para evitar detecção dupla
         obs.destroy();
         obstacles.splice(i, 1);
 
-        console.log("Colisão detectada e obstáculo removido. Total restante:", obstacles.length);
-        console.log("Evento disparado:", eventoSorteado.texto);
+        console.log("🧹 Obstáculo removido após colisão. Total restante:", obstacles.length);
+        console.log("🎲 Evento disparado:", eventoSorteado.texto);
         setShowPopup(true); // Mostrar o popup
         break; // Sair do loop após detectar a colisão
       }
@@ -652,10 +711,7 @@ scene("main", () => {
     progressRef.current = progressPercent;
     setProgress(progressPercent);
     
-    // Debug inicial do movimento
-    if (progressPercent > 0 && progressPercent < 1) {
-      console.log(`Primeiro movimento detectado! Progress: ${progressPercent.toFixed(3)}%, deltaTime: ${deltaTime.toFixed(6)}`);
-    }
+    // Debug inicial do movimento removido
 
     // Consumir combustível de forma mais realista baseado no progresso
     const routeDistance = totalDistance || 500; // Usar distância da rota ou padrão
@@ -702,15 +758,13 @@ scene("main", () => {
     setProgress(0);
     distanceTravelled.current = 0;
     
-    // Resetar timer de criação de obstáculos
+    // Resetar timer de criação de obstáculos para dar um tempo antes do próximo
     obstacleTimerRef.current = 0;
     
     // Garantir que o jogo não esteja pausado ao inicializar
     gamePaused.current = false;
     
-    // DEBUG: Log inicial simplificado
-    console.log("Jogo inicializado - pathCoordinates:", selectedRoute?.pathCoordinates?.length, "pontos");
-    console.log("Estados iniciais - currentPathIndex:", currentPathIndex, "pathProgress:", pathProgressRef.current, "progress:", progress);
+    // DEBUG: Log inicial removido
     
     // Marcar jogo como carregado após tudo estar configurado
     setGameLoaded(true);
@@ -757,14 +811,15 @@ scene("main", () => {
     console.log("Jogo finalizado. Mostrando mensagem final.");
     // Limpar progresso salvo quando o jogo terminar
     localStorage.removeItem('savedGameProgress');
-    console.log('Progresso salvo removido - jogo concluído');
+    // Log de progresso removido
     setShowEndMessage(true);
   }
 }, [gameEnded]);
 
 
   const handleOptionClick = (choice: string) => {
-    console.log("Processando escolha do evento:", choice);
+    console.log("🎯 Processando escolha do evento:", choice);
+    console.log("🔧 Cooldown atual:", collisionCooldownRef.current);
     setPlayerChoice(choice);
     
     // Novo formato: "Descrição - R$valor | tempo | combustível"
@@ -903,10 +958,20 @@ scene("main", () => {
       return;
     }
 
-    // Despausar o jogo e resetar timer para dar tempo ao jogador
+    // Despausar o jogo e resetar timer para dar um tempo maior ao jogador
     gamePaused.current = false;
-    obstacleTimerRef.current = 0;
-    console.log("Jogo despausado após evento");
+    obstacleTimerRef.current = -8; // Dar 8 segundos antes do próximo obstáculo
+
+    // Ativar um cooldown longo e destravar sistema depois de um tempo
+    collisionCooldownRef.current = 3.0; // 3 segundos de cooldown
+    
+    // Destravar sistema de obstáculos após 8 segundos
+    setTimeout(() => {
+      obstacleSystemLockedRef.current = false;
+      console.log("🔓 Sistema de obstáculos destravado após evento");
+    }, 8000);
+
+    console.log("🎮 Jogo despausado - sistema travado por 5s, cooldown:", collisionCooldownRef.current);
   };
 
   return (
@@ -993,8 +1058,7 @@ scene("main", () => {
             timestamp: Date.now()
           };
           localStorage.setItem('savedGameProgress', JSON.stringify(gameProgress));
-          console.log('Progresso salvo:', gameProgress);
-          console.log(`🔧 Ajuste manual salvo: ${manualTimeAdjustment.current}s`);
+          // Log de progresso removido
           
           // Mostrar confirmação ao usuário
           const saveConfirmation = document.createElement('div');
