@@ -20,56 +20,33 @@ import {
   CalendarDays,
   MapPin,
   DollarSign,
-  CheckCircle,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
+// TODO: Ajustar imagens, (adicionar imagens ao banco?)
 import caminhaoMedioPng from '@/assets/caminhao_medio.png';
 import camihaoPequenoPng from '@/assets/caminhao_pequeno.png';
 import carretaPng from '@/assets/carreta.png';
 import camhionetePng from '@/assets/caminhonete.png';
 
-const vehicles: Vehicle[] = [
-    
-  {
-    id: 'caminhao_pequeno',
-    name: 'Caminhão Pequeno',
-    capacity: 20,
-    consumption: { asphalt: 4, dirt: 3 },
-    image: camihaoPequenoPng,
-    maxCapacity: 200,
-    currentFuel: 50, cost: 1500
-  },
-  {
-    id: 'carreta',
-    name: 'Carreta',
-    capacity: 60,
-    consumption: { asphalt: 2, dirt: 1.5 },
-    image: carretaPng,
-    maxCapacity: 500,
-    currentFuel: 120,
-    cost: 4500
+// FIXME: Ajustar imagens para cada tipo de veiculo (permitir o envio de imagens ou ter um conjunto de imagens selecionaveis via admin?)
+const getVehicleImage = (modelName: string) => {
+  switch (modelName.toLowerCase()) {
+    case 'caminhonete':
+      return camhionetePng;
+    case 'van':
+      return camihaoPequenoPng;
+    case 'caminhão médio':
+      return caminhaoMedioPng;
+    case 'carreta':
+      return carretaPng;
+    default:
+      return camihaoPequenoPng;
+  }
+};
 
-  },
-  {
-    id: 'caminhao_medio',
-    name: 'Caminhão Médio',
-    capacity: 40,
-    consumption: { asphalt: 3, dirt: 2 },
-    image: caminhaoMedioPng,
-    maxCapacity: 300,
-    currentFuel: 75,
-    cost: 2500
-  },
-  {
-    id: 'caminhonete',
-    name: 'Caminhonete', capacity: 10,
-    consumption: { asphalt: 8, dirt: 6 },
-    image: camhionetePng, maxCapacity: 100,
-    currentFuel: 25, cost: 800
-  },
-];
 
+// O componente VehicleCard permanece o mesmo
 const VehicleCard: React.FC<{
   vehicle: Vehicle;
   isSelected: boolean;
@@ -87,15 +64,15 @@ const VehicleCard: React.FC<{
       <div className="flex justify-center mb-2">
         <img src={vehicle.image} alt={vehicle.name} className="h-48 object-contain" />
       </div>
-       
+
       <h3 className="font-['Silkscreen'] text-center text-xl font-bold mb-2">{vehicle.name}</h3>
       <ul className="text-sm space-y-1">
-        <li>🧱 Capacidade: {vehicle.capacity} caixas</li>
+        <li>🧱 Capacidade: {vehicle.capacity} Kg</li>
         <li>🛢️ Tanque: {vehicle.maxCapacity} L</li>
         <li>🚗 Asfalto: {vehicle.consumption.asphalt} KM/L</li>
       </ul>
     </div>
-     
+
     <p className="font-['Silkscreen'] text-orange-600 font-bold text-center mt-3 text-lg">
       R$ {vehicle.cost.toLocaleString()}
     </p>
@@ -104,13 +81,64 @@ const VehicleCard: React.FC<{
 
 export const VehicleSelectionPage = () => {
   const navigate = useNavigate();
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+
+  // NOVO: Estados para guardar os veículos da API, o estado de loading e possíveis erros.
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // Inicia como nulo
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [availableMoney] = useState(10000);
+  const [availableMoney] = useState(100000);
   const [api, setApi] = useState<CarouselApi>();
 
+  // NOVO: useEffect para buscar os dados da API quando o componente for montado.
   useEffect(() => {
-    if (!api) return;
+    const fetchVehicles = async () => {
+      try {
+        const apiUrl = `${import.meta.env.VITE_API_URL}/jogo1/veiculos/`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const dataFromApi = await response.json();
+
+        const formattedVehicles: Vehicle[] = dataFromApi.map((apiVehicle: any) => ({
+          id: String(apiVehicle.id),
+          name: apiVehicle.modelo,
+          capacity: apiVehicle.capacidade_carga,
+          consumption: {
+            asphalt: parseFloat((apiVehicle.autonomia / apiVehicle.capacidade_combustivel).toFixed(2)),
+            dirt: parseFloat(((apiVehicle.autonomia / apiVehicle.capacidade_combustivel) * 0.8).toFixed(2))
+          },
+          image: getVehicleImage(apiVehicle.modelo),
+          maxCapacity: apiVehicle.capacidade_combustivel,
+          currentFuel: apiVehicle.capacidade_combustivel,
+          cost: parseFloat(apiVehicle.preco),
+        }));
+
+        setVehicles(formattedVehicles);
+        if (formattedVehicles.length > 0) {
+            setSelectedIndex(0); // Define o primeiro veículo como selecionado por padrão
+        }
+
+      } catch (e) {
+        if (e instanceof Error) {
+            setError(`Falha ao buscar veículos: ${e.message}`);
+        } else {
+            setError("Ocorreu um erro desconhecido.");
+        }
+        console.error(e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVehicles();
+  }, []); // O array vazio [] garante que este efeito rode apenas uma vez.
+
+  useEffect(() => {
+    if (!api || selectedIndex === null) return;
     api.scrollTo(selectedIndex);
     const onSelect = () => {
       setSelectedIndex(api.selectedScrollSnap());
@@ -127,25 +155,34 @@ export const VehicleSelectionPage = () => {
   };
 
    const handleConfirm = () => {
-    const selectedVehicle = vehicles[selectedIndex];
-    if (selectedVehicle.cost <= availableMoney) {
-      navigate('/mapa-rota', {
-        state: {
-          selectedVehicle: selectedVehicle,
-          availableMoney: availableMoney - selectedVehicle.cost
-        }
-      });
-    }
-  };
+    if (selectedIndex === null) return; // Proteção extra
+    const selectedVehicle = vehicles[selectedIndex];
+    if (selectedVehicle.cost <= availableMoney) {
+      navigate('/mapa-rota', {
+        state: {
+          selectedVehicle: selectedVehicle,
+          availableMoney: availableMoney - selectedVehicle.cost
+        }
+      });
+    }
+   };
+
+  if (isLoading) {
+    return <div className="bg-sky-100 min-h-screen flex items-center justify-center font-['Silkscreen'] text-2xl">Carregando veículos...</div>;
+  }
+
+  if (error) {
+    return <div className="bg-red-100 min-h-screen flex items-center justify-center font-['Silkscreen'] text-2xl text-red-700">{error}</div>;
+  }
+
+  const selectedVehicle = selectedIndex !== null ? vehicles[selectedIndex] : null;
 
   return (
     <div className="bg-sky-100 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-       
       <div className="font-['Silkscreen'] text-lg absolute top-4 right-4">
         R$ {availableMoney.toLocaleString()}
       </div>
 
-       
       <h1 className="font-['Silkscreen'] text-3xl mb-8 text-center">
         ESCOLHA UM CAMINHÃO
       </h1>
@@ -161,7 +198,7 @@ export const VehicleSelectionPage = () => {
         >
           <CarouselContent className="-ml-4 py-4 font-['Silkscreen'] ">
             {vehicles.map((vehicle, index) => (
-              <CarouselItem key={index} className="basis-auto md:basis-1/2 lg:basis-1/3 pl-4">
+              <CarouselItem key={vehicle.id} className="basis-auto md:basis-1/2 lg:basis-1/3 pl-4">
                 <VehicleCard
                   vehicle={vehicle}
                   isSelected={selectedIndex === index}
@@ -170,65 +207,61 @@ export const VehicleSelectionPage = () => {
               </CarouselItem>
             ))}
           </CarouselContent>
-          
-          <CarouselPrevious className="hidden md:flex opacity-100 -left-4 h-14 w-14 bg-orange-500 hover:bg-orange-600 transition-all duration-300 ease-in-out
-               hover:scale-110 text-white border-none rounded-sm" />
-          <CarouselNext className="hidden transition-all duration-300 ease-in-out
-               hover:scale-110 md:flex opacity-100 -right-4 h-14 w-14 bg-orange-500 hover:bg-orange-600 text-white border-none rounded-sm" />
+
+          <CarouselPrevious className="hidden md:flex opacity-100 -left-4 h-14 w-14 bg-orange-500 hover:bg-orange-600 transition-all duration-300 ease-in-out hover:scale-110 text-white border-none rounded-sm" />
+          <CarouselNext className="hidden transition-all duration-300 ease-in-out hover:scale-110 md:flex opacity-100 -right-4 h-14 w-14 bg-orange-500 hover:bg-orange-600 text-white border-none rounded-sm" />
         </Carousel>
       </div>
 
-      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation} >
-        <DialogContent className="sm:max-w-md font-['Silkscreen']">
-          <DialogHeader className="font-['Silkscreen']">
-            
-            <DialogTitle className="font-['Silkscreen'] flex items-center gap-2 text-xl">
-              Veículo Selecionado
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 text-sm">
-            <div>
-              <div className="flex items-center gap-4">
-                <img src={vehicles[selectedIndex].image} className="h-16 w-16 object-contain" />
-                <div>
-                
-                  <p className="font-['Silkscreen'] font-bold text-base">{vehicles[selectedIndex].name}</p>
-                  <ul className="text-xs">
-                    <li>Capacidade: {vehicles[selectedIndex].capacity} caixas</li>
-                    <li>Tanque: {vehicles[selectedIndex].maxCapacity} L</li>
-                    <li>Asfalto: {vehicles[selectedIndex].consumption.asphalt} KM/L</li>
-                    <li>Terra: {vehicles[selectedIndex].consumption.dirt} KM/L</li>
-                  </ul>
+      {selectedVehicle && (
+        <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+            <DialogContent className="sm:max-w-md font-['Silkscreen']">
+                <DialogHeader>
+                    <DialogTitle className="font-['Silkscreen'] flex items-center gap-2 text-xl">
+                        Veículo Selecionado
+                    </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3 text-sm">
+                    <div>
+                        <div className="flex items-center gap-4">
+                            <img src={selectedVehicle.image} className="h-16 w-16 object-contain" />
+                            <div>
+                                <p className="font-['Silkscreen'] font-bold text-base">{selectedVehicle.name}</p>
+                                <ul className="text-xs">
+                                    <li>Capacidade: {selectedVehicle.capacity} Kg</li>
+                                    <li>Tanque: {selectedVehicle.maxCapacity} L</li>
+                                    <li>Asfalto: {selectedVehicle.consumption.asphalt} KM/L</li>
+                                    <li>Terra: {selectedVehicle.consumption.dirt} KM/L</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold mb-1 text-base">Detalhes da Compra</h4>
+                        <div className="text-sm space-y-1">
+                            <p className="flex items-center gap-2">
+                                <CalendarDays size={16} /> Data/Hora: Agora
+                            </p>
+                            <p className="flex items-center gap-2">
+                                <MapPin size={16} /> Local de Retirada: Base
+                            </p>
+                            <p className="font-['Silkscreen'] flex items-center gap-2 text-lg font-bold">
+                                <DollarSign size={16} /> Total: R$ {selectedVehicle.cost.toLocaleString()}
+                            </p>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-1 text-base">Detalhes da Reserva</h4>
-              <div className="text-sm space-y-1">
-                <p className="flex items-center gap-2">
-                  <CalendarDays size={16} /> Data/Hora: Agora
-                </p>
-                <p className="flex items-center gap-2">
-                  <MapPin size={16} /> Local de Retirada: Base
-                </p>
-                <p className="font-['Silkscreen'] flex items-center gap-2 text-lg font-bold">
-                  <DollarSign size={16} /> Total: R$ {vehicles[selectedIndex].cost.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
-          <DialogFooter className="pt-4 font-['Silkscreen']">
-            
-            <Button onClick={handleConfirm} className="bg-green-600 hover:bg-green-700 font-['Silkscreen']">
-              Confirmar
-            </Button>
-            <Button variant="destructive" onClick={() => setShowConfirmation(false)} className="font-['Silkscreen']">
-              Cancelar
-            </Button>
-          </DialogFooter >
-        </DialogContent>
-      </Dialog>
+                <DialogFooter className="pt-4 font-['Silkscreen']">
+                    <Button onClick={handleConfirm} className="bg-green-600 hover:bg-green-700 font-['Silkscreen']" disabled={availableMoney < selectedVehicle.cost}>
+                        {availableMoney < selectedVehicle.cost ? "Dinheiro Insuficiente" : "Confirmar"}
+                    </Button>
+                    <Button variant="destructive" onClick={() => setShowConfirmation(false)} className="font-['Silkscreen']">
+                        Cancelar
+                    </Button>
+                </DialogFooter >
+            </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
-

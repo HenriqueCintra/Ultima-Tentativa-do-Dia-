@@ -22,8 +22,7 @@ import GameSelectionPage from "./pages/GameSelection/GameSelectionPage";
 import { ApresentacaoDesafioPage} from "./pages/Desafio/ApresentacaoDesafio";
 import { RankingPage } from "./pages/Ranking/RankingPage";
 import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
-
-// Criar instância do QueryClient
+import { PauseMenu } from "./pages/PauseMenu/PauseMenu.tsx";// Criar instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -68,7 +67,6 @@ createRoot(document.getElementById("app") as HTMLElement).render(
                 <EditarEquipePage />
              </ProtectedRoute>
             } />
-            {}
             <Route path="/mudar-senha" element={
              <ProtectedRoute>
                 <ChangePassword />
@@ -93,7 +91,6 @@ createRoot(document.getElementById("app") as HTMLElement).render(
              <ProtectedRoute>
                 <VehicleSelectionPage />
              </ProtectedRoute>
-              
             } />
             <Route path="/mapa-rota" element={
              <ProtectedRoute>
@@ -114,17 +111,29 @@ createRoot(document.getElementById("app") as HTMLElement).render(
               <ProtectedRoute>
                 <CriarEquipePage/>
                </ProtectedRoute>
-              }/>
+            } />
             <Route path="/desafio" element={
              <ProtectedRoute>
                <ApresentacaoDesafioPage />
               </ProtectedRoute>
-             } />  
+            } />  
             <Route path="/game-selection" element={
              <ProtectedRoute>
                <GameSelectionPage />
              </ProtectedRoute>
-             } />
+            } />
+            
+            {/* Rota para o PauseMenu para testes */}
+            <Route path="/pause-menu" element={
+             <ProtectedRoute>
+               <PauseMenu 
+                 isVisible={true}
+                 onResume={() => console.log('Resume')}
+                 onGoToProfile={() => console.log('Go to Profile')}
+                 onRestart={() => console.log('Restart')}
+               />
+             </ProtectedRoute>
+            } />
 
           </Routes>
         </AuthProvider>
