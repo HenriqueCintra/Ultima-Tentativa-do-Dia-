@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
+import { TeamService } from "../../api/teamService";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -19,6 +21,13 @@ export const PerfilPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, logout } = useAuth();
+
+  // Buscar dados da equipe se o usuário estiver em uma
+  const { data: teamData } = useQuery({
+    queryKey: ['teamDetails', user?.equipe],
+    queryFn: () => TeamService.getTeamDetails(user!.equipe!),
+    enabled: !!user?.equipe, // Só busca se o usuário estiver em uma equipe
+  });
 
   // Stats ainda estáticos (podem ser implementados depois)
   const [userStats] = useState<UserStats>({
@@ -113,6 +122,16 @@ export const PerfilPage = () => {
     navigate("/login");
   };
 
+  const handleManageTeam = () => {
+    if (user?.equipe) {
+      // Se está em uma equipe, vai para editar
+      navigate("/perfil/editar-equipe");
+    } else {
+      // Se não está em uma equipe, vai para escolher
+      navigate("/choose-team");
+    }
+  };
+
   // Se não há usuário logado, redireciona
   if (!user) {
     navigate("/login");
@@ -130,6 +149,9 @@ export const PerfilPage = () => {
   const xp = 2450;
   const maxXp = 3000;
   const xpPercentage = Math.round((xp / maxXp) * 100);
+
+  // Nome da equipe - agora dinâmico
+  const teamDisplayName = teamData?.nome || "SEM EQUIPE";
 
   const titleStyle = {
     color: "#E3922A",
@@ -222,11 +244,17 @@ export const PerfilPage = () => {
                     </div>
 
                     {/* Team info - usando dados reais do backend */}
-                    <div className="mt-4 [font-family:'Silkscreen',Helvetica]">
+                    <div
+                      className="mt-4 [font-family:'Silkscreen',Helvetica] cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors"
+                      onClick={handleManageTeam}
+                    >
                       <span className="font-bold">EQUIPE: </span>
-                      <span className="text-orange-500 font-bold">
-                        {user.equipe ? 'TEAM_NAME' : 'SEM EQUIPE'}
+                      <span className={`font-bold ${user.equipe ? 'text-orange-500' : 'text-gray-500'}`}>
+                        {teamDisplayName}
                       </span>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {user.equipe ? 'Clique para gerenciar' : 'Clique para entrar em uma equipe'}
+                      </div>
                     </div>
 
                     {/* Action buttons */}
@@ -291,7 +319,7 @@ export const PerfilPage = () => {
                   {/* Other games link */}
                   <div className="text-center mt-1">
                     <button
-                      onClick={() => navigate("/games")}
+                      onClick={() => navigate("/game-selection")}
                       className="text-xs underline [font-family:'Silkscreen',Helvetica] text-blue-500"
                     >
                       JOGAR OUTRO JOGO!
