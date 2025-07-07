@@ -4,6 +4,7 @@ import kaboom from "kaboom";
 import './game.css'
 import { Vehicle } from "../../types/vehicle";
 import { GameMiniMap } from "./GameMiniMap";
+import { MapComponent } from "../mapaRota/MapComponent";
 
 import type {
   GameObj,
@@ -57,6 +58,9 @@ export function GameScene() {
     return vehicleData?.currentFuel || 0;
   });
   const [totalDistance, setTotalDistance] = useState<number>(500); // Distância padrão
+
+  // Estados para o modal do mapa
+  const [showMapModal, setShowMapModal] = useState(false);
 
   // Estados que agora vêm dos parâmetros de navegação
   const [vehicle, setVehicle] = useState<Vehicle>(() => {
@@ -222,6 +226,11 @@ export function GameScene() {
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handler para abrir/fechar modal do mapa
+  const handleMapModalToggle = () => {
+    setShowMapModal(!showMapModal);
   };
 
   // Calcular progresso baseado nos pontos reais do caminho
@@ -1197,10 +1206,26 @@ scene("main", () => {
   }}>
     {/* Mapa em tempo real mostrando a posição do caminhão na rota */}
     {selectedRoute?.pathCoordinates && (
-      <div style={{
-        width: "min(12vw, 180px)",
-        height: "min(12vw, 180px)"
-      }}>
+      <div 
+        style={{
+          width: "min(12vw, 180px)",
+          height: "min(12vw, 180px)",
+          cursor: "pointer",
+          transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          borderRadius: "50%",
+          overflow: "hidden"
+        }}
+        onClick={handleMapModalToggle}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = "scale(1.05)";
+          e.currentTarget.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+          e.currentTarget.style.boxShadow = "none";
+        }}
+        title="Clique para abrir o mapa completo"
+      >
       <GameMiniMap
         pathCoordinates={selectedRoute.pathCoordinates}
         currentPathIndex={currentPathIndex}
@@ -1457,6 +1482,100 @@ scene("main", () => {
       >
         Trocar Veículo
       </button>
+    </div>
+  </div>
+)}
+
+{/* Modal do Mapa Completo */}
+{showMapModal && selectedRoute && (
+  <div 
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100vw",
+      height: "100vh",
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      zIndex: 3000,
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: "20px"
+    }}
+    onClick={handleMapModalToggle}
+  >
+    <div 
+      style={{
+        width: "95%",
+        height: "95%",
+        backgroundColor: "white",
+        borderRadius: "10px",
+        overflow: "hidden",
+        position: "relative",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.5)"
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Botão para fechar o modal */}
+      <button
+        onClick={handleMapModalToggle}
+        style={{
+          position: "absolute",
+          top: "15px",
+          right: "15px",
+          zIndex: 3001,
+          backgroundColor: "#e63946",
+          color: "white",
+          border: "none",
+          borderRadius: "50%",
+          width: "40px",
+          height: "40px",
+          fontSize: "20px",
+          fontWeight: "bold",
+          cursor: "pointer",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+        title="Fechar mapa"
+      >
+        ×
+      </button>
+
+      {/* Título do modal */}
+      <div 
+        style={{
+          position: "absolute",
+          top: "15px",
+          left: "15px",
+          zIndex: 3001,
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          color: "white",
+          padding: "10px 15px",
+          borderRadius: "5px",
+          fontFamily: '"Silkscreen", monospace',
+          fontSize: "16px",
+          fontWeight: "bold"
+        }}
+      >
+        🗺️ {selectedRoute.name} - Posição Atual do Caminhão
+      </div>
+
+      {/* MapComponent dentro do modal */}
+      <div style={{ width: "100%", height: "100%" }}>
+        <MapComponent 
+          preSelectedRoute={selectedRoute}
+          preSelectedVehicle={vehicle}
+          preAvailableMoney={money}
+          showControls={false}
+          externalProgress={{
+            currentPathIndex: currentPathIndex,
+            pathProgress: pathProgressRef.current,
+            totalProgress: progress
+          }}
+        />
+      </div>
     </div>
   </div>
 )}

@@ -282,18 +282,100 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   );
 };
 
+// Componente para mostrar o caminhão em uma posição específica baseada nos dados externos
+interface StaticTruckMarkerProps {
+  routePath: [number, number][];
+  currentPathIndex: number;
+  pathProgress: number;
+  vehicle: Vehicle;
+}
+
+const StaticTruckMarker: React.FC<StaticTruckMarkerProps> = ({
+  routePath,
+  currentPathIndex,
+  pathProgress,
+  vehicle
+}) => {
+  // Criar ícone personalizado para o veículo
+  const vehicleIcon = useMemo(() => {
+    // Converter URL da imagem para uso no mapa
+    let imageUrl = vehicle.image;
+    if (imageUrl.startsWith('/src/assets/')) {
+      imageUrl = imageUrl.replace('/src/assets/', '/assets/');
+    }
+    if (!imageUrl.startsWith('/assets/') && !imageUrl.startsWith('http')) {
+      imageUrl = `/assets/${imageUrl.split('/').pop()}`;
+    }
+
+    return L.icon({
+      iconUrl: imageUrl,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -20]
+    });
+  }, [vehicle.image]);
+
+  // Calcular posição atual do caminhão baseada nos dados externos
+  const currentPosition = useMemo(() => {
+    if (!routePath || routePath.length < 2) {
+      return routePath?.[0] || [0, 0];
+    }
+
+    const totalSegments = routePath.length - 1;
+    
+    // Garantir que o índice esteja dentro dos limites
+    const segmentIndex = Math.min(Math.max(0, currentPathIndex), totalSegments - 1);
+    const nextIndex = Math.min(segmentIndex + 1, totalSegments);
+    
+    const startPoint = routePath[segmentIndex];
+    const endPoint = routePath[nextIndex];
+    
+    // Interpolar entre os dois pontos
+    const progress = Math.min(Math.max(0, pathProgress), 1);
+    const lat = startPoint[0] + (endPoint[0] - startPoint[0]) * progress;
+    const lng = startPoint[1] + (endPoint[1] - startPoint[1]) * progress;
+    
+    return [lat, lng] as [number, number];
+  }, [routePath, currentPathIndex, pathProgress]);
+
+  if (!routePath || routePath.length === 0) return null;
+
+  return (
+    <Marker
+      position={currentPosition}
+      icon={vehicleIcon}
+    >
+      <Popup>
+        <div className="text-sm">
+          <p className="font-bold">{vehicle.name}</p>
+          <p>🚛 Posição Atual do Jogo</p>
+          <p>Segmento: {currentPathIndex + 1}/{routePath.length - 1}</p>
+          <p>Progresso: {(pathProgress * 100).toFixed(1)}%</p>
+        </div>
+      </Popup>
+    </Marker>
+  );
+};
+
 interface MapComponentProps {
   preSelectedRoute?: Route | null;
   preSelectedVehicle?: Vehicle | null;
   preAvailableMoney?: number;
   showControls?: boolean;
+  // Novos props para sincronizar com o progresso do jogo
+  externalProgress?: {
+    currentPathIndex: number;
+    pathProgress: number;
+    totalProgress: number;
+  };
 }
 
 export const MapComponent: React.FC<MapComponentProps> = ({
   preSelectedRoute = null,
   preSelectedVehicle = null,
   preAvailableMoney = null,
-  showControls = true
+  showControls = true,
+  externalProgress = null
 }) => {
   const [simulatedTime, setSimulatedTime] = useState<number>(0);
   const location = useLocation();
@@ -553,6 +635,22 @@ export const MapComponent: React.FC<MapComponentProps> = ({
               </Popup>
             </Polyline>
           ))}
+
+          {/* Linha do progresso percorrido (quando há dados externos) */}
+          {externalProgress && selectedRoute?.pathCoordinates && externalProgress.currentPathIndex > 0 && (
+            <Polyline
+              positions={selectedRoute.pathCoordinates.slice(0, externalProgress.currentPathIndex + 1)}
+              pathOptions={{
+                color: '#00cc66',
+                weight: 6,
+                opacity: 0.9
+              }}
+            >
+              <Popup>
+                <span className="font-bold text-green-700">Percurso Concluído - {externalProgress.totalProgress.toFixed(1)}%</span>
+              </Popup>
+            </Polyline>
+          )}
           {/* Marcadores de Velocidade para a Rota Selecionada */}
           {selectedRoute?.speedLimits.map((speedLimit: any, index: number) => (
             speedLimit.coordinates && (
@@ -577,16 +675,27 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
           {/* Componente de animação do caminhão */}
           {selectedRoute?.pathCoordinates && (
-            <TruckAnimation
-              routePath={selectedRoute.pathCoordinates}
-              speed={(selectedRoute.actualDistance || selectedRoute.distance) / selectedRoute.estimatedTimeHours}
-              playing={isPlaying}
-              onTripEnd={handleTripEnd}
-              onFuelEmpty={handleFuelEmpty}
-              vehicle={vehicle}
-              setCurrentFuel={(fuel) => setVehicle(prev => ({ ...prev, currentFuel: fuel }))}
-              isDirtRoad={selectedRoute.dirtRoad || false}
-            />
+            externalProgress ? (
+              // Usar posição externa quando fornecida (para modal do jogo)
+              <StaticTruckMarker
+                routePath={selectedRoute.pathCoordinates}
+                currentPathIndex={externalProgress.currentPathIndex}
+                pathProgress={externalProgress.pathProgress}
+                vehicle={vehicle}
+              />
+            ) : (
+              // Usar animação normal quando não há dados externos
+              <TruckAnimation
+                routePath={selectedRoute.pathCoordinates}
+                speed={(selectedRoute.actualDistance || selectedRoute.distance) / selectedRoute.estimatedTimeHours}
+                playing={isPlaying}
+                onTripEnd={handleTripEnd}
+                onFuelEmpty={handleFuelEmpty}
+                vehicle={vehicle}
+                setCurrentFuel={(fuel) => setVehicle(prev => ({ ...prev, currentFuel: fuel }))}
+                isDirtRoad={selectedRoute.dirtRoad || false}
+              />
+            )
           )}
         </MapContainer>
       </div>
