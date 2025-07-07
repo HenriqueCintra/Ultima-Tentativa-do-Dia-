@@ -41,12 +41,12 @@ export interface Route {
   }[];
 
   // Limites de velocidade por estrada
-   speedLimits: { 
-    road: string; 
-    limit: string, 
-     value?: number, 
-     coordinates?: [number,number] 
-    }[];
+  speedLimits: {
+    road: string;
+    limit: string,
+    value?: number,
+    coordinates?: [number, number]
+  }[];
 
 
 
@@ -87,6 +87,7 @@ export interface Route {
   // Zonas de perigo
   dangerZones?: {
     location: string;
+    startKm: number;
     description: string;
     coordinates: [number, number];
     riskLevel: 'Baixo' | 'Médio' | 'Alto';
@@ -184,33 +185,33 @@ export const routes: Route[] = [
       }
     ],
 
-   speedLimits: [
-      { 
-        road: "BR-407", 
+    speedLimits: [
+      {
+        road: "BR-407",
         limit: "80 km/h",
         value: 80,
-        coordinates:[-9.990413, -40.239591],
+        coordinates: [-9.990413, -40.239591],
       },
-      { 
-        road: "BR-407", 
+      {
+        road: "BR-407",
         limit: "80 km/h",
         value: 80,
-        coordinates:[-11.817558, -39.375948],
+        coordinates: [-11.817558, -39.375948],
       },
-      { 
-        road: "BR-407", 
+      {
+        road: "BR-407",
         limit: "60 km/h",
         value: 60,
         coordinates: [-10.517028, -40.142195]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "100 km/h",
         value: 100,
         coordinates: [-12.743087, -38.437596]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "50 km/h",
         value: 50,
         coordinates: [-12.447111365070798, -38.71353301661456]
@@ -228,8 +229,8 @@ export const routes: Route[] = [
     constructionZones: "Manutenção pontual na BR-324.",
 
     restStops: [{
-         location: "Limite de velocidade de 50km/h",
-         description: "radares pela rodovia de 50km/h",
+      location: "Limite de velocidade de 50km/h",
+      description: "radares pela rodovia de 50km/h",
       coordinates: [-12.447111365070798, -38.71353301661456],
       type: "gas"
     }],
@@ -308,26 +309,26 @@ export const routes: Route[] = [
     ],
 
     speedLimits: [
-      { 
-        road: "BR-235", 
+      {
+        road: "BR-235",
         limit: "80 km/h",
         value: 80,
         coordinates: [-9.460458, -40.429308]
       },
-      { 
-        road: "BR-235", 
+      {
+        road: "BR-235",
         limit: "40 km/h",
         value: 40,
-        coordinates:  [-12.193182, -38.418788]
+        coordinates: [-12.193182, -38.418788]
       },
-      { 
-        road: "BR-110", 
+      {
+        road: "BR-110",
         limit: "60 km/h",
         value: 60,
         coordinates: [-11.225797, -38.485761]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "100 km/h",
         value: 100,
         coordinates: [-12.5778, -38.5405]
@@ -433,33 +434,33 @@ export const routes: Route[] = [
       totalCost: 0
     }],
 
-   speedLimits: [
-      { 
-        road: "BR-407", 
+    speedLimits: [
+      {
+        road: "BR-407",
         limit: "80 km/h",
         value: 80,
-        coordinates:[-9.990413, -40.239591],
+        coordinates: [-9.990413, -40.239591],
       },
-      { 
-        road: "BR-407", 
+      {
+        road: "BR-407",
         limit: "80 km/h",
         value: 80,
-        coordinates:[-11.817558, -39.375948],
+        coordinates: [-11.817558, -39.375948],
       },
-      { 
-        road: "BR-407", 
+      {
+        road: "BR-407",
         limit: "60 km/h",
         value: 60,
         coordinates: [-10.517028, -40.142195]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "100 km/h",
         value: 100,
         coordinates: [-12.743087, -38.437596]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "40 km/h",
         value: 40,
         coordinates: [-12.630725, -38.622729]
@@ -497,30 +498,35 @@ export const routes: Route[] = [
     dangerZones: [
       {
         location: "Estradas secundárias em Nova Fátima",
+        startKm: 121,
         description: "Vias isoladas e pouco policiadas",
         coordinates: [-11.6049, -39.6301],
         riskLevel: "Médio"
       },
       {
         location: "BR-324 próximo a Feira de Santana",
+        startKm: 454,
         description: "Alto fluxo de veículos e histórico de roubos de carga",
         coordinates: [-12.2267, -38.9648],
         riskLevel: "Alto"
       },
       {
         location: "BR-407 trecho Jaguarari",
+        startKm: 121,
         description: "Área isolada com histórico de assaltos",
         coordinates: [-10.2550, -40.1924],
         riskLevel: "Médio"
       },
       {
         location: "Desvio em Santanópolis",
+        startKm: 479,
         description: "Estrada secundária com pouca iluminação e fluxo",
         coordinates: [-12.5025, -39.0013],
         riskLevel: "Alto"
       },
       {
         location: "Entrada para Candeias",
+        startKm: 502,
         description: "Ponto conhecido de abordagens a caminhões",
         coordinates: [-12.6737, -38.5514],
         riskLevel: "Alto"
@@ -607,27 +613,27 @@ export const routes: Route[] = [
       }
     ],
 
-   speedLimits: [
-      { 
-        road: "BR-324", 
+    speedLimits: [
+      {
+        road: "BR-324",
         limit: "100 km/h",
         value: 100,
         coordinates: [-9.961578, -39.228228]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "100 km/h",
         value: 100,
         coordinates: [-10.961665, -38.791498]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "80 km/h",
         value: 80,
         coordinates: [-12.5778, -38.5405]
       },
-      { 
-        road: "BR-324", 
+      {
+        road: "BR-324",
         limit: "50 km/h",
         value: 50,
         coordinates: [-12.7905, -38.4055]
@@ -665,18 +671,21 @@ export const routes: Route[] = [
     dangerZones: [
       {
         location: "BR-235 após Uauá",
+        startKm: 90,
         description: "Área deserta e com pouco policiamento",
         coordinates: [-9.8367, -39.4890],
         riskLevel: "Médio"
       },
       {
         location: "BR-116 próximo a Serrinha",
+        startKm: 341,
         description: "Região com histórico de roubos de carga",
         coordinates: [-11.6664, -39.0009],
         riskLevel: "Alto"
       },
       {
         location: "BR-324 próximo a Feira de Santana",
+        startKm: 453,
         description: "Alto fluxo de veículos e histórico de roubos de carga",
         coordinates: [-12.2267, -38.9648],
         riskLevel: "Alto"

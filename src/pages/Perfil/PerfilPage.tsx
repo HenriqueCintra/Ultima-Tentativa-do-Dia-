@@ -74,7 +74,8 @@ export const PerfilPage = () => {
   };
 
   const handleCheckRanking = () => {
-    navigate("/ranking");
+    // Navega para o ranking passando informação de que veio do perfil
+    navigate("/ranking", { state: { from: 'profile' } });
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -348,8 +349,8 @@ export const PerfilPage = () => {
 
               {/* Action cards */}
               <div className="grid grid-cols-2 gap-3">
-                {/* Ranking card */}
-                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden">
+                {/* Ranking card - agora com cursor pointer */}
+                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors">
                   <CardContent className="p-4" onClick={handleCheckRanking}>
                     <div className="flex items-center">
                       <Trophy size={32} className="text-yellow-500" />
@@ -366,7 +367,7 @@ export const PerfilPage = () => {
                 </Card>
 
                 {/* Continue game card */}
-                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50">
+                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 cursor-pointer hover:bg-gray-50 transition-colors">
                   <CardContent className="p-4" onClick={handleContinueGame}>
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-purple-700 rounded-full flex items-center justify-center">
