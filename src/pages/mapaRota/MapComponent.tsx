@@ -8,8 +8,6 @@ import { Route } from './routesData';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Vehicle } from '../../types/vehicle';
 import { ArrowLeft } from 'lucide-react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { GameService } from '../../api/gameService';
 
 // --- Correção para o ícone padrão do Leaflet ---
 import defaultIcon from 'leaflet/dist/images/marker-icon.png';
@@ -24,118 +22,58 @@ let DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
+
 // --- Ícones Customizados ---
-import truckIconSvg from '@/assets/truck-solid.svg';
-
-const truckIcon = L.icon({
-  iconUrl: truckIconSvg,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20]
-});
-
-// Outros ícones
+// rest, construction, gas, toll, danger
 const tollIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/2297/2297592.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const dangerIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1008/1008928.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const restStopIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/6807/6807796.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const constructionIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4725/4725077.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const gasStationIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/465/465090.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 
-// Ícones de risco
+
+// --- Ícones para áreas de risco ---
 const lowRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/6276/6276686.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const mediumRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/4751/4751259.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 const highRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/900/900532.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 
-// Ícones de velocidade
-const speedLimitIcon20 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1670/1670172.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const speedLimitIcon40 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/5124/5124881.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const speedLimitIcon50 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/752/752738.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const speedLimitIcon60 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/15674/15674424.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const speedLimitIcon80 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3897/3897785.png', iconSize: [30, 30], iconAnchor: [15, 15] });
-const speedLimitIcon100 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/10392/10392769.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+// --- Ícones de velocidade ---
+ const speedLimitIcon20 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1670/1670172.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon40 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/5124/5124881.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon50 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/752/752738.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon60 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/15674/15674424.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon80 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3897/3897785.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+ const speedLimitIcon100 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/10392/10392769.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 
-const getSpeedLimitIcon = (speed: number): L.Icon => {
-  switch (speed) {
-    case 20: return speedLimitIcon20;
-    case 40: return speedLimitIcon40;
-    case 50: return speedLimitIcon50;
-    case 60: return speedLimitIcon60;
-    case 80: return speedLimitIcon80;
-    case 100: return speedLimitIcon100;
-    default: return speedLimitIcon60;
-  }
-};
 
-// INTERFACES
+
+  // logica para obter o ícone de limite de velocidade
+  const getSpeedLimitIcon = (speed: number): L.Icon => {
+    switch (speed) {
+      case 20: return speedLimitIcon20;
+      case 40: return speedLimitIcon40;
+      case 50: return speedLimitIcon50;
+      case 60: return speedLimitIcon60;
+      case 80: return speedLimitIcon80;
+      case 100: return speedLimitIcon100;
+      default: return speedLimitIcon60; // ícone padrão caso a velocidade não corresponda
+    }
+  };
+
+// NOVA INTERFACE PARA OS SEGMENTOS RENDERIZÁVEIS
 interface RenderSegment {
   path: [number, number][];
   isDirt: boolean;
   style: L.PathOptions;
 }
 
-interface EventData {
-  id: number;
-  evento_nome: string;
-  evento_descricao: string;
-  evento_tipo: string;
-  opcoes: Array<{
-    id: number;
-    descricao: string;
-  }>;
-}
-
-// Modal de Evento
-interface EventModalProps {
-  event: EventData;
-  onRespond: (optionId: number) => void;
-  isResponding: boolean;
-}
-
-const EventModal: React.FC<EventModalProps> = ({ event, onRespond, isResponding }) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-[#200259] rounded-lg shadow-2xl border-4 border-[#E3922A] max-w-2xl w-full p-6">
-        <h1 className="text-2xl font-['Silkscreen'] font-bold text-[#E3922A] text-center mb-4">
-          EVENTO ENCONTRADO!
-        </h1>
-        <h2 className="text-xl font-['Silkscreen'] text-white text-center mb-4">
-          {event.evento_nome}
-        </h2>
-        <p className="text-white text-center mb-6 font-sans text-lg">
-          {event.evento_descricao}
-        </p>
-        <div className="space-y-3">
-          {event.opcoes.map((opcao) => (
-            <button
-              key={opcao.id}
-              onClick={() => onRespond(opcao.id)}
-              disabled={isResponding}
-              className="w-full px-4 py-3 bg-[#E3922A] text-black font-bold rounded-md shadow-lg 
-                       border-2 border-black hover:bg-[#FFC06F] transition-all duration-200
-                       disabled:opacity-50 disabled:cursor-not-allowed text-left"
-            >
-              {opcao.descricao}
-            </button>
-          ))}
-        </div>
-        {isResponding && (
-          <p className="text-center text-white mt-4 font-['Silkscreen']">
-            Processando sua decisão...
-          </p>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Componente de animação do caminhão
+// Componente para animar o caminhão
 interface TruckAnimationProps {
   routePath: [number, number][];
-  speed: number;
+  speed: number; // Velocidade média em km/h
   playing: boolean;
   onTripEnd: () => void;
   onFuelEmpty: () => void;
-  onEventTriggered: () => void;
   vehicle: Vehicle;
   setCurrentFuel: (fuel: number) => void;
   isDirtRoad: boolean;
@@ -147,7 +85,6 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   playing,
   onTripEnd,
   onFuelEmpty,
-  onEventTriggered,
   vehicle,
   setCurrentFuel,
   isDirtRoad
@@ -161,9 +98,9 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
   const totalDistanceTraveledRef = useRef<number>(0);
   const lastFuelUpdateRef = useRef<number>(0);
   const currentFuelRef = useRef<number>(vehicle.currentFuel);
-  const lastEventCheckRef = useRef<number>(0);
-  const visualizationSpeedFactor = 300;
+  const visualizationSpeedFactor = 300; // Fator de aceleração da visualização
 
+  // Criar ícone personalizado para o veículo
   const vehicleIcon = useMemo(() => {
     return L.icon({
       iconUrl: vehicle.image,
@@ -173,11 +110,13 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
     });
   }, [vehicle.image]);
 
+  // Calcular consumo de combustível com base no tipo de estrada
   const calculateFuelConsumption = useCallback((distanceTraveled: number) => {
     const consumption = isDirtRoad ? vehicle.consumption.dirt : vehicle.consumption.asphalt;
     return distanceTraveled / consumption;
   }, [isDirtRoad, vehicle.consumption]);
 
+  // Atualizar o combustível do veículo
   const updateFuel = useCallback((distanceTraveled: number) => {
     const fuelConsumed = calculateFuelConsumption(distanceTraveled);
     const newFuel = Math.max(0, currentFuelRef.current - fuelConsumed);
@@ -185,6 +124,7 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
     currentFuelRef.current = newFuel;
     setCurrentFuel(newFuel);
 
+    // Se o combustível acabou, parar o caminhão
     if (newFuel <= 0) {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -201,6 +141,7 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
       return;
     }
 
+    // Se estamos no final da rota
     if (currentSegment.current >= routePath.length - 1) {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -211,6 +152,7 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
 
     const now = performance.now();
 
+    // Para a primeira execução ou após resumir de uma pausa
     if (startTimeRef.current === 0) {
       startTimeRef.current = now;
       lastTimeRef.current = now;
@@ -220,11 +162,12 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
     const deltaTime = now - lastTimeRef.current;
     lastTimeRef.current = now;
 
+    // Pontos do segmento atual
     const startPoint = routePath[currentSegment.current];
     const endPoint = routePath[currentSegment.current + 1];
 
     // Calcular distância em metros do segmento (usando a fórmula de Haversine)
-    const R = 6371e3;
+    const R = 6371e3; // Raio da Terra em metros
     const φ1 = startPoint[0] * Math.PI / 180;
     const φ2 = endPoint[0] * Math.PI / 180;
     const Δφ = (endPoint[0] - startPoint[0]) * Math.PI / 180;
@@ -237,45 +180,44 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
     const segmentDistanceMeters = R * c;
     const segmentDistanceKm = segmentDistanceMeters / 1000;
 
+    // Tempo para percorrer este segmento em milissegundos (considerando a velocidade)
     const timeToCompleteMsec = (segmentDistanceKm / speed) * 3600 * 1000;
+
+    // Ajustar para uma velocidade de visualização acelerada
     const adjustedTimeToCompleteMsec = timeToCompleteMsec / visualizationSpeedFactor;
 
+    // Calcular progresso neste segmento (0 a 1)
     segmentProgress.current = Math.min(elapsed / adjustedTimeToCompleteMsec, 1);
 
+    // Calcular distância percorrida neste frame
     const previousProgress = (elapsed - deltaTime) / adjustedTimeToCompleteMsec;
     const previousDistanceFraction = Math.min(previousProgress, 1);
     const currentDistanceFraction = segmentProgress.current;
     const distanceDiff = currentDistanceFraction - previousDistanceFraction;
     const distanceThisFrameKm = segmentDistanceKm * distanceDiff;
 
+    // Atualizar a distância total percorrida
     totalDistanceTraveledRef.current += distanceThisFrameKm;
 
-    // Verificar eventos a cada 10km
-    if (totalDistanceTraveledRef.current - lastEventCheckRef.current >= 10) {
-      lastEventCheckRef.current = totalDistanceTraveledRef.current;
-      // 30% de chance de evento
-      if (Math.random() < 0.3) {
-        onEventTriggered();
-        return;
-      }
-    }
-
-    // Atualizar combustível
+    // Atualizar o combustível a cada 1km ou quando o combustível estiver abaixo de 10%
     if (totalDistanceTraveledRef.current - lastFuelUpdateRef.current >= 1 ||
       currentFuelRef.current <= (vehicle.maxCapacity * 0.1)) {
       const distanceSinceLastUpdate = totalDistanceTraveledRef.current - lastFuelUpdateRef.current;
       lastFuelUpdateRef.current = totalDistanceTraveledRef.current;
 
+      // Se o combustível acabou, parar a animação
       if (updateFuel(distanceSinceLastUpdate)) {
         return;
       }
     }
 
+    // Se completou este segmento, avançar para o próximo
     if (segmentProgress.current >= 1) {
       currentSegment.current += 1;
       segmentProgress.current = 0;
       startTimeRef.current = now;
 
+      // Se ainda tem segmentos a percorrer, continua a animação
       if (currentSegment.current < routePath.length - 1) {
         animationFrameRef.current = requestAnimationFrame(animateTruck);
       } else {
@@ -290,8 +232,9 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
 
     truckRef.current.setLatLng(newPosition);
     animationFrameRef.current = requestAnimationFrame(animateTruck);
-  }, [playing, routePath, speed, onTripEnd, updateFuel, vehicle.maxCapacity, onFuelEmpty, onEventTriggered]);
+  }, [playing, routePath, speed, onTripEnd, updateFuel, vehicle.maxCapacity, onFuelEmpty]);
 
+  // Iniciar ou reiniciar a animação quando o estado de playing mudar
   useEffect(() => {
     if (playing && routePath && routePath.length > 1) {
       if (!truckRef.current || (currentSegment.current === 0 && segmentProgress.current === 0)) {
@@ -301,7 +244,6 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
       if (currentSegment.current === 0 && segmentProgress.current === 0) {
         totalDistanceTraveledRef.current = 0;
         lastFuelUpdateRef.current = 0;
-        lastEventCheckRef.current = 0;
         currentFuelRef.current = vehicle.currentFuel;
       }
 
@@ -326,7 +268,7 @@ const TruckAnimation: React.FC<TruckAnimationProps> = ({
 
   return (
     <Marker
-      position={L.latLng(routePath[0][0], routePath[0][1])}
+      position={L.latLng(routePath[0][0], routePath[0][1])} // Posição inicial
       icon={vehicleIcon}
       ref={truckRef}
     >
@@ -362,19 +304,20 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   // Dados recebidos da tela anterior ou props
   const selectedRoute = preSelectedRoute || location.state?.selectedRoute || null;
   const [isPlaying, setIsPlaying] = useState(false);
-  const [routesList] = useState<Route[]>(routes);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      const start = Date.now();
-      interval = setInterval(() => {
-        const elapsedRealMs = Date.now() - start;
-        const accelerationFactor = 8 / 3;
-        const simulatedMinutes = (elapsedRealMs / 60000) * accelerationFactor;
-        setSimulatedTime(simulatedMinutes);
-      }, 1000);
-    }
+  let interval: NodeJS.Timeout;
+
+  if (isPlaying) {
+    const start = Date.now();
+    interval = setInterval(() => {
+      const elapsedRealMs = Date.now() - start;
+      const accelerationFactor = 8 / 3;
+      const simulatedMinutes = (elapsedRealMs / 60000) * accelerationFactor;
+      setSimulatedTime(simulatedMinutes);
+    }, 1000);
+  }
+
     return () => clearInterval(interval);
   }, [isPlaying]);
 
@@ -420,21 +363,24 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     const map = useMapEvents({});
 
     useEffect(() => {
+      // Só ajuste o mapa automaticamente quando uma rota for selecionada pela primeira vez
+      // ou quando isPlaying for false (não está em execução)
       if (route && route.pathCoordinates && route.pathCoordinates.length > 1 && (!initialMapViewSet || !isPlaying)) {
         const bounds = L.latLngBounds(route.pathCoordinates);
-        map.fitBounds(bounds, { padding: [50, 50] });
+        map.fitBounds(bounds, { padding: [50, 50] }); // Ajusta o zoom para caber a rota
         setInitialMapViewSet(true);
       } else if (!route && !initialMapViewSet) {
+        // Se nenhuma rota estiver selecionada, centraliza em Juazeiro/Salvador
         const bounds = L.latLngBounds(juazeiroCoordinates, salvadorCoordinates);
         map.fitBounds(bounds, { padding: [100, 100] });
         setInitialMapViewSet(true);
       }
-    }, [map, route, isPlaying]);
+    }, [map, route, isPlaying]); // Adicionado isPlaying para reajustar o zoom quando pausado
 
     return null;
   }
 
-  // Segmentar a rota
+  // NOVA LÓGICA PARA SEGMENTAR A ROTA
   useEffect(() => {
     if (!selectedRoute || !selectedRoute.pathCoordinates) {
       setRenderedSegments([]);
@@ -477,6 +423,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
+    // Se não houver nenhum segmento (rota sem trechos de terra), desenha a rota inteira
     if (segments.length === 0 && selectedRoute.pathCoordinates.length > 0) {
       segments.push({
         path: selectedRoute.pathCoordinates,
@@ -486,6 +433,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     setRenderedSegments(segments);
+
   }, [selectedRoute]);
 
   const handleTripEnd = useCallback(() => {
@@ -495,6 +443,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
 
 
+  // Ícone para áreas de risco
   const getRiskIcon = (riskLevel: 'Baixo' | 'Médio' | 'Alto'): L.Icon => {
     switch (riskLevel) {
       case 'Baixo': return lowRiskIcon;
@@ -513,15 +462,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     });
   };
 
-  if (isLoadingData) {
-    return (
-      <div className="min-h-screen bg-[#200259] flex items-center justify-center">
-        <div className="text-white text-center text-2xl font-['Silkscreen']">
-          Carregando dados do jogo...
-        </div>
-      </div>
-    );
-  }
+  const handleFuelEmpty = useCallback(() => {
+    setIsPlaying(false);
+    setGameOverReason('combustível');
+    setShowGameOverModal(true);
+  }, []);
 
   return (
     <div className="flex flex-col lg:flex-row h-screen p-4 font-['Silkscreen'] bg-[#200259]">
@@ -548,10 +493,10 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           <div className="absolute top-4 right-4 flex space-x-2 z-[1000]">
             <button
               className="px-4 py-2 bg-green-500 text-white font-bold text-md rounded-md shadow-lg hover:bg-green-600 transition-all duration-200 border-2 border-black"
-              onClick={handleStartGame}
+              onClick={() => setIsPlaying(true)}
               disabled={isPlaying || !selectedRoute.pathCoordinates || selectedRoute.pathCoordinates.length < 2 || vehicle.currentFuel <= 0}
             >
-              {isPlaying ? 'EM ANDAMENTO' : isGameActive ? 'CONTINUAR' : 'INICIAR'}
+              {isPlaying ? 'EM ANDAMENTO' : 'INICIAR'}
             </button>
             <button
               className="px-4 py-2 bg-blue-500 text-white font-bold text-md rounded-md shadow-lg hover:bg-blue-600 transition-all duration-200 border-2 border-black"
@@ -579,7 +524,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             </button>
           </div>
         )}
-
         <MapContainer
           center={juazeiroCoordinates}
           zoom={7}
@@ -594,7 +538,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
 
           {/* Apenas a rota selecionada será exibida */}
 
-          {/* Rota selecionada em segmentos */}
+          {/* Renderiza a rota selecionada em segmentos */}
           {renderedSegments.map((segment, index) => (
             <Polyline
               key={`segment-${selectedRoute?.routeId}-${index}`}
@@ -631,7 +575,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           <Marker position={juazeiroCoordinates}><Popup>Ponto de Partida: Juazeiro</Popup></Marker>
           <Marker position={salvadorCoordinates}><Popup>Destino: Salvador</Popup></Marker>
 
-          {/* Animação do caminhão */}
+          {/* Componente de animação do caminhão */}
           {selectedRoute?.pathCoordinates && (
             <TruckAnimation
               routePath={selectedRoute.pathCoordinates}
@@ -639,7 +583,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
               playing={isPlaying}
               onTripEnd={handleTripEnd}
               onFuelEmpty={handleFuelEmpty}
-              onEventTriggered={handleEventTriggered}
               vehicle={vehicle}
               setCurrentFuel={(fuel) => setVehicle(prev => ({ ...prev, currentFuel: fuel }))}
               isDirtRoad={selectedRoute.dirtRoad || false}
@@ -696,20 +639,10 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       {showGameOverModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[9999] p-4">
           <div className="bg-[#200259] rounded-lg shadow-2xl border-4 border-red-500 max-w-md w-full p-6">
-            <h1 className="text-2xl font-['Silkscreen'] font-bold text-red-500 text-center mb-4">
-              FIM DE JOGO!
-            </h1>
-            <p className="text-xl font-['Silkscreen'] text-white text-center mb-6">
-              {gameOverReason === 'combustível' ? 'Seu combustível acabou!' : 'Viagem interrompida!'}
-            </p>
+            <h1 className="text-2xl font-['Silkscreen'] font-bold text-red-500 text-center mb-4">FIM DE JOGO!</h1>
+            <p className="text-xl font-['Silkscreen'] text-white text-center mb-6">{gameOverReason === 'combustível' ? 'Seu combustível acabou!' : 'Viagem interrompida!'}</p>
             <div className="flex justify-center space-x-4">
-              <button
-                onClick={() => {
-                  setShowGameOverModal(false);
-                  navigate('/select-vehicle');
-                }}
-                className="px-6 py-3 bg-red-500 text-white font-bold rounded-md shadow-lg border-2 border-black hover:bg-red-600 transition-all duration-200"
-              >
+              <button onClick={() => { setShowGameOverModal(false); navigate('/select-vehicle'); }} className="px-6 py-3 bg-red-500 text-white font-bold rounded-md shadow-lg border-2 border-black hover:bg-red-600 transition-all duration-200">
                 VOLTAR AO INÍCIO
               </button>
             </div>
