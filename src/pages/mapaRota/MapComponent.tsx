@@ -699,7 +699,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           )}
         </MapContainer>
       </div>
-
       {showControls && (
         <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20">
           <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
