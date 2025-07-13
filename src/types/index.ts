@@ -12,8 +12,8 @@ export interface TeamHistory {
 }
 
 export interface Team {
-  id: string;
-  name: string;
+  id: number;
+  nome: string;
   stats: {
     people: number;
     trophy: number;
