@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
+import { TeamService } from "../../api/teamService";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -20,6 +22,13 @@ export const PerfilPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, logout } = useAuth();
 
+  // Buscar dados da equipe se o usuário estiver em uma
+  const { data: teamData } = useQuery({
+    queryKey: ['teamDetails', user?.equipe],
+    queryFn: () => TeamService.getTeamDetails(user!.equipe!),
+    enabled: !!user?.equipe, // Só busca se o usuário estiver em uma equipe
+  });
+
   // Stats ainda estáticos (podem ser implementados depois)
   const [userStats] = useState<UserStats>({
     deliveries: 12,
@@ -36,11 +45,46 @@ export const PerfilPage = () => {
   };
 
   const handleContinueGame = () => {
-    navigate("/select-vehicle");
+    // Verificar se há progresso salvo
+    const savedProgress = localStorage.getItem('savedGameProgress');
+    
+    if (savedProgress) {
+      try {
+        const gameProgress = JSON.parse(savedProgress);
+        console.log('Carregando progresso salvo:', gameProgress);
+        
+        // Navegar para o jogo com o progresso salvo
+        navigate('/game', {
+          state: {
+            selectedVehicle: gameProgress.vehicle,
+            availableMoney: gameProgress.money,
+            selectedRoute: gameProgress.selectedRoute,
+            savedProgress: {
+              currentFuel: gameProgress.currentFuel,
+              progress: gameProgress.progress,
+              currentPathIndex: gameProgress.currentPathIndex,
+              pathProgress: gameProgress.pathProgress,
+              gameTime: gameProgress.gameTime
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Erro ao carregar progresso:', error);
+        alert('Erro ao carregar o jogo salvo. Iniciando novo jogo...');
+        navigate("/select-vehicle");
+      }
+    } else {
+      // Se não há progresso salvo, mostrar opção de novo jogo
+      const startNewGame = window.confirm('Não há jogo salvo. Deseja iniciar um novo jogo?');
+      if (startNewGame) {
+        navigate("/select-vehicle");
+      }
+    }
   };
 
   const handleCheckRanking = () => {
-    navigate("/ranking");
+    // Navega para o ranking passando informação de que veio do perfil
+    navigate("/ranking", { state: { from: 'profile' } });
   };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +122,16 @@ export const PerfilPage = () => {
     navigate("/login");
   };
 
+  const handleManageTeam = () => {
+    if (user?.equipe) {
+      // Se está em uma equipe, vai para editar
+      navigate("/perfil/editar-equipe");
+    } else {
+      // Se não está em uma equipe, vai para escolher
+      navigate("/choose-team");
+    }
+  };
+
   // Se não há usuário logado, redireciona
   if (!user) {
     navigate("/login");
@@ -95,6 +149,9 @@ export const PerfilPage = () => {
   const xp = 2450;
   const maxXp = 3000;
   const xpPercentage = Math.round((xp / maxXp) * 100);
+
+  // Nome da equipe - agora dinâmico
+  const teamDisplayName = teamData?.nome || "SEM EQUIPE";
 
   const titleStyle = {
     color: "#E3922A",
@@ -187,11 +244,17 @@ export const PerfilPage = () => {
                     </div>
 
                     {/* Team info - usando dados reais do backend */}
-                    <div className="mt-4 [font-family:'Silkscreen',Helvetica]">
+                    <div
+                      className="mt-4 [font-family:'Silkscreen',Helvetica] cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors"
+                      onClick={handleManageTeam}
+                    >
                       <span className="font-bold">EQUIPE: </span>
-                      <span className="text-orange-500 font-bold">
-                        {user.equipe ? 'TEAM_NAME' : 'SEM EQUIPE'}
+                      <span className={`font-bold ${user.equipe ? 'text-orange-500' : 'text-gray-500'}`}>
+                        {teamDisplayName}
                       </span>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {user.equipe ? 'Clique para gerenciar' : 'Clique para entrar em uma equipe'}
+                      </div>
                     </div>
 
                     {/* Action buttons */}
@@ -256,7 +319,7 @@ export const PerfilPage = () => {
                   {/* Other games link */}
                   <div className="text-center mt-1">
                     <button
-                      onClick={() => navigate("/games")}
+                      onClick={() => navigate("/game-selection")}
                       className="text-xs underline [font-family:'Silkscreen',Helvetica] text-blue-500"
                     >
                       JOGAR OUTRO JOGO!
@@ -314,8 +377,8 @@ export const PerfilPage = () => {
 
               {/* Action cards */}
               <div className="grid grid-cols-2 gap-3">
-                {/* Ranking card */}
-                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden">
+                {/* Ranking card - agora com cursor pointer */}
+                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors">
                   <CardContent className="p-4" onClick={handleCheckRanking}>
                     <div className="flex items-center">
                       <Trophy size={32} className="text-yellow-500" />
@@ -332,18 +395,20 @@ export const PerfilPage = () => {
                 </Card>
 
                 {/* Continue game card */}
-                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden">
+                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 cursor-pointer hover:bg-gray-50 transition-colors">
                   <CardContent className="p-4" onClick={handleContinueGame}>
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-purple-700 rounded-full flex items-center justify-center">
-                        <span className="text-white text-2xl">⏱️</span>
+                        <span className="text-white text-2xl">{localStorage.getItem('savedGameProgress') ? '⏱️' : '🎮'}</span>
                       </div>
                       <div className="ml-3">
                         <h3 className="[font-family:'Silkscreen',Helvetica] font-bold" style={titleStyle}>
-                          CONTINUAR
+                          {localStorage.getItem('savedGameProgress') ? 'CONTINUAR' : 'NOVO JOGO'}
                         </h3>
                         <p className="[font-family:'Silkscreen',Helvetica] text-xs">
-                          RETOMAR A ÚLTIMA PARTIDA
+                          {localStorage.getItem('savedGameProgress') 
+                            ? 'RETOMAR A ÚLTIMA PARTIDA' 
+                            : 'INICIAR NOVA AVENTURA'}
                         </p>
                       </div>
                     </div>

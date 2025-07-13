@@ -31,3 +31,31 @@ export interface Map {
   descricao: string;
   rotas: any[]; // Pode ser tipado como Rota[] se necessário
 }
+
+// NOVAS INTERFACES PARA EQUIPES
+export interface TeamCreationData {
+  nome: string;
+  descricao?: string;
+}
+
+export interface TeamMember {
+  id: number;
+  nickname: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  level?: number;
+  xp?: number;
+  avatar?: string;
+}
+
+export interface TeamDetails {
+  id: number;
+  nome: string;
+  codigo: string;
+  descricao?: string;
+  lider: TeamMember;
+  membros: TeamMember[];
+  created_at: string;
+  updated_at?: string;
+}
