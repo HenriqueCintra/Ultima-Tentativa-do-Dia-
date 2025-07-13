@@ -56,7 +56,7 @@ const VehicleCard: React.FC<{
     className={`
       relative min-w-[280px] max-w-[320px] mx-4 cursor-pointer transition-transform duration-300
       ${isSelected ? 'scale-105 border-4 border-orange-500' : 'hover:scale-105 border border-gray-200'}
-      bg-white p-4 rounded-xl shadow-xl flex flex-col justify-between
+      bg-white p-4 rounded-xl shadow-md flex flex-col justify-between
     `}
     onClick={onSelect}
   >
@@ -179,7 +179,18 @@ export const VehicleSelectionPage = () => {
 
   return (
     <div className="bg-sky-100 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <div className="font-['Silkscreen'] text-lg absolute top-4 right-4">
+      {/* Botão de Voltar */}
+      <div className="absolute top-4 left-4">
+        <Button
+          onClick={() => navigate(-1)}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md font-['Silkscreen'] h-10"
+        >
+          ← Voltar
+        </Button>
+      </div>
+
+      {/* Saldo disponível */}
+      <div className="absolute top-4 right-4 font-['Silkscreen'] bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md flex items-center justify-center h-10">
         R$ {availableMoney.toLocaleString()}
       </div>
 
