@@ -114,18 +114,18 @@ export const FuelModal: React.FC<FuelModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">CONSUMO</h3>
-                  <p className="font-['Silkscreen'] text-black text-md mb-1">- ASFALTO: {selectedVehicle.consumption.asphalt}KM/L</p>
-                  <p className="font-['Silkscreen'] text-black text-md mb-3">- TERRA: {selectedVehicle.consumption.dirt}KM/L</p>
+                  <p className="font-sans text-black text-md mb-1">- ASFALTO: {selectedVehicle.consumption.asphalt}KM/L</p>
+                  <p className="font-sans text-black text-md mb-3">- TERRA: {selectedVehicle.consumption.dirt}KM/L</p>
                 </div>
 
                 <div>
                   <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">COMBUSTÍVEL</h3>
-                  <p className="font-['Silkscreen'] text-black text-md mb-1">ATUAL: 0L</p>
-                  <p className="font-['Silkscreen'] text-black text-md mb-3">MÁXIMO: {selectedVehicle.maxCapacity}L</p>
+                  <p className="font-sans text-black text-md mb-1">ATUAL: 0L</p>
+                  <p className="font-sans text-black text-md mb-3">MÁXIMO: {selectedVehicle.maxCapacity}L</p>
                 </div>
               </div>
 
-              <p className="font-['Silkscreen'] text-black text-md mb-2">NÍVEL DO TANQUE</p>
+              <p className="font-sans text-black text-md mb-2">NÍVEL DO TANQUE</p>
               <div className="w-full bg-gray-200 rounded-full h-6 border-2 border-black mb-4 relative overflow-hidden shadow-inner">
                 {/* Fundo branco (tanque vazio) */}
                 <div className="w-full h-full bg-white rounded-full"></div>
@@ -147,7 +147,7 @@ export const FuelModal: React.FC<FuelModalProps> = ({
             <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">ABASTECER</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <p className="font-['Silkscreen'] text-black text-md mb-2">PREÇO DO DIESEL: R$ {fuelCostPerLiter.toFixed(2)}/L</p>
+                <p className="font-sans text-black text-md mb-2">PREÇO DO DIESEL: R$ {fuelCostPerLiter.toFixed(2)}/L</p>
               </div>
 
               <div className="md:col-span-2">
@@ -187,7 +187,7 @@ export const FuelModal: React.FC<FuelModalProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <p className="font-['Silkscreen'] text-black text-md font-bold text-xl">
+              <p className="font-sans text-black text-md font-bold text-xl">
                 Custo: R$ {calculateFuelCost(fuelAmount).toFixed(2)}
               </p>
 

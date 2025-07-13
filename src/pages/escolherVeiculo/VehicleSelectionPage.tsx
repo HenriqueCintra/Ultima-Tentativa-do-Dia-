@@ -56,7 +56,7 @@ const VehicleCard: React.FC<{
     className={`
       relative min-w-[280px] max-w-[320px] mx-4 cursor-pointer transition-transform duration-300
       ${isSelected ? 'scale-105 border-4 border-orange-500' : 'hover:scale-105 border border-gray-200'}
-      bg-white p-4 rounded-xl shadow-xl flex flex-col justify-between
+      bg-white p-4 rounded-xl shadow-md flex flex-col justify-between
     `}
     onClick={onSelect}
   >
@@ -155,16 +155,6 @@ export const VehicleSelectionPage = () => {
   };
 
    const handleConfirm = () => {
-    const selectedVehicle = vehicles[selectedIndex];
-    if (selectedVehicle.cost <= availableMoney) {
-      navigate('/mapa-rota', {
-        state: {
-        selectedVehicle: selectedVehicle,
-        availableMoney: availableMoney - selectedVehicle.cost
-      }
-    });
-    }
-  };
     if (selectedIndex === null) return; // Proteção extra
     const selectedVehicle = vehicles[selectedIndex];
     if (selectedVehicle.cost <= availableMoney) {
@@ -189,7 +179,6 @@ export const VehicleSelectionPage = () => {
 
   return (
     <div className="bg-sky-100 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-
       {/* Botão de Voltar */}
       <div className="absolute top-4 left-4">
         <Button
@@ -200,12 +189,10 @@ export const VehicleSelectionPage = () => {
         </Button>
       </div>
 
-       
-       {/* Saldo disponível */}
+      {/* Saldo disponível */}
       <div className="absolute top-4 right-4 font-['Silkscreen'] bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md flex items-center justify-center h-10">
         R$ {availableMoney.toLocaleString()}
       </div>
-
 
       <h1 className="font-['Silkscreen'] text-3xl mb-8 text-center">
         ESCOLHA UM CAMINHÃO
