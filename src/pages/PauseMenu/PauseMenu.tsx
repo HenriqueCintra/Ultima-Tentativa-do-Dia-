@@ -37,7 +37,7 @@ export const PauseMenu = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
       <div className="w-full h-full [background:linear-gradient(180deg,rgba(57,189,248,0.9)_0%,rgba(154,102,248,0.9)_100%)] relative overflow-hidden flex items-center justify-center">
         
         {}

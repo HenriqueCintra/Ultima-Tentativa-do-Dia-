@@ -5,7 +5,7 @@ import './game.css'
 import { Vehicle } from "../../types/vehicle";
 import { GameMiniMap } from "./GameMiniMap";
 import { MapComponent } from "../mapaRota/MapComponent";
-
+import { PauseMenu } from "../PauseMenu/PauseMenu"; 
 import type {
   GameObj,
   SpriteComp,
@@ -23,6 +23,7 @@ export function GameScene() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [showPopup, setShowPopup] = useState(false);
   const [playerChoice, setPlayerChoice] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
   const gamePaused = useRef(false);
   const collidedObstacle = useRef<GameObj | null>(null);
   const destroyRef = useRef<((obj: GameObj) => void) | null>(null); // <-- Aqui
@@ -88,6 +89,81 @@ export function GameScene() {
     console.log("Rota recebida:", route);
     return route || null;
   });
+
+  // Função central para pausar e despausar o jogo
+  const togglePause = () => {
+    const nextPausedState = !gamePaused.current;
+    gamePaused.current = nextPausedState; // Atualiza a ref para a lógica do Kaboom
+    setIsPaused(nextPausedState); // Atualiza o state para a UI do React
+    console.log(`Jogo ${nextPausedState ? "pausado" : "despausado"}`);
+  };
+
+  // Função para reiniciar o jogo (a forma mais simples é recarregar a página)
+  const handleRestart = () => {
+    window.location.reload();
+  };
+
+  // Função para salvar e ir para o perfil (reaproveitando sua lógica)
+  const handleGoToProfile = () => {
+    // Salva o progresso no localStorage
+    const gameProgress = {
+      vehicle, 
+      money,
+      selectedRoute,
+      currentFuel,
+      progress,
+      currentPathIndex,
+      pathProgress: pathProgressRef.current,
+      gameTime,
+      manualTimeAdjustment: manualTimeAdjustment.current,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('savedGameProgress', JSON.stringify(gameProgress));
+    
+    // Navega para o perfil
+    navigate('/perfil');
+  };
+
+    // Listener para a tecla ESC
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          // Não pausar se um evento já estiver na tela
+          if (!eventoAtual && !gameEnded) {
+            togglePause();
+          }
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+
+      // Função de limpeza para remover o listener quando o componente for desmontado
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    }, [eventoAtual, gameEnded]); // Dependências para evitar pausar em momentos indevidos
+
+    const handleSaveAndPause = () => {
+    console.log("💾 Salvando progresso e pausando o jogo...");
+
+    // Salva o progresso no localStorage (mesma lógica que você já tinha)
+    const gameProgress = {
+      vehicle, 
+      money,
+      selectedRoute,
+      currentFuel,
+      progress,
+      currentPathIndex,
+      pathProgress: pathProgressRef.current,
+      gameTime,
+      manualTimeAdjustment: manualTimeAdjustment.current,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('savedGameProgress', JSON.stringify(gameProgress));
+
+    // Pausa o jogo e abre o modal
+    togglePause();
+  };
 
   // Inicializar estados baseados nos dados recebidos
   useEffect(() => {
@@ -330,6 +406,7 @@ export function GameScene() {
       console.log("Jogo já foi inicializado, pulando...");
       return;
     }
+
 
     // Aguardar o canvas estar completamente montado
     const initializeGame = () => {
@@ -1046,96 +1123,41 @@ scene("main", () => {
       )}
 
      <div style={{
-        position: "fixed",
-        top: "2vh",
-        left: "2vw",
-        zIndex: 1000
-      }}>
-      <button
-        onClick={() => {
-          // Salvar progresso do jogo antes de sair
-          const gameProgress = {
-            vehicle, 
-            money,
-            selectedRoute,
-            currentFuel,
-            progress,
-            currentPathIndex,
-            pathProgress: pathProgressRef.current,
-            gameTime,
-            manualTimeAdjustment: manualTimeAdjustment.current,
-            timestamp: Date.now()
-          };
-          localStorage.setItem('savedGameProgress', JSON.stringify(gameProgress));
-          // Log de progresso removido
-          
-          // Mostrar confirmação ao usuário
-          const saveConfirmation = document.createElement('div');
-          saveConfirmation.innerHTML = '💾 Progresso Salvo!';
-          saveConfirmation.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #00cc66;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            z-index: 3000;
-            font-family: "Silkscreen", sans-serif;
-            font-size: 14px;
-            font-weight: bold;
-            animation: fadeInOut 2s ease-in-out;
-          `;
-          
-          // Adicionar animação CSS
-          const style = document.createElement('style');
-          style.textContent = `
-            @keyframes fadeInOut {
-              0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-              20% { opacity: 1; transform: translateX(-50%) translateY(0); }
-              80% { opacity: 1; transform: translateX(-50%) translateY(0); }
-              100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
-            }
-          `;
-          document.head.appendChild(style);
-          document.body.appendChild(saveConfirmation);
-          
-          setTimeout(() => {
-            saveConfirmation.remove();
-            style.remove();
-            navigate('/perfil');
-          }, 2000);
-        }}
-        style={{
-          backgroundColor: "#E3922A",
-          border: "2px solid #000",
-          borderRadius: "8px",
-          padding: "min(1.5vh, 10px)",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          boxShadow: "2px 2px 4px rgba(0,0,0,0.3)",
-          transition: "all 0.2s ease",
-          width: "min(6vh, 50px)",
-          height: "min(6vh, 50px)"
-        }}
-        title="Voltar ao Perfil (Progresso Salvo)"
-        onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#FFC06F"}
-        onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#E3922A"}
-      >
-        <img 
-          src="/assets/backArrow.png" 
-          alt="Voltar" 
-          style={{ 
-            width: 'min(3vh, 24px)', 
-            height: 'min(3vh, 24px)' 
-          }}
-        />
-      </button>
-
-    </div>
+  position: "fixed",
+  top: "2vh",
+  left: "2vw",
+  zIndex: 1000
+}}>
+  <button
+    onClick={handleSaveAndPause} 
+    style={{
+      backgroundColor: "#E3922A",
+      border: "2px solid #000",
+      borderRadius: "8px",
+      padding: "min(1.5vh, 10px)",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "2px 2px 4px rgba(0,0,0,0.3)",
+      transition: "all 0.2s ease",
+      width: "min(6vh, 50px)",
+      height: "min(6vh, 50px)"
+    }}
+    title="Pausar e Salvar Progresso" 
+    onMouseOver={(e) => e.currentTarget.style.backgroundColor = "#FFC06F"}
+    onMouseOut={(e) => e.currentTarget.style.backgroundColor = "#E3922A"}
+  >
+    <img 
+      src="src/assets/pausa.png"
+      alt="Pausar" 
+      style={{ 
+        width: 'min(3vh, 24px)', 
+        height: 'min(3vh, 24px)' 
+      }}
+    />
+  </button>
+</div>
 
 
 {/* Barra de progresso  */}
@@ -1579,6 +1601,13 @@ scene("main", () => {
     </div>
   </div>
 )}
+{/* NOVO: Renderiza o menu de pausa */}
+      <PauseMenu
+        isVisible={isPaused}
+        onResume={togglePause}
+        onRestart={handleRestart}
+        onGoToProfile={handleGoToProfile}
+      />
 </div>
 
 
