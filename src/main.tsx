@@ -22,6 +22,10 @@ import GameSelectionPage from "./pages/GameSelection/GameSelectionPage";
 import { ApresentacaoDesafioPage} from "./pages/Desafio/ApresentacaoDesafio";
 import { RankingPage } from "./pages/Ranking/RankingPage";
 import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
+import { GameScene } from "./pages/Game-truck/game";
+import { FuelPage } from "./pages/fuel/FuelPage";
+import { RoutesPage } from "./pages/RoutesPage/RoutesPage";
+
 import { PauseMenu } from "./pages/PauseMenu/PauseMenu.tsx";// Criar instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,11 +44,15 @@ createRoot(document.getElementById("app") as HTMLElement).render(
           <Routes>
             {/* Rotas públicas */}
             <Route path="/" element={<HomePage />} />
+            {/* <Route path="/select-vehicle" element={<HomePage />} />
+            <Route path="/mapa-rota" element={<MapComponent />} /> */}
+            
+            <Route path="/game" element={<GameScene />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:uidb64/:token" element={<ForgotPassword />} />
-            <Route path="/tutorial" element={<TutorialPage />} />
+            <Route path="/tutorial" element={<TutorialPage />} /> 
 
             {/* Rotas protegidas */}
             <Route path="/perfil" element={
@@ -121,7 +129,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
              <ProtectedRoute>
                <GameSelectionPage />
              </ProtectedRoute>
-            } />
+            } /> 
             
             {/* Rota para o PauseMenu para testes */}
             <Route path="/pause-menu" element={
@@ -134,6 +142,10 @@ createRoot(document.getElementById("app") as HTMLElement).render(
                />
              </ProtectedRoute>
             } />
+
+            <Route path="/routes" element={<RoutesPage />} />
+            <Route path="/fuel" element={<FuelPage />} />
+            <Route path="/map" element={<MapComponent />} />
 
           </Routes>
         </AuthProvider>

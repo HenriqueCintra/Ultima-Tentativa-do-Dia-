@@ -74,7 +74,7 @@ export const ChooseTeam = () => {
           <h1 className="text-2xl md:text-2xl text-yellow-300 font-bold text-center mt-2 mb-8 tracking-wide" style={{ textShadow: '2px 3px 2px black' }}>
             ESCOLHA SUA EQUIPE
           </h1>
-          <div className="bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-lg p-2.5 mb-2">
+          <div className="bg-white/5 backdrop-blur-sm border-2 border-white/20 rounded-lg p-2.5 mb-2 mt-20">
             <CreateTeamButton onClick={handleCreateTeam} />
           </div>
           <div className="mb-6">
@@ -83,8 +83,7 @@ export const ChooseTeam = () => {
               {teams?.map(team => (
                 <TeamCard
                   key={team.id}
-                  // Corrigindo a adaptação para o componente esperar `name` enquanto a API envia `nome`
-                  team={{ ...team, name: team.nome || 'Nome da Equipe' }}
+                  team={team}
                   onClick={() => handleTeamClick(team.id)}
                   selected={team.id === selectedTeamId}
                 />

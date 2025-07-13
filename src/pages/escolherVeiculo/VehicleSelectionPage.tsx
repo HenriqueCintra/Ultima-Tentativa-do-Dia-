@@ -34,9 +34,9 @@ const getVehicleImage = (modelName: string) => {
   switch (modelName.toLowerCase()) {
     case 'caminhonete':
       return camhionetePng;
-    case 'van':
+    case 'caminhao pequeno':
       return camihaoPequenoPng;
-    case 'caminhão médio':
+    case 'caminhao medio':
       return caminhaoMedioPng;
     case 'carreta':
       return carretaPng;
@@ -56,7 +56,7 @@ const VehicleCard: React.FC<{
     className={`
       relative min-w-[280px] max-w-[320px] mx-4 cursor-pointer transition-transform duration-300
       ${isSelected ? 'scale-105 border-4 border-orange-500' : 'hover:scale-105 border border-gray-200'}
-      bg-white p-4 rounded-xl shadow-xl flex flex-col justify-between
+      bg-white p-4 rounded-xl shadow-md flex flex-col justify-between
     `}
     onClick={onSelect}
   >
@@ -113,7 +113,7 @@ export const VehicleSelectionPage = () => {
           },
           image: getVehicleImage(apiVehicle.modelo),
           maxCapacity: apiVehicle.capacidade_combustivel,
-          currentFuel: apiVehicle.capacidade_combustivel,
+          currentFuel: 0, // Tanque sempre vazio - usuário deve abastecer
           cost: parseFloat(apiVehicle.preco),
         }));
 
@@ -158,7 +158,7 @@ export const VehicleSelectionPage = () => {
     if (selectedIndex === null) return; // Proteção extra
     const selectedVehicle = vehicles[selectedIndex];
     if (selectedVehicle.cost <= availableMoney) {
-      navigate('/mapa-rota', {
+      navigate('/routes', {
         state: {
           selectedVehicle: selectedVehicle,
           availableMoney: availableMoney - selectedVehicle.cost
@@ -179,7 +179,18 @@ export const VehicleSelectionPage = () => {
 
   return (
     <div className="bg-sky-100 min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <div className="font-['Silkscreen'] text-lg absolute top-4 right-4">
+      {/* Botão de Voltar */}
+      <div className="absolute top-4 left-4">
+        <Button
+          onClick={() => navigate(-1)}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md font-['Silkscreen'] h-10"
+        >
+          ← Voltar
+        </Button>
+      </div>
+
+      {/* Saldo disponível */}
+      <div className="absolute top-4 right-4 font-['Silkscreen'] bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md flex items-center justify-center h-10">
         R$ {availableMoney.toLocaleString()}
       </div>
 
