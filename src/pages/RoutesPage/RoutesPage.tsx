@@ -45,7 +45,7 @@ export const RoutesPage: React.FC = () => {
     <div className="min-h-screen bg-[#200259] font-['Silkscreen']">
       {/* Header compacto */}
       <div className="bg-[#200259] border-b-2 border-[#E3922A] px-3 py-2">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center justify-between mx-auto">
           <button
             className="flex items-center gap-1 px-3 py-1.5 bg-[#E3922A] text-black font-bold text-sm rounded-md shadow-lg
                      hover:bg-[#FFC06F] transition-all duration-200 border-2 border-black"
@@ -93,7 +93,7 @@ export const RoutesPage: React.FC = () => {
         </div>
 
         {/* Lista de Rotas */}
-        <div className="lg:w-1/3 flex flex-col h-full lg:h-full min-h-[400px] lg:min-h-0">
+        <div className="lg:w-2/5 flex flex-col h-full lg:h-full min-h-[400px] lg:min-h-0">
           {/* Header da seção */}
           <div className="bg-[#E3922A] text-black p-2 rounded-t-lg border-2 border-black mb-0 flex-shrink-0">
             <h2 className="text-lg font-['Silkscreen'] font-bold text-center">
@@ -120,25 +120,25 @@ export const RoutesPage: React.FC = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div className="space-y-0.5">
-                    <p className="font-sans text-black text-xs">
-                      <span className="font-bold">⏱️ TEMPO:</span> {route.estimatedTime}
+                    <p className="font-['Silkscreen'] text-black text-xs">
+                      <span className="font-['Silkscreen']">⏱️ TEMPO:</span> {route.estimatedTime}
                     </p>
-                    <p className="font-sans text-black text-xs">
-                      <span className="font-bold">📏 DISTÂNCIA:</span> {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km
+                    <p className="font-['Silkscreen'] text-black text-xs">
+                      <span className="font-['Silkscreen']">📏 DISTÂNCIA:</span> {route.actualDistance ? `${route.actualDistance.toFixed(0)}` : route.distance} km
                     </p>
                   </div>
                   
                   <div className="space-y-0.5">
-                    <p className="font-sans text-black text-xs flex items-center">
-                      <span className="font-bold">🛡️ RISCO:</span>
-                      <span className={`${route.safety.robberyRisk === 'Baixo' ? 'text-green-700' : 'text-red-700'} ml-1 font-semibold`}>
+                    <p className="font-['Silkscreen'] text-black text-xs flex items-center">
+                      <span className="font-['Silkscreen']">🛡️ RISCO:</span>
+                      <span className={`${route.safety.robberyRisk === 'Baixo' ? 'text-green-700' : 'text-red-700'} ml-1 font-['Silkscreen']`}>
                         {route.safety.robberyRisk} {route.safety.robberyRisk === 'Baixo' ? '✅' : '⚠️'}
                       </span>
                     </p>
                     {route.dirtRoad && (
-                      <p className="font-sans text-black text-xs flex items-center">
-                        <span className="font-bold">🛤️ TERRENO:</span>
-                        <span className="text-yellow-700 ml-1 font-semibold">Estrada de Terra</span>
+                      <p className="font-['Silkscreen'] text-black text-xs flex items-center">
+                        <span className="font-['Silkscreen']">🛤️ TERRENO:</span>
+                        <span className="text-yellow-700 ml-1 font-['Silkscreen']">Estrada de Terra</span>
                       </p>
                     )}
                   </div>
