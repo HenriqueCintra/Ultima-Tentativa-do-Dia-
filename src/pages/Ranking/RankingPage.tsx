@@ -112,7 +112,7 @@ export const RankingPage = () => {
       navigate("/perfil");
     } else {
       // Caso contrário, vai para o perfil (não para home/login)
-      navigate("/perfil");
+      navigate("/choose-team");
     }
   };
 

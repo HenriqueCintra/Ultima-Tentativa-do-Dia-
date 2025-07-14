@@ -1179,7 +1179,6 @@ scene("main", () => {
     width: `${progress}%`,
     height: "100%",
     backgroundColor: "#0077cc",
-    transition: "width 0.2s ease",
     borderRadius: "20px 20px"
   }}></div>
 
