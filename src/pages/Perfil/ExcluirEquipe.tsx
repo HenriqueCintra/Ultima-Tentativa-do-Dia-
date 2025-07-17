@@ -11,7 +11,6 @@ import {
   Trash2,
   AlertTriangle,
   Users,
-  Trophy,
 } from 'lucide-react';
 import { TeamService } from "../../api/teamService";
 import { useAuth } from "../../contexts/AuthContext";
