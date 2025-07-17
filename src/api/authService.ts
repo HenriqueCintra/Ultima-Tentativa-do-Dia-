@@ -17,7 +17,7 @@ interface RegisterData {
   username: string;
   email: string;
   password: string;
-  password2: string;  // Confirmação de senha
+  password_confirm: string;  // Confirmação de senha
   nickname: string;
   first_name?: string;
   last_name?: string;

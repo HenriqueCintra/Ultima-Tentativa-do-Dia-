@@ -14,7 +14,7 @@ export const Cadastro = () => {
     email: "",
     data_nascimento: "",
     password: "",
-    password2: "",
+    password_confirm: "",
     nickname: "", // Será preenchido automaticamente com o valor do username
     last_name: ""
   });
@@ -31,12 +31,12 @@ export const Cadastro = () => {
     e.preventDefault();
 
     // Validação básica
-    if (!formData.first_name || !formData.username || !formData.email || !formData.password || !formData.password2) {
+    if (!formData.first_name || !formData.username || !formData.email || !formData.password || !formData.password_confirm) {
       setError("Por favor, preencha todos os campos obrigatórios");
       return;
     }
 
-    if (formData.password !== formData.password2) {
+    if (formData.password !== formData.password_confirm) {
       setError("As senhas não conferem");
       return;
     }
@@ -51,7 +51,7 @@ export const Cadastro = () => {
         ...formData,
         nickname: formData.username
       };
-      
+
       await AuthService.register(dataToSend);
       setSuccess("Cadastro realizado com sucesso! Redirecionando para o login...");
 
@@ -86,7 +86,7 @@ export const Cadastro = () => {
     { id: "email", label: "EMAIL", type: "email" },
     { id: "data_nascimento", label: "DATA DE NASCIMENTO", type: "date" },
     { id: "password", label: "SENHA", type: "password" },
-    { id: "password2", label: "CONFIRMAR SENHA", type: "password" },
+    { id: "password_confirm", label: "CONFIRMAR SENHA", type: "password" },
   ];
 
   return (
