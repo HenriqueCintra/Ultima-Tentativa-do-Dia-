@@ -9,13 +9,13 @@ export const FuelPage: React.FC = () => {
 
   // Dados recebidos da tela anterior
   const receivedVehicle = location.state?.selectedVehicle || location.state?.vehicle || { id: 'carreta', name: 'Carreta', capacity: 60, consumption: { asphalt: 2, dirt: 1.5 }, image: '/carreta.png', maxCapacity: 495, currentFuel: 0, cost: 4500 };
-  
+
   // Garantir que o veículo sempre comece com tanque vazio na página de combustível
   const vehicle = {
     ...receivedVehicle,
     currentFuel: 0 // Tanque sempre vazio para forçar decisão do usuário
   };
-  
+
   const availableMoney = location.state?.availableMoney || 5500;
   const selectedRoute = location.state?.selectedRoute;
 
@@ -70,14 +70,14 @@ export const FuelPage: React.FC = () => {
         currentFuel: newCurrentFuel
       };
 
-      const newBalance = availableBalance - cost;
+      const newBalance = availableMoney - cost;
 
-      // Navegar para o jogo 2D com os dados atualizados
+      // ATUALIZADO: Passar dados completos incluindo selectedRoute para a GameScene
       navigate('/game', {
         state: {
           selectedVehicle: updatedVehicle,
           availableMoney: newBalance,
-          selectedRoute: selectedRoute
+          selectedRoute: selectedRoute  // GARANTIR QUE ESTE DADO SEJA PASSADO
         }
       });
     } else {
@@ -86,12 +86,12 @@ export const FuelPage: React.FC = () => {
   };
 
   const handleSkipFuel = () => {
-    // Navegar para o jogo 2D sem abastecer
+    // ATUALIZADO: Navegar para o jogo 2D sem abastecer, mas passando dados completos
     navigate('/game', {
       state: {
         selectedVehicle: selectedVehicle,
         availableMoney: availableBalance,
-        selectedRoute: selectedRoute
+        selectedRoute: selectedRoute  // GARANTIR QUE ESTE DADO SEJA PASSADO
       }
     });
   };
@@ -115,6 +115,13 @@ export const FuelPage: React.FC = () => {
     navigate('/routes');
   };
 
+  // VALIDAÇÃO: Verificar se temos todos os dados necessários
+  if (!selectedRoute) {
+    console.error("ERRO: selectedRoute não encontrada! Redirecionando para seleção de rotas.");
+    navigate('/routes');
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#200259] to-[#300369] font-['Silkscreen']">
       {/* Header compacto */}
@@ -127,20 +134,28 @@ export const FuelPage: React.FC = () => {
           >
             <ArrowLeft size={16} /> VOLTAR
           </button>
-          
+
           <h1 className="text-lg lg:text-xl font-bold text-[#E3922A] text-center flex items-center gap-2">
             ⛽ ABASTECIMENTO
           </h1>
-          
+
           <div className="bg-gradient-to-r from-[#E3922A] to-[#FFC06F] text-black text-sm lg:text-base font-bold px-3 py-1.5 rounded-md shadow-lg border-2 border-black">
             R$ {availableBalance.toFixed(2)}
           </div>
         </div>
       </div>
 
-             {/* Conteúdo principal */}
+      {/* Conteúdo principal */}
       <div className="h-[calc(100vh-60px)] max-h-[calc(100vh-60px)] overflow-hidden p-2">
         <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg shadow-2xl border-2 border-[#E3922A] w-full h-full p-3 backdrop-blur-sm flex flex-col">
+
+          {/* Debug Info - mostrar rota selecionada */}
+          <div className="bg-blue-500 bg-opacity-20 p-2 rounded-lg mb-2 border border-blue-600">
+            <h4 className="font-['Silkscreen'] text-sm font-bold text-blue-100 mb-1">🗺️ ROTA SELECIONADA</h4>
+            <p className="text-xs text-blue-200">{selectedRoute?.name || 'Rota não identificada'}</p>
+            <p className="text-xs text-blue-200">ID: {selectedRoute?.routeId || 'N/A'} | Distância: {selectedRoute?.distance || 'N/A'}km</p>
+          </div>
+
           {/* Header compacto da seção */}
           <div className="bg-gradient-to-r from-[#E3922A] to-[#FFC06F] text-black p-2 rounded-lg mb-2 border border-black flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -157,18 +172,18 @@ export const FuelPage: React.FC = () => {
           <div className="flex-1 min-h-0 flex flex-col">
             {/* Seção principal em uma linha */}
             <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
-              
+
               {/* Card do veículo elegante */}
               <div className="lg:w-3/5 bg-gradient-to-br from-[#FFC06F] via-[#FFD700] to-[#FFA500] p-4 rounded-xl shadow-xl border-2 border-[#E3922A]">
                 <div className="bg-black bg-opacity-10 rounded-lg p-3 h-full flex flex-col">
-                  
+
                   {/* Header do veículo */}
                   <div className="flex items-center justify-center mb-3">
                     <h3 className="text-lg font-['Silkscreen'] font-bold text-black bg-white bg-opacity-80 px-4 py-2 rounded-full border-2 border-black shadow-md">
                       🚛 {selectedVehicle.name.toUpperCase()}
                     </h3>
                   </div>
-                  
+
                   {/* Layout horizontal com imagem e informações */}
                   <div className="flex gap-4 flex-1">
                     {/* Imagem do veículo */}
@@ -179,7 +194,7 @@ export const FuelPage: React.FC = () => {
                         className="max-h-20 lg:max-h-24 object-contain filter drop-shadow-lg"
                       />
                     </div>
-                    
+
                     {/* Informações técnicas */}
                     <div className="w-3/5 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
@@ -189,7 +204,7 @@ export const FuelPage: React.FC = () => {
                           <p className="text-xs text-green-800 text-center">🛣️ {selectedVehicle.consumption.asphalt} KM/L</p>
                           <p className="text-xs text-green-800 text-center">🌄 {selectedVehicle.consumption.dirt} KM/L</p>
                         </div>
-                        
+
                         {/* Capacidade */}
                         <div className="bg-blue-500 bg-opacity-20 p-2 rounded-lg border border-blue-600">
                           <h4 className="font-['Silkscreen'] text-sm font-bold text-blue-900 mb-1 text-center">🗜️ TANQUE</h4>
@@ -204,17 +219,17 @@ export const FuelPage: React.FC = () => {
                           <p className="font-['Silkscreen'] text-black text-sm font-bold">⛽ NÍVEL DO TANQUE</p>
                           <p className="text-sm font-bold text-black">0L → {previewFuel.toFixed(0)}L / {selectedVehicle.maxCapacity}L</p>
                         </div>
-                        
+
                         <div className="w-full bg-gray-200 rounded-full h-5 border-2 border-black relative overflow-hidden shadow-inner">
                           {/* Barra vazia (fundo branco quando não há combustível) */}
                           <div className="w-full h-full bg-white rounded-full"></div>
-                          
+
                           {/* Barra de preview - quantidade que será abastecida (verde) */}
                           <div
                             className="bg-gradient-to-r from-green-400 via-green-500 to-green-600 h-full absolute top-0 left-0 transition-all duration-700 ease-out"
                             style={{ width: `${(previewFuel / selectedVehicle.maxCapacity) * 100}%` }}
                           ></div>
-                          
+
                           {/* Marcadores de divisão */}
                           <div className="absolute inset-0 flex justify-between items-center px-2">
                             <div className="w-0.5 h-3 bg-gray-600 opacity-50"></div>
@@ -231,14 +246,14 @@ export const FuelPage: React.FC = () => {
               {/* Painel de abastecimento */}
               <div className="lg:w-2/5 bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 p-4 rounded-xl shadow-xl border-2 border-orange-600">
                 <div className="bg-white bg-opacity-10 rounded-lg p-3 h-full flex flex-col">
-                  
+
                   {/* Header */}
                   <div className="text-center mb-3">
                     <h4 className="font-['Silkscreen'] text-lg font-bold text-white bg-black bg-opacity-30 px-3 py-2 rounded-lg border border-white">
                       ⛽ POSTO DE COMBUSTÍVEL
                     </h4>
                   </div>
-                  
+
                   {/* Preço em destaque */}
                   <div className="bg-red-600 text-white p-3 rounded-lg mb-3 text-center border-2 border-red-800 shadow-md">
                     <p className="font-['Silkscreen'] text-sm font-bold">
@@ -256,11 +271,10 @@ export const FuelPage: React.FC = () => {
                           setFuelAmount('quarter');
                           setPreviewFuel(newPreview);
                         }}
-                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${
-                          fuelAmount === 'quarter' 
-                            ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105' 
-                            : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-                        }`}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${fuelAmount === 'quarter'
+                          ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105'
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                          }`}
                       >
                         1/4 TANQUE
                       </button>
@@ -270,11 +284,10 @@ export const FuelPage: React.FC = () => {
                           setFuelAmount('half');
                           setPreviewFuel(newPreview);
                         }}
-                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${
-                          fuelAmount === 'half' 
-                            ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105' 
-                            : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-                        }`}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${fuelAmount === 'half'
+                          ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105'
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                          }`}
                       >
                         1/2 TANQUE
                       </button>
@@ -284,11 +297,10 @@ export const FuelPage: React.FC = () => {
                           setFuelAmount('full');
                           setPreviewFuel(newPreview);
                         }}
-                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${
-                          fuelAmount === 'full' 
-                            ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105' 
-                            : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
-                        }`}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${fuelAmount === 'full'
+                          ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105'
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                          }`}
                       >
                         TANQUE CHEIO
                       </button>
@@ -317,11 +329,10 @@ export const FuelPage: React.FC = () => {
               <button
                 onClick={handleRefuel}
                 disabled={calculateFuelCost(fuelAmount) > availableBalance}
-                className={`font-bold py-3 px-8 rounded-xl shadow-xl border-2 transition-all duration-200 transform hover:scale-105 flex items-center gap-2 ${
-                  calculateFuelCost(fuelAmount) > availableBalance 
-                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed border-gray-500' 
-                    : 'bg-gradient-to-r from-[#E3922A] via-[#FFC06F] to-[#FFD700] text-black border-[#E3922A] hover:from-[#FFC06F] hover:via-[#FFD700] hover:to-[#FFED4E]'
-                }`}
+                className={`font-bold py-3 px-8 rounded-xl shadow-xl border-2 transition-all duration-200 transform hover:scale-105 flex items-center gap-2 ${calculateFuelCost(fuelAmount) > availableBalance
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed border-gray-500'
+                  : 'bg-gradient-to-r from-[#E3922A] via-[#FFC06F] to-[#FFD700] text-black border-[#E3922A] hover:from-[#FFC06F] hover:via-[#FFD700] hover:to-[#FFED4E]'
+                  }`}
               >
                 ⛽ ABASTECER AGORA
               </button>
@@ -330,5 +341,5 @@ export const FuelPage: React.FC = () => {
         </div>
       </div>
     </div>
-      );
-}; 
+  );
+};
