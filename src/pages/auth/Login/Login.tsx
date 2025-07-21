@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
-import { ArrowLeft, House, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
 import { ButtonHomeBack } from "@/components/ButtonHomeBack";
 import { useAuth } from "../../../contexts/AuthContext";
 
@@ -82,9 +82,8 @@ export const Login = () => {
           src="/nuvemright.png"
         />
 
-        <div className="flex gap-5 absolute top-14 left-[33px]">
+        <div className="absolute top-14 left-[33px]">
           <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft /></ButtonHomeBack>
-          <ButtonHomeBack onClick={() => navigate("/")}><House /></ButtonHomeBack>
         </div>
 
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
