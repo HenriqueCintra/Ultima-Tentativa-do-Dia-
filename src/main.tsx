@@ -16,6 +16,7 @@ import { EditarPerfilPage } from "./pages/Perfil/EditarPerfil";
 import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
 import { EditarEquipePage } from "./pages/Perfil/EditarEquipe";
+import { EntrarEquipePage } from "./pages/Perfil/EntrarEquipe";
 import { CriarEquipePage} from "./pages/Perfil/CriarEquipe";
 import { createRoot } from "react-dom/client";
 import GameSelectionPage from "./pages/GameSelection/GameSelectionPage";
@@ -26,7 +27,9 @@ import { GameScene } from "./pages/Game-truck/game";
 import { FuelPage } from "./pages/fuel/FuelPage";
 import { RoutesPage } from "./pages/RoutesPage/RoutesPage";
 
-import { PauseMenu } from "./pages/PauseMenu/PauseMenu.tsx";// Criar instância do QueryClient
+import { PauseMenu } from "./pages/PauseMenu/PauseMenu.tsx";
+
+// Criar instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -75,6 +78,11 @@ createRoot(document.getElementById("app") as HTMLElement).render(
                 <EditarEquipePage />
              </ProtectedRoute>
             } />
+            <Route path="/perfil/entrar-equipe" element={
+             <ProtectedRoute>
+                <EntrarEquipePage />
+             </ProtectedRoute>
+            } />
             <Route path="/mudar-senha" element={
              <ProtectedRoute>
                 <ChangePassword />
@@ -118,6 +126,11 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             <Route path="/create-team" element={
               <ProtectedRoute>
                 <CriarEquipePage/>
+               </ProtectedRoute>
+            } />
+            <Route path="/join-team" element={
+              <ProtectedRoute>
+                <EntrarEquipePage/>
                </ProtectedRoute>
             } />
             <Route path="/desafio" element={

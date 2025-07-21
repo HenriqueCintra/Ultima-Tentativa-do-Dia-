@@ -11,7 +11,6 @@ import {
   Copy,
   Settings,
   Crown,
-  Shield,
   User,
 } from 'lucide-react';
 import { TeamService } from "../../api/teamService";
