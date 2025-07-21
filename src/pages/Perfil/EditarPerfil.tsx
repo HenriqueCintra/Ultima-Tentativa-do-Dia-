@@ -169,9 +169,9 @@ export const EditarPerfilPage = () => {
     navigate(-1);
   };
 
-const handleTeamSettings = () => {
-  navigate("/perfil/editar-equipe");
-};
+  const handleTeamSettings = () => {
+    navigate("/perfil/editar-equipe");
+  };
 
   const handleSairDaEquipe = () => {
     console.log("Sair da equipe");
@@ -377,9 +377,17 @@ const handleTeamSettings = () => {
                             {user.equipe ? displayData.team.toUpperCase() : 'SEM EQUIPE'}
                           </span>
                         </h3>
-                        <Button variant="ghost" onClick={handleTeamSettings} className="p-1 hover:bg-gray-200 rounded">
-                          <Edit3 size={18} className="text-black" />
-                        </Button>
+                        {/* Ícones de editar e excluir equipe */}
+                        <div className="flex items-center space-x-2">
+                          <Button variant="ghost" onClick={handleTeamSettings} className="p-1 hover:bg-gray-200 rounded">
+                            <Edit3 size={18} className="text-black" />
+                          </Button>
+                          {user.equipe && (
+                            <Button variant="ghost" onClick={handleExcluirEquipe} className="p-1 hover:bg-red-100 rounded">
+                              <Trash2 size={18} className="text-red-500" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       {/* Team info box */}
