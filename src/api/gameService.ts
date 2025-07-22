@@ -1,4 +1,4 @@
-// src/api/gameService.ts - VERSÃO CORRIGIDA
+// src/api/gameService.ts - VERSÃO COMPLETA CORRIGIDA
 import api from './config';
 import { Map } from '../types';
 
@@ -73,13 +73,10 @@ interface MapResponse {
 }
 
 export const GameService = {
-  // ✅ CORREÇÃO: Adicionar cache busting para garantir dados frescos
   async getMaps(): Promise<MapResponse[]> {
     console.log('🗺️ Buscando mapas da API...');
     try {
-      // Adiciona timestamp para evitar cache desatualizado
-      const timestamp = Date.now();
-      const response = await api.get(`/jogo1/mapas/?_t=${timestamp}`);
+      const response = await api.get('/jogo1/mapas/');
       console.log('✅ Mapas recebidos:', response.data.length, 'mapas');
 
       // Log detalhado dos IDs para debug
@@ -109,25 +106,48 @@ export const GameService = {
     }
   },
 
-  // ✅ CORREÇÃO: Melhor tratamento de erros para eventos
+  // ✅ CORREÇÃO CRÍTICA: Tratamento correto do HTTP 204 e categorização de erros
   async getNextEvent(distancia_percorrida: number): Promise<EventResponse> {
     console.log('🎲 Buscando próximo evento para distância:', distancia_percorrida.toFixed(2), 'km');
+
     try {
       const response = await api.post<EventResponse>('/jogo1/proximo-evento/', {
         distancia_percorrida
       });
 
-      if (response.data && response.data.evento) {
-        console.log('✅ Evento recebido:', response.data.evento.nome, '(categoria:', response.data.evento.categoria + ')');
-        return response.data;
-      } else {
-        console.log('ℹ️ Resposta da API não contém evento válido:', response.data);
-        throw new Error('Resposta inválida da API de eventos');
+      // ✅ CORREÇÃO: Verificar status explicitamente
+      if (response.status === 200) {
+        if (response.data && response.data.evento) {
+          console.log('✅ Evento recebido:', response.data.evento.nome, '(categoria:', response.data.evento.categoria + ')');
+          return response.data;
+        } else {
+          // HTTP 200 mas dados inválidos - erro real da API
+          console.warn('⚠️ Resposta 200 mas dados inválidos:', response.data);
+          throw new Error('INVALID_API_RESPONSE');
+        }
       }
+
+      // ✅ CORREÇÃO: Tratar HTTP 204 como caso especial
+      if (response.status === 204) {
+        console.log('✅ Nenhum evento desta vez (HTTP 204 - NORMAL)');
+        throw new Error('NO_EVENT_AVAILABLE');
+      }
+
+      // Outros códigos de status não esperados
+      console.warn('⚠️ Status não esperado:', response.status);
+      throw new Error('UNEXPECTED_STATUS');
+
     } catch (error: any) {
-      // ✅ CORREÇÃO: Melhor tratamento de diferentes tipos de erro
+      // ✅ CORREÇÃO: Se o erro já é um dos nossos erros controlados, re-lança
+      if (error.message === 'NO_EVENT_AVAILABLE' ||
+        error.message === 'INVALID_API_RESPONSE' ||
+        error.message === 'UNEXPECTED_STATUS') {
+        throw error;
+      }
+
+      // ✅ CORREÇÃO: Trata erros HTTP baseados no status
       if (error.response?.status === 204) {
-        console.log('ℹ️ Nenhum evento disponível (HTTP 204)');
+        console.log('✅ Nenhum evento desta vez (Erro 204 - NORMAL)');
         throw new Error('NO_EVENT_AVAILABLE');
       } else if (error.response?.status === 400) {
         console.warn('⚠️ Bad Request ao buscar evento:', error.response?.data);
@@ -140,7 +160,7 @@ export const GameService = {
         throw new Error('NETWORK_ERROR');
       } else {
         console.error('❌ Erro desconhecido ao buscar evento:', error);
-        throw error;
+        throw new Error('UNKNOWN_ERROR');
       }
     }
   },
@@ -171,7 +191,6 @@ export const GameService = {
     }
   },
 
-  // ✅ CORREÇÃO: Validação mais robusta e logs detalhados
   async createGame(gameData: { mapa: number; rota: number; veiculo: number }): Promise<PartidaResponse> {
     console.log('🚀 Criando nova partida com dados:', gameData);
 
@@ -211,7 +230,7 @@ export const GameService = {
         console.error('📋 Status do erro:', error.response.status);
         console.error('📋 Dados do erro:', error.response.data);
 
-        // ✅ CORREÇÃO: Tratamento específico para erro 400 (IDs inválidos)
+        // Tratamento específico para erro 400 (IDs inválidos)
         if (error.response.status === 400) {
           const errorData = error.response.data;
           console.error('🔍 ERRO DE VALIDAÇÃO DETECTADO:');

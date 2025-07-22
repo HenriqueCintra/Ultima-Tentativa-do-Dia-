@@ -1,3 +1,4 @@
+// src/pages/Game-truck/game.tsx - ARQUIVO COMPLETO CORRIGIDO
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
@@ -164,57 +165,47 @@ export function GameScene() {
   const fetchNextEventMutation = useMutation({
     mutationFn: (distancia: number) => GameService.getNextEvent(distancia),
     onSuccess: (data) => {
+      // onSuccess agora só é chamado para eventos reais (HTTP 200 com dados válidos)
       if (data && data.evento) {
         console.log('🎲 Evento recebido do backend:', data.evento.nome, '(categoria:', data.evento.categoria + ')');
         setActiveEvent(data);
         setShowPopup(true);
+        // O jogo permanece pausado até o jogador responder
+        // processingEvent.current permanece true até a resposta
       } else {
-        console.log('ℹ️ Nenhum evento disponível, continuando jogo');
-        // ====== LIMPEZA COMPLETA DE ESTADO ======
+        // Caso de segurança - não deveria acontecer com a nova lógica
+        console.warn('⚠️ onSuccess chamado com dados inválidos, resetando estado');
+        processingEvent.current = false;
+        gamePaused.current = false;
+      }
+    },
+    onError: (error: any) => {
+      console.warn('⚠️ Erro ao buscar evento:', error);
+
+      // ✅ CORREÇÃO CRÍTICA: Trata 'NO_EVENT_AVAILABLE' como um caso normal
+      if (error.message === 'NO_EVENT_AVAILABLE') {
+        console.log('ℹ️ Nenhum evento desta vez (NORMAL) - continuando jogo');
+
+        // ====== LIMPEZA COMPLETA DE ESTADO (crítico para continuar o jogo) ======
         setActiveEvent(null);
         setShowPopup(false);
         setIsResponding(false);
         gamePaused.current = false;
         processingEvent.current = false;
         collidedObstacle.current = null;
-        // ========================================
-      }
-    },
-    onError: (error: any) => {
-      console.warn('⚠️ Erro ao buscar evento:', error);
 
-      // ====== TRATAMENTO ROBUSTO DE DIFERENTES TIPOS DE ERRO ======
-      if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_RESET') {
-        console.error('🔥 ERRO CRÍTICO: Servidor não está respondendo ou crashed');
-        // Em caso de erro de rede, aguardar mais tempo antes do próximo evento
-        lastEventCheckKm.current += 15; // Pular mais 15km para dar tempo ao servidor se recuperar
+        // Reset do sistema de obstáculos para dar tempo ao jogador
+        obstacleTimerRef.current = -3;
+        collisionCooldownRef.current = 1.5;
+        // =====================================================================
 
-        // Mostrar notificação discreta para o usuário (opcional)
-        // alert('Conexão com servidor temporariamente instável. O jogo continuará.');
-
-      } else if (error.response?.status === 400) {
-        console.warn('⚠️ Bad Request (400) - possível evento órfão no backend');
-        console.log('📋 Detalhes do erro 400:', error.response?.data);
-
-        // Para 400, pular apenas um pouco e tentar novamente em breve
-        lastEventCheckKm.current += 5; // Pular apenas 5km
-
-        // Mostrar alerta informativo (opcional)
-        // alert('Um evento anterior pode ter sido interrompido. O jogo continuará normalmente.');
-
-      } else if (error.response?.status >= 500) {
-        console.error('💥 ERRO INTERNO DO SERVIDOR (500+)');
-        console.log('📋 Detalhes do erro 500:', error.response?.data);
-
-        // Para 500+, aguardar bastante antes de tentar novamente
-        lastEventCheckKm.current += 25;
-
-      } else {
-        console.warn('⚠️ Erro não categorizado:', error.code, error.message);
-        lastEventCheckKm.current += 10; // Pular 10km por segurança
+        return; // ✅ IMPORTANTE: Return aqui para não executar a lógica de erro
       }
 
-      // ====== LIMPEZA COMPLETA DE ESTADO (CRÍTICO!) ======
+      // ====== TRATAMENTO DE ERROS REAIS ======
+      console.error('❌ Erro real detectado:', error.message);
+
+      // Limpeza padrão para todos os erros reais
       setActiveEvent(null);
       setShowPopup(false);
       setIsResponding(false);
@@ -222,16 +213,30 @@ export function GameScene() {
       processingEvent.current = false;
       collidedObstacle.current = null;
 
-      // Resetar timer de obstáculos para dar tempo ao jogador
-      obstacleTimerRef.current = -8;
-      collisionCooldownRef.current = 3.0;
+      // ✅ CORREÇÃO: Diferentes estratégias baseadas no tipo de erro
+      if (error.message === 'INVALID_REQUEST') {
+        console.warn('⚠️ Request inválido, aguardando próximo checkpoint');
+        lastEventCheckKm.current += 10; // Pula 10km para evitar spam
+      } else if (error.message === 'SERVER_ERROR' || error.message === 'NETWORK_ERROR') {
+        console.error('💥 Erro de servidor/rede, aguardando recuperação');
+        lastEventCheckKm.current += 30; // Pula 30km para dar tempo ao servidor
+      } else if (error.message === 'INVALID_API_RESPONSE') {
+        console.error('💥 API retornou dados inválidos');
+        lastEventCheckKm.current += 15; // Pula 15km
+      } else {
+        console.error('❌ Erro não categorizado:', error.message);
+        lastEventCheckKm.current += 15; // Pula 15km por segurança
+      }
 
-      // Destravar sistema de obstáculos se necessário
+      // Reset de segurança do sistema de obstáculos
+      obstacleTimerRef.current = -5;
+      collisionCooldownRef.current = 2.0;
+
+      // ✅ IMPORTANTE: Destravar sistema após tempo mais curto para erros reais
       setTimeout(() => {
         obstacleSystemLockedRef.current = false;
         console.log('🔓 Sistema de obstáculos destravado após erro de evento');
-      }, 8000);
-      // ===================================================
+      }, 3000); // ✅ Reduzido para 3 segundos
     }
   });
 
@@ -523,10 +528,6 @@ export function GameScene() {
               scale(carScale),
             ]);
 
-            // ============= LÓGICA CORRIGIDA DE GATILHO DE EVENTOS =============
-            // (Esta é apenas a seção específica que deve substituir a lógica no game.tsx)
-
-            // Dentro do onUpdate do Kaboom:
             onUpdate(() => {
               if (gamePaused.current) {
                 return;
@@ -555,25 +556,33 @@ export function GameScene() {
               const progressPercent = calculatePathProgress(deltaTime);
               const previousProgress = progressRef.current;
               progressRef.current = progressPercent;
-              setProgress(progressPercent);
+
+              // ✅ CORREÇÃO: Só atualiza o estado React se a mudança for significativa
+              if (Math.abs(progressPercent - progress) > 0.1) {
+                setProgress(progressPercent);
+              }
 
               const routeDistance = totalDistance || 500;
               const progressDelta = progressPercent - previousProgress;
               const distanceInKm = (progressDelta / 100) * routeDistance;
-              const consumptionRate = vehicle.consumption?.asphalt || 10;
-              const fuelConsumption = Math.abs(distanceInKm) / consumptionRate;
 
-              if (fuelConsumption > 0.001) {
-                setCurrentFuel((prevFuel) => {
-                  const updatedFuel = Math.max(0, prevFuel - fuelConsumption);
-                  setGasoline((updatedFuel / vehicle.maxCapacity) * 100);
+              // ✅ CORREÇÃO: Melhor controle do consumo de combustível
+              if (distanceInKm > 0) {
+                const consumptionRate = vehicle.consumption?.asphalt || 10;
+                const fuelConsumption = distanceInKm / consumptionRate;
 
-                  if (prevFuel > 0 && updatedFuel <= 0) {
-                    setTimeout(() => checkGameOver(), 100);
-                  }
+                const updatedFuel = Math.max(0, currentFuel - fuelConsumption);
+                setCurrentFuel(updatedFuel);
 
-                  return updatedFuel;
-                });
+                const newGasolinePercent = (updatedFuel / vehicle.maxCapacity) * 100;
+                setGasoline(newGasolinePercent);
+
+                // ✅ CORREÇÃO: Verificar game over com delay para evitar setState durante render
+                if (currentFuel > 0 && updatedFuel <= 0) {
+                  requestAnimationFrame(() => {
+                    checkGameOver();
+                  });
+                }
               }
 
               // ============= LÓGICA CORRIGIDA DE GATILHO DE EVENTOS =============
@@ -597,7 +606,7 @@ export function GameScene() {
               );
 
               if (canTriggerEvent) {
-                // Atualiza o checkpoint para a distância atual ANTES do request
+                // ✅ CRÍTICO: Atualiza o checkpoint ANTES do request para evitar duplicatas
                 lastEventCheckKm.current = distanciaAtualKm;
 
                 console.log(`📍 Checkpoint de evento alcançado em ${distanciaAtualKm.toFixed(2)}km. Rolando dados...`);
@@ -606,57 +615,14 @@ export function GameScene() {
 
                 // "Rola o dado" para ver se um evento realmente acontece
                 if (Math.random() < EVENT_OCCURRENCE_CHANCE) {
-                  // ✅ CORREÇÃO: Marcar como processando ANTES do request
+                  // ✅ CRÍTICO: Marcar como processando ANTES do request
                   processingEvent.current = true;
                   gamePaused.current = true; // Pausa o jogo para o jogador tomar a decisão
 
                   console.log(`🎲 Sorte! Evento irá ocorrer. Buscando no backend...`);
 
-                  // ✅ CORREÇÃO: Melhor tratamento de erro
-                  fetchNextEventMutation.mutate(distanciaAtualKm, {
-                    onError: (error: any) => {
-                      console.error('❌ Erro específico no trigger de evento:', error);
-
-                      // ✅ CORREÇÃO: Reset completo do estado em caso de erro
-                      processingEvent.current = false;
-                      gamePaused.current = false;
-                      setActiveEvent(null);
-                      setShowPopup(false);
-                      setIsResponding(false);
-
-                      // ✅ CORREÇÃO: Diferentes estratégias baseadas no tipo de erro
-                      if (error.message === 'NO_EVENT_AVAILABLE') {
-                        console.log('ℹ️ Nenhum evento disponível neste momento');
-                        // Não precisa fazer nada, apenas continue o jogo
-                      } else if (error.message === 'INVALID_REQUEST') {
-                        console.warn('⚠️ Request inválido, aguardando próximo checkpoint');
-                        // Pode ser um evento órfão, aguardar mais tempo
-                        lastEventCheckKm.current += 10;
-                      } else if (error.message === 'SERVER_ERROR' || error.message === 'NETWORK_ERROR') {
-                        console.error('💥 Erro de servidor/rede, aguardando recuperação');
-                        // Em caso de erro de servidor, aguardar mais tempo
-                        lastEventCheckKm.current += 30;
-                      } else {
-                        console.error('❌ Erro desconhecido:', error);
-                        lastEventCheckKm.current += 15;
-                      }
-
-                      // Reset de segurança do sistema de obstáculos
-                      obstacleTimerRef.current = -5;
-                      collisionCooldownRef.current = 2.0;
-                    },
-                    onSuccess: (eventData) => {
-                      if (eventData && eventData.evento) {
-                        console.log('✅ Evento recebido com sucesso:', eventData.evento.nome);
-                        // O estado será atualizado pela mutação automaticamente
-                        // processingEvent.current permanece true até a resposta
-                      } else {
-                        console.warn('⚠️ Evento inválido recebido, resetando estado');
-                        processingEvent.current = false;
-                        gamePaused.current = false;
-                      }
-                    }
-                  });
+                  // ✅ CORREÇÃO: O onError da mutação agora trata adequadamente NO_EVENT_AVAILABLE
+                  fetchNextEventMutation.mutate(distanciaAtualKm);
                 } else {
                   console.log(`🎲 Sem sorte desta vez. Nenhum evento ocorreu.`);
                 }
