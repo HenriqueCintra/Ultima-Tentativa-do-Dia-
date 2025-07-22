@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { GameService } from '../../api/gameService';
 import { MapComponent } from '../mapaRota/MapComponent';
-import { routes as staticRoutesData } from '../mapaRota/routesData'; // ← Importar dados estáticos para coordenadas
+import { routes as staticRoutesData } from '../mapaRota/routesData';
 
 interface ApiRoute {
   id: number;
@@ -17,7 +17,6 @@ interface ApiRoute {
   danger_zones_data: any[];
   dirt_segments_data: any[];
   mapaId: number;
-  // Campos mapeados
   routeId: number;
   name: string;
   distance: number;
@@ -28,11 +27,11 @@ interface ApiRoute {
   tollBooths: any[];
   speedLimits: any[];
   roadConditions: string;
-  pathCoordinates?: [number, number][]; // ← Campo essencial para o mapa
+  pathCoordinates?: [number, number][];
   actualDistance?: number;
   actualDuration?: number;
-  dirtSegments?: any[]; // ← Campo adicional necessário para o MapComponent
-  dangerZones?: any[]; // ← Campo adicional
+  dirtSegments?: any[];
+  dangerZones?: any[];
 }
 
 export const RoutesPage: React.FC = () => {
@@ -48,11 +47,15 @@ export const RoutesPage: React.FC = () => {
 
   const [selectedRoute, setSelectedRoute] = useState<ApiRoute | null>(null);
 
-  const { data: mapsData, isLoading, isError, error } = useQuery({
-    queryKey: ['maps'],
+  // ✅ CORREÇÃO: Configuração de cache balanceada (sem loop infinito)
+  const { data: mapsData, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['maps'], // ✅ CORRIGIDO: QueryKey estável
     queryFn: GameService.getMaps,
     retry: 3,
-    staleTime: 5 * 60 * 1000
+    staleTime: 30 * 1000, // ✅ 30 segundos - dados frescos mas não excessivo
+    cacheTime: 5 * 60 * 1000, // ✅ 5 minutos no cache
+    refetchOnMount: 'always', // ✅ Sempre refetch na montagem
+    refetchOnWindowFocus: false, // Evita refetch desnecessário
   });
 
   // 🔧 MAPEAMENTO CORRIGIDO - USANDO NOME COMO CHAVE
@@ -66,8 +69,12 @@ export const RoutesPage: React.FC = () => {
     const mapaPrincipal = mapsData.find(m => m.nome === "ENTREGA EFICIENTE");
     if (!mapaPrincipal) {
       console.warn("⚠️ Mapa principal 'ENTREGA EFICIENTE' não encontrado");
+      console.log("🔍 Mapas disponíveis:", mapsData.map(m => `"${m.nome}" (ID: ${m.id})`));
       return [];
     }
+
+    console.log(`✅ Mapa principal encontrado: "${mapaPrincipal.nome}" (ID: ${mapaPrincipal.id})`);
+    console.log(`📍 Rotas do mapa: ${mapaPrincipal.rotas.length}`);
 
     return mapaPrincipal.rotas.map(apiRoute => {
       // 🎯 CORREÇÃO CRÍTICA: Correspondência pelo NOME
@@ -78,7 +85,7 @@ export const RoutesPage: React.FC = () => {
           const apiName = apiRoute.nome.trim().toLowerCase();
 
           // Log para debug
-          console.log(`Comparando: "${staticName}" com "${apiName}"`);
+          console.log(`🔍 Comparando: "${staticName}" com "${apiName}"`);
 
           return staticName === apiName || staticName.includes(apiName) || apiName.includes(staticName);
         }
@@ -144,13 +151,18 @@ export const RoutesPage: React.FC = () => {
         return;
       }
 
+      // ✅ CORREÇÃO: Logs detalhados antes de navegar
       console.log("✅ Continuando com a rota:", selectedRoute.name);
       console.log("📋 Dados completos enviados:", {
         vehicle: vehicle.name,
         money: availableMoney,
-        route: selectedRoute.name,
-        pathCoordinatesLength: selectedRoute.pathCoordinates.length,
-        hasAllRequiredData: true
+        route: {
+          id: selectedRoute.id,
+          routeId: selectedRoute.routeId,
+          mapaId: selectedRoute.mapaId,
+          name: selectedRoute.name,
+          pathCoordinatesLength: selectedRoute.pathCoordinates.length
+        }
       });
 
       // Garantir que TODOS os dados necessários sejam passados
@@ -172,13 +184,19 @@ export const RoutesPage: React.FC = () => {
     navigate('/select-vehicle');
   };
 
-  // Estados de loading/erro
+  // ✅ CORREÇÃO: Melhor tratamento de estados de loading/erro
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#200259] font-['Silkscreen'] flex items-center justify-center">
         <div className="text-center">
           <div className="text-[#E3922A] text-2xl mb-4">🚛 Carregando rotas...</div>
-          <div className="text-white">Buscando dados do servidor</div>
+          <div className="text-white">Buscando dados atualizados do servidor</div>
+          <button
+            onClick={() => refetch()}
+            className="mt-4 bg-[#E3922A] text-black font-bold px-4 py-2 rounded-md hover:bg-[#FFC06F]"
+          >
+            🔄 Tentar Novamente
+          </button>
         </div>
       </div>
     );
@@ -192,12 +210,20 @@ export const RoutesPage: React.FC = () => {
           <div className="text-white mb-4">
             {error instanceof Error ? error.message : 'Erro desconhecido'}
           </div>
-          <button
-            onClick={() => navigate('/select-vehicle')}
-            className="bg-[#E3922A] text-black font-bold px-6 py-3 rounded-md hover:bg-[#FFC06F]"
-          >
-            Voltar
-          </button>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => refetch()}
+              className="bg-[#E3922A] text-black font-bold px-6 py-3 rounded-md hover:bg-[#FFC06F]"
+            >
+              🔄 Recarregar Dados
+            </button>
+            <button
+              onClick={() => navigate('/select-vehicle')}
+              className="bg-gray-600 text-white font-bold px-6 py-3 rounded-md hover:bg-gray-700"
+            >
+              ← Voltar
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -268,6 +294,12 @@ export const RoutesPage: React.FC = () => {
               <div className="text-center text-gray-500 py-8">
                 <div className="text-2xl mb-2">🚫</div>
                 <p>Nenhuma rota encontrada</p>
+                <button
+                  onClick={() => refetch()}
+                  className="mt-2 bg-[#E3922A] text-black font-bold px-4 py-2 rounded-md hover:bg-[#FFC06F] text-sm"
+                >
+                  🔄 Recarregar
+                </button>
               </div>
             ) : (
               allRoutes.map((route) => (

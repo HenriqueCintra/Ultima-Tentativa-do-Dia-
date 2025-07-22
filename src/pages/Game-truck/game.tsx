@@ -42,9 +42,14 @@ interface EventData {
 
 export function GameScene() {
 
-  // 🔥 NOVA PROTEÇÃO MELHORADA CONTRA DUPLA EXECUÇÃO
+  // 🔥 PROTEÇÃO CONTRA DUPLA EXECUÇÃO E STRICTMODE
   const gameCreationPromise = useRef<Promise<any> | null>(null);
   const gameInitCompleted = useRef(false);
+  const isMountedRef = useRef(false); // REF PARA CONTROLAR STRICTMODE
+
+  // REFs DE CONTROLE DE EVENTOS
+  const lastEventCheckKm = useRef(0);
+  const activeGameIdRef = useRef<number | null>(null); // REF PARA STALE CLOSURE
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,7 +61,7 @@ export function GameScene() {
   const collidedObstacle = useRef<GameObj | null>(null);
   const destroyRef = useRef<((obj: GameObj) => void) | null>(null);
 
-  // NOVOS ESTADOS PARA INTEGRAÇÃO COM API
+  // ESTADOS PARA INTEGRAÇÃO COM API
   const [activeEvent, setActiveEvent] = useState<EventData | null>(null);
   const [isResponding, setIsResponding] = useState(false);
   const [activeGameId, setActiveGameId] = useState<number | null>(null);
@@ -136,13 +141,17 @@ export function GameScene() {
       GameService.createGame(gameData),
     onSuccess: (partida) => {
       console.log('🎮 Partida criada com sucesso no backend, ID:', partida.id);
-      setActiveGameId(partida.id);
+
+      // ATUALIZE AMBOS, O ESTADO E A REF
+      setActiveGameId(partida.id);           // Atualiza o estado para a UI do React
+      activeGameIdRef.current = partida.id;  // Atualiza a ref para o loop do Kaboom
 
       // Sincronizar estados do frontend com os valores iniciais do backend
       setMoney(partida.saldo);
       setCurrentFuel(partida.combustivel_atual);
 
       console.log('💰 Estado sincronizado - Saldo:', partida.saldo, 'Combustível:', partida.combustivel_atual);
+      console.log('🔗 activeGameIdRef definido como:', activeGameIdRef.current);
     },
     onError: (error) => {
       console.error('❌ Erro ao criar partida:', error);
@@ -151,7 +160,7 @@ export function GameScene() {
     }
   });
 
-  // Mutação para buscar o próximo evento
+  // ============= MUTAÇÃO CORRIGIDA PARA BUSCAR EVENTOS =============
   const fetchNextEventMutation = useMutation({
     mutationFn: (distancia: number) => GameService.getNextEvent(distancia),
     onSuccess: (data) => {
@@ -161,14 +170,68 @@ export function GameScene() {
         setShowPopup(true);
       } else {
         console.log('ℹ️ Nenhum evento disponível, continuando jogo');
+        // ====== LIMPEZA COMPLETA DE ESTADO ======
+        setActiveEvent(null);
+        setShowPopup(false);
+        setIsResponding(false);
         gamePaused.current = false;
         processingEvent.current = false;
+        collidedObstacle.current = null;
+        // ========================================
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.warn('⚠️ Erro ao buscar evento:', error);
+
+      // ====== TRATAMENTO ROBUSTO DE DIFERENTES TIPOS DE ERRO ======
+      if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_RESET') {
+        console.error('🔥 ERRO CRÍTICO: Servidor não está respondendo ou crashed');
+        // Em caso de erro de rede, aguardar mais tempo antes do próximo evento
+        lastEventCheckKm.current += 15; // Pular mais 15km para dar tempo ao servidor se recuperar
+
+        // Mostrar notificação discreta para o usuário (opcional)
+        // alert('Conexão com servidor temporariamente instável. O jogo continuará.');
+
+      } else if (error.response?.status === 400) {
+        console.warn('⚠️ Bad Request (400) - possível evento órfão no backend');
+        console.log('📋 Detalhes do erro 400:', error.response?.data);
+
+        // Para 400, pular apenas um pouco e tentar novamente em breve
+        lastEventCheckKm.current += 5; // Pular apenas 5km
+
+        // Mostrar alerta informativo (opcional)
+        // alert('Um evento anterior pode ter sido interrompido. O jogo continuará normalmente.');
+
+      } else if (error.response?.status >= 500) {
+        console.error('💥 ERRO INTERNO DO SERVIDOR (500+)');
+        console.log('📋 Detalhes do erro 500:', error.response?.data);
+
+        // Para 500+, aguardar bastante antes de tentar novamente
+        lastEventCheckKm.current += 25;
+
+      } else {
+        console.warn('⚠️ Erro não categorizado:', error.code, error.message);
+        lastEventCheckKm.current += 10; // Pular 10km por segurança
+      }
+
+      // ====== LIMPEZA COMPLETA DE ESTADO (CRÍTICO!) ======
+      setActiveEvent(null);
+      setShowPopup(false);
+      setIsResponding(false);
       gamePaused.current = false;
       processingEvent.current = false;
+      collidedObstacle.current = null;
+
+      // Resetar timer de obstáculos para dar tempo ao jogador
+      obstacleTimerRef.current = -8;
+      collisionCooldownRef.current = 3.0;
+
+      // Destravar sistema de obstáculos se necessário
+      setTimeout(() => {
+        obstacleSystemLockedRef.current = false;
+        console.log('🔓 Sistema de obstáculos destravado após erro de evento');
+      }, 8000);
+      // ===================================================
     }
   });
 
@@ -274,7 +337,7 @@ export function GameScene() {
     togglePause();
   };
 
-  // ============= NOVA FUNÇÃO PARA RESPONDER EVENTOS =============
+  // ============= FUNÇÃO PARA RESPONDER EVENTOS =============
 
   const handleOptionClick = (optionId: number) => {
     if (isResponding) return;
@@ -284,45 +347,421 @@ export function GameScene() {
     respondToEventMutation.mutate(optionId);
   };
 
-  // ============= CRIAÇÃO DA PARTIDA COM PROTEÇÃO ROBUSTA =============
+  // ============= USEEFFECT PRINCIPAL COM PROTEÇÃO CONTRA STRICTMODE =============
 
   useEffect(() => {
-    // Proteção IMEDIATA contra dupla execução
-    if (gameCreationPromise.current || activeGameId) {
-      console.log("⚠️ Criação de partida já em andamento ou partida já criada, ignorando execução duplicada");
-      return;
-    }
+    // Esta condição impede execução na segunda montagem do StrictMode
+    if (!isMountedRef.current) {
+      isMountedRef.current = true; // Marcar como montado na primeira passagem
 
-    const { selectedVehicle, selectedRoute: route } = location.state || {};
+      console.log("🚀 Primeira montagem detectada - iniciando processo único...");
 
-    if (selectedVehicle && route && route.id && route.mapaId) {
-      console.log("🚀 Iniciando partida no backend (proteção ativada)...");
-      console.log("Dados:", {
-        mapa: route.mapaId,
-        rota: route.id,
-        veiculo: parseInt(selectedVehicle.id, 10) || 1
-      });
+      // ---- Lógica de Criação da Partida (agora segura) ----
+      if (!gameCreationPromise.current) {
+        const { selectedVehicle, selectedRoute: route } = location.state || {};
+        if (selectedVehicle && route && route.id && route.mapaId) {
+          console.log("🚀 Iniciando partida no backend (chamada única e final)...");
+          console.log("Dados:", {
+            mapa: route.mapaId,
+            rota: route.id,
+            veiculo: parseInt(selectedVehicle.id, 10) || 1
+          });
 
-      // Cria e armazena a Promise IMEDIATAMENTE
-      gameCreationPromise.current = createGameMutation.mutateAsync({
-        mapa: route.mapaId,
-        rota: route.id,
-        veiculo: parseInt(selectedVehicle.id, 10) || 1
-      }).catch(error => {
-        console.error("❌ Erro ao criar partida:", error);
-        gameCreationPromise.current = null; // Reset em caso de erro
-        throw error;
-      });
+          gameCreationPromise.current = createGameMutation.mutateAsync({
+            mapa: route.mapaId,
+            rota: route.id,
+            veiculo: parseInt(selectedVehicle.id, 10) || 1
+          }).catch(error => {
+            console.error("❌ Erro ao criar partida:", error);
+            gameCreationPromise.current = null; // Reset em caso de erro
+            throw error;
+          });
+        } else {
+          console.error("❌ Dados insuficientes para criar partida:", {
+            selectedVehicle,
+            route,
+            hasRouteId: route?.id,
+            hasMapaId: route?.mapaId
+          });
+          alert("Erro: Dados do veículo ou rota incompletos. Redirecionando...");
+          navigate('/routes');
+          return; // Aborta a inicialização se os dados estiverem errados
+        }
+      }
+
+      // ---- Lógica de Inicialização do Kaboom (agora segura) ----
+      const initializeGame = () => {
+        if (gameInitCompleted.current) {
+          console.log("⚠️ Jogo já inicializado, ignorando segunda tentativa");
+          return;
+        }
+
+        if (!vehicle || !vehicle.name) {
+          console.error("Dados do veículo não encontrados");
+          return;
+        }
+
+        gameInitCompleted.current = true;
+
+        if (!canvasRef.current) {
+          console.error("Canvas não encontrado, tentando novamente...");
+          setTimeout(initializeGame, 100);
+          return;
+        }
+
+        console.log("Canvas encontrado:", canvasRef.current);
+
+        if (!document.contains(canvasRef.current)) {
+          console.error("Canvas não está no DOM, aguardando...");
+          setTimeout(initializeGame, 100);
+          return;
+        }
+
+        if ((window as any).__kaboom_initiated__) {
+          (window as any).__kaboom_initiated__ = false;
+        }
+
+        console.log("Inicializando jogo com veículo:", vehicle.name, "Imagem:", vehicle.image);
+        console.log("Combustível atual no início:", currentFuel);
+
+        handleResizeRef.current = () => {
+          if (canvasRef.current) {
+            canvasRef.current.width = window.innerWidth;
+            canvasRef.current.height = window.innerHeight;
+          }
+        };
+
+        try {
+          setGameLoaded(false);
+          setLoadingError(null);
+
+          const testContext = canvasRef.current!.getContext('webgl') || canvasRef.current!.getContext('experimental-webgl');
+          if (!testContext) {
+            throw new Error("WebGL não suportado neste navegador");
+          }
+
+          const k = kaboom({
+            canvas: canvasRef.current!,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            background: [0, 0, 0],
+            crisp: true,
+          });
+
+          window.addEventListener('resize', handleResizeRef.current!);
+          (window as any).__kaboom_initiated__ = true;
+
+          const {
+            loadSprite,
+            scene,
+            go,
+            add,
+            sprite,
+            pos,
+            area,
+            body,
+            isKeyDown,
+            width,
+            height,
+            dt,
+            onUpdate,
+            z,
+            scale,
+            destroy,
+          } = k;
+
+          destroyRef.current = destroy;
+
+          try {
+            console.log("Tentando carregar sprites...");
+            loadSprite("background", "/assets/backgroundd.png");
+
+            const vehicleImageUrl = getVehicleImageUrl(vehicle.image);
+            console.log("Imagem original do veículo:", vehicle.image);
+            console.log("URL convertida para kaboom:", vehicleImageUrl);
+            loadSprite("car", vehicleImageUrl);
+
+            console.log("Todos os sprites carregados com sucesso");
+          } catch (error) {
+            console.error("Erro ao carregar sprites:", error);
+          }
+
+          scene("main", () => {
+            const speed = 5000;
+
+            const bgScaleX = width() / 1365;
+            const bgScaleY = height() / 762;
+            const bgScale = Math.max(bgScaleX, bgScaleY);
+
+            const bgOffsetY = -height() * 0.15;
+
+            const bg1 = add([
+              sprite("background"),
+              pos(0, bgOffsetY),
+              scale(bgScale),
+              z(0),
+              { speed },
+            ]);
+
+            const bg2 = add([
+              sprite("background"),
+              pos(1365 * bgScale, bgOffsetY),
+              scale(bgScale),
+              z(0),
+              { speed },
+            ]);
+
+            const roadYPosition = height() * 0.68;
+            const carScale = Math.min(width() / 1365, height() / 762) * 0.6;
+
+            const car = add([
+              sprite("car"),
+              pos(width() * 0.08, roadYPosition),
+              area(),
+              body(),
+              z(2),
+              scale(carScale),
+            ]);
+
+            // ============= LÓGICA CORRIGIDA DE GATILHO DE EVENTOS =============
+            // (Esta é apenas a seção específica que deve substituir a lógica no game.tsx)
+
+            // Dentro do onUpdate do Kaboom:
+            onUpdate(() => {
+              if (gamePaused.current) {
+                return;
+              }
+
+              const deltaTime = dt();
+
+              if (collisionCooldownRef.current > 0) {
+                collisionCooldownRef.current = Math.max(0, collisionCooldownRef.current - deltaTime);
+              }
+
+              const moveAmount = -speed * deltaTime;
+
+              bg1.move(moveAmount, 0);
+              bg2.move(moveAmount, 0);
+
+              const bgWidth = bg1.width * bgScale;
+
+              if (bg1.pos.x + bgWidth <= 0) {
+                bg1.pos.x = bg2.pos.x + bgWidth;
+              }
+              if (bg2.pos.x + bgWidth <= 0) {
+                bg2.pos.x = bg1.pos.x + bgWidth;
+              }
+
+              const progressPercent = calculatePathProgress(deltaTime);
+              const previousProgress = progressRef.current;
+              progressRef.current = progressPercent;
+              setProgress(progressPercent);
+
+              const routeDistance = totalDistance || 500;
+              const progressDelta = progressPercent - previousProgress;
+              const distanceInKm = (progressDelta / 100) * routeDistance;
+              const consumptionRate = vehicle.consumption?.asphalt || 10;
+              const fuelConsumption = Math.abs(distanceInKm) / consumptionRate;
+
+              if (fuelConsumption > 0.001) {
+                setCurrentFuel((prevFuel) => {
+                  const updatedFuel = Math.max(0, prevFuel - fuelConsumption);
+                  setGasoline((updatedFuel / vehicle.maxCapacity) * 100);
+
+                  if (prevFuel > 0 && updatedFuel <= 0) {
+                    setTimeout(() => checkGameOver(), 100);
+                  }
+
+                  return updatedFuel;
+                });
+              }
+
+              // ============= LÓGICA CORRIGIDA DE GATILHO DE EVENTOS =============
+
+              // ✅ CORREÇÃO: Configurações de evento mais robustas
+              const EVENT_CHECK_INTERVAL_KM = 20; // Aumentado para dar mais espaço
+              const EVENT_OCCURRENCE_CHANCE = 0.7; // 70% de chance (mais baixa para testes)
+
+              // ✅ CORREÇÃO: Use progressPercent (valor atualizado) consistentemente
+              const distanciaAtualKm = (progressPercent / 100) * totalDistance;
+
+              // ====== VALIDAÇÕES EXTRAS PARA EVITAR REQUESTS DUPLICADOS ======
+              const canTriggerEvent = (
+                activeGameIdRef.current && // ✅ Partida deve existir no backend
+                !processingEvent.current && // ✅ Não pode haver outro evento sendo processado
+                !gamePaused.current && // ✅ O jogo não pode estar pausado
+                !activeEvent && // ✅ Não pode haver evento ativo no estado React
+                !showPopup && // ✅ Não pode haver popup sendo exibido
+                !fetchNextEventMutation.isPending && // ✅ NOVA: Não pode haver request em andamento
+                distanciaAtualKm - lastEventCheckKm.current >= EVENT_CHECK_INTERVAL_KM // ✅ Distância suficiente
+              );
+
+              if (canTriggerEvent) {
+                // Atualiza o checkpoint para a distância atual ANTES do request
+                lastEventCheckKm.current = distanciaAtualKm;
+
+                console.log(`📍 Checkpoint de evento alcançado em ${distanciaAtualKm.toFixed(2)}km. Rolando dados...`);
+                console.log(`🎮 activeGameIdRef.current = ${activeGameIdRef.current}`);
+                console.log(`🔄 fetchNextEventMutation.isPending = ${fetchNextEventMutation.isPending}`);
+
+                // "Rola o dado" para ver se um evento realmente acontece
+                if (Math.random() < EVENT_OCCURRENCE_CHANCE) {
+                  // ✅ CORREÇÃO: Marcar como processando ANTES do request
+                  processingEvent.current = true;
+                  gamePaused.current = true; // Pausa o jogo para o jogador tomar a decisão
+
+                  console.log(`🎲 Sorte! Evento irá ocorrer. Buscando no backend...`);
+
+                  // ✅ CORREÇÃO: Melhor tratamento de erro
+                  fetchNextEventMutation.mutate(distanciaAtualKm, {
+                    onError: (error: any) => {
+                      console.error('❌ Erro específico no trigger de evento:', error);
+
+                      // ✅ CORREÇÃO: Reset completo do estado em caso de erro
+                      processingEvent.current = false;
+                      gamePaused.current = false;
+                      setActiveEvent(null);
+                      setShowPopup(false);
+                      setIsResponding(false);
+
+                      // ✅ CORREÇÃO: Diferentes estratégias baseadas no tipo de erro
+                      if (error.message === 'NO_EVENT_AVAILABLE') {
+                        console.log('ℹ️ Nenhum evento disponível neste momento');
+                        // Não precisa fazer nada, apenas continue o jogo
+                      } else if (error.message === 'INVALID_REQUEST') {
+                        console.warn('⚠️ Request inválido, aguardando próximo checkpoint');
+                        // Pode ser um evento órfão, aguardar mais tempo
+                        lastEventCheckKm.current += 10;
+                      } else if (error.message === 'SERVER_ERROR' || error.message === 'NETWORK_ERROR') {
+                        console.error('💥 Erro de servidor/rede, aguardando recuperação');
+                        // Em caso de erro de servidor, aguardar mais tempo
+                        lastEventCheckKm.current += 30;
+                      } else {
+                        console.error('❌ Erro desconhecido:', error);
+                        lastEventCheckKm.current += 15;
+                      }
+
+                      // Reset de segurança do sistema de obstáculos
+                      obstacleTimerRef.current = -5;
+                      collisionCooldownRef.current = 2.0;
+                    },
+                    onSuccess: (eventData) => {
+                      if (eventData && eventData.evento) {
+                        console.log('✅ Evento recebido com sucesso:', eventData.evento.nome);
+                        // O estado será atualizado pela mutação automaticamente
+                        // processingEvent.current permanece true até a resposta
+                      } else {
+                        console.warn('⚠️ Evento inválido recebido, resetando estado');
+                        processingEvent.current = false;
+                        gamePaused.current = false;
+                      }
+                    }
+                  });
+                } else {
+                  console.log(`🎲 Sem sorte desta vez. Nenhum evento ocorreu.`);
+                }
+              }
+              // ================================================================
+
+              if (progressPercent >= 100) {
+                setGameEnded(true);
+                gamePaused.current = true;
+              }
+            });
+
+          });
+
+          go("main");
+
+          setCurrentPathIndex(0);
+          currentPathIndexRef.current = 0;
+          pathProgressRef.current = 0;
+          progressRef.current = 0;
+          setProgress(0);
+          distanceTravelled.current = 0;
+
+          obstacleTimerRef.current = 0;
+          gamePaused.current = false;
+
+          setGameLoaded(true);
+
+          if (!location.state?.savedProgress) {
+            gameStartTime.current = Date.now();
+            manualTimeAdjustment.current = 0;
+            console.log("🕐 gameStartTime inicializado para novo jogo:", new Date(gameStartTime.current).toLocaleTimeString());
+          } else {
+            console.log("🕐 gameStartTime mantido do save carregado:", new Date(gameStartTime.current).toLocaleTimeString());
+          }
+
+          console.log("✅ Jogo inicializado com sucesso!");
+
+        } catch (error) {
+          console.error("Erro ao inicializar o jogo:", error);
+          setLoadingError(`Erro ao carregar o jogo: ${error}`);
+          setGameLoaded(false);
+          (window as any).__kaboom_initiated__ = false;
+        }
+      };
+
+      // Espera a criação da partida antes de inicializar o Kaboom
+      if (gameCreationPromise.current) {
+        gameCreationPromise.current.then(() => {
+          setTimeout(initializeGame, 50);
+        }).catch(() => {
+          console.error("❌ Falha na criação da partida, não inicializando Kaboom");
+        });
+      } else {
+        // Se não há promise (erro de dados), tenta inicializar mesmo assim
+        setTimeout(initializeGame, 50);
+      }
     } else {
-      console.error("❌ Dados insuficientes para criar partida:", {
-        selectedVehicle,
-        route,
-        hasRouteId: route?.id,
-        hasMapaId: route?.mapaId
-      });
-      alert("Erro: Dados do veículo ou rota incompletos. Redirecionando...");
-      navigate('/routes');
+      console.log("⚠️ Segunda montagem detectada (StrictMode) - ignorando inicialização");
     }
+
+    // A função de limpeza agora só executa quando o componente REALMENTE for desmontado
+    return () => {
+      console.log("🧹 Limpando GameScene ao sair da página...");
+
+      // Reset completo para permitir nova inicialização se necessário
+      gameCreationPromise.current = null;
+      gameInitCompleted.current = false;
+      isMountedRef.current = false; // Importante para permitir remontagem
+
+      // Resetar estados críticos
+      setGameLoaded(false);
+      setActiveGameId(null);
+      activeGameIdRef.current = null; // Reset da ref também
+      setActiveEvent(null);
+      setIsResponding(false);
+
+      // Resetar refs de controle
+      processingEvent.current = false;
+      gamePaused.current = false;
+      obstacleSystemLockedRef.current = false;
+      lastEventCheckKm.current = 0; // Reset do checkpoint de eventos
+
+      // Limpar Kaboom de forma mais robusta
+      if ((window as any).__kaboom_initiated__) {
+        const k = (window as any).k;
+        if (k && typeof k.destroy === 'function') {
+          try {
+            k.destroy();
+            console.log("✅ Contexto Kaboom destruído com sucesso");
+          } catch (error) {
+            console.warn("⚠️ Erro ao destruir contexto Kaboom:", error);
+          }
+        }
+        (window as any).__kaboom_initiated__ = false;
+      }
+
+      // Remover listener de resize
+      if (handleResizeRef.current) {
+        window.removeEventListener('resize', handleResizeRef.current);
+        handleResizeRef.current = null;
+      }
+
+      console.log("✅ Limpeza completa realizada - pronto para novo jogo");
+    };
   }, []); // Dependências vazias para executar apenas na montagem
 
   // ============= LISTENERS E EFFECTS ORIGINAIS =============
@@ -532,390 +971,6 @@ export function GameScene() {
     console.log("Usando fallback truck.png");
     return '/assets/truck.png';
   };
-
-  // ============= INICIALIZAÇÃO DO JOGO KABOOM =============
-
-  useEffect(() => {
-    if (!vehicle || !vehicle.name) {
-      console.error("Dados do veículo não encontrados");
-      return;
-    }
-
-    if (gameInitialized.current || gameInitCompleted.current) {
-      console.log("Jogo já foi inicializado, pulando...");
-      return;
-    }
-
-    const initializeGame = () => {
-      if (!canvasRef.current) {
-        console.error("Canvas não encontrado, tentando novamente...");
-        setTimeout(initializeGame, 100);
-        return;
-      }
-
-      console.log("Canvas encontrado:", canvasRef.current);
-
-      if (!document.contains(canvasRef.current)) {
-        console.error("Canvas não está no DOM, aguardando...");
-        setTimeout(initializeGame, 100);
-        return;
-      }
-
-      gameInitialized.current = true;
-      gameInitCompleted.current = true;
-
-      if ((window as any).__kaboom_initiated__) {
-        (window as any).__kaboom_initiated__ = false;
-      }
-
-      console.log("Inicializando jogo com veículo:", vehicle.name, "Imagem:", vehicle.image);
-      console.log("Combustível atual no início:", currentFuel);
-
-      handleResizeRef.current = () => {
-        if (canvasRef.current) {
-          canvasRef.current.width = window.innerWidth;
-          canvasRef.current.height = window.innerHeight;
-        }
-      };
-
-      try {
-        setGameLoaded(false);
-        setLoadingError(null);
-
-        const testContext = canvasRef.current!.getContext('webgl') || canvasRef.current!.getContext('experimental-webgl');
-        if (!testContext) {
-          throw new Error("WebGL não suportado neste navegador");
-        }
-
-        const k = kaboom({
-          canvas: canvasRef.current!,
-          width: window.innerWidth,
-          height: window.innerHeight,
-          background: [0, 0, 0],
-          crisp: true,
-        });
-
-        window.addEventListener('resize', handleResizeRef.current!);
-        (window as any).__kaboom_initiated__ = true;
-
-        const {
-          loadSprite,
-          scene,
-          go,
-          add,
-          sprite,
-          pos,
-          area,
-          body,
-          isKeyDown,
-          width,
-          height,
-          dt,
-          onUpdate,
-          z,
-          scale,
-          destroy,
-        } = k;
-
-        destroyRef.current = destroy;
-
-        try {
-          console.log("Tentando carregar sprites...");
-          loadSprite("background", "/assets/backgroundd.png");
-
-          const vehicleImageUrl = getVehicleImageUrl(vehicle.image);
-          console.log("Imagem original do veículo:", vehicle.image);
-          console.log("URL convertida para kaboom:", vehicleImageUrl);
-          loadSprite("car", vehicleImageUrl);
-
-          loadSprite("obstacle", "/assets/obstaclee.png");
-
-          console.log("Todos os sprites carregados com sucesso");
-        } catch (error) {
-          console.error("Erro ao carregar sprites:", error);
-        }
-
-        scene("main", () => {
-          const speed = 5000;
-
-          const bgScaleX = width() / 1365;
-          const bgScaleY = height() / 762;
-          const bgScale = Math.max(bgScaleX, bgScaleY);
-
-          const bgOffsetY = -height() * 0.15;
-
-          const bg1 = add([
-            sprite("background"),
-            pos(0, bgOffsetY),
-            scale(bgScale),
-            z(0),
-            { speed },
-          ]);
-
-          const bg2 = add([
-            sprite("background"),
-            pos(1365 * bgScale, bgOffsetY),
-            scale(bgScale),
-            z(0),
-            { speed },
-          ]);
-
-          const roadYPosition = height() * 0.68;
-          const carScale = Math.min(width() / 1365, height() / 762) * 0.6;
-
-          const car = add([
-            sprite("car"),
-            pos(width() * 0.08, roadYPosition),
-            area(),
-            body(),
-            z(2),
-            scale(carScale),
-          ]);
-
-          type Obstacle = GameObj<
-            SpriteComp |
-            PosComp |
-            ZComp |
-            AreaComp |
-            BodyComp |
-            ScaleComp
-          > & { collided: boolean; };
-
-          const obstacles: Obstacle[] = [];
-          const maxObstacles = 1;
-          const obstacleSpawnInterval = 10;
-          let lastObstacleCreatedTime = 0;
-
-          const createObstacle = () => {
-            const currentTime = Date.now();
-
-            if (obstacles.length >= maxObstacles) {
-              console.log("🚫 Limite de obstáculos atingido:", obstacles.length);
-              return;
-            }
-
-            if (currentTime - lastObstacleCreatedTime < 3000) {
-              console.log("🚫 Muito cedo para criar obstáculo:", currentTime - lastObstacleCreatedTime, "ms");
-              return;
-            }
-
-            const roadYPosition = height() * 0.68;
-            const obstacleScale = Math.min(width() / 1365, height() / 762) * 0.12;
-            const safeDistance = width() + 300;
-
-            const obs = add([
-              sprite("obstacle"),
-              pos(safeDistance + Math.random() * 200, roadYPosition + Math.random() * 40 - 20),
-              area(),
-              body(),
-              z(1),
-              scale(obstacleScale),
-              "obstacle",
-              { collided: false },
-            ]) as Obstacle;
-
-            obstacles.push(obs);
-            lastObstacleCreatedTime = Date.now();
-            console.log("🔴 Novo obstáculo criado. Total:", obstacles.length, "Posição:", obs.pos.x, obs.pos.y);
-          };
-
-          onUpdate(() => {
-            if (gamePaused.current) {
-              return;
-            }
-
-            const deltaTime = dt();
-
-            if (collisionCooldownRef.current > 0) {
-              collisionCooldownRef.current = Math.max(0, collisionCooldownRef.current - deltaTime);
-            }
-
-            const moveAmount = -speed * deltaTime;
-
-            bg1.move(moveAmount, 0);
-            bg2.move(moveAmount, 0);
-
-            obstacleTimerRef.current += deltaTime;
-
-            const canCreateObstacle = (
-              obstacleTimerRef.current >= obstacleSpawnInterval &&
-              obstacles.length === 0 &&
-              !activeEvent &&
-              !processingEvent.current &&
-              !obstacleSystemLockedRef.current &&
-              collisionCooldownRef.current === 0
-            );
-
-            if (canCreateObstacle) {
-              obstacleSystemLockedRef.current = true;
-              console.log("⏰ Condições atendidas - TRAVANDO sistema e criando obstáculo");
-
-              createObstacle();
-              obstacleTimerRef.current = -10;
-
-              setTimeout(() => {
-                obstacleSystemLockedRef.current = false;
-                console.log("🔓 Sistema destravado após criação de obstáculo");
-              }, 2000);
-            }
-
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-              const obs = obstacles[i];
-
-              obs.move(moveAmount, 0);
-
-              if (obs.pos.x < -obs.width - 100) {
-                obs.destroy();
-                obstacles.splice(i, 1);
-                console.log("🗑️ Obstáculo removido da tela. Total restante:", obstacles.length);
-                continue;
-              }
-
-              const obstacleInGameArea = obs.pos.x > 0 && obs.pos.x < width() - 50;
-              const obstacleVisible = obs.pos.x > -obs.width && obs.pos.x < width();
-
-              // ============= NOVA LÓGICA DE COLISÃO COM EVENTOS DA API =============
-
-              if (
-                collisionCooldownRef.current === 0 &&
-                obstacleVisible &&
-                obstacleInGameArea &&
-                !obs.collided &&
-                !activeEvent &&
-                !processingEvent.current &&
-                !fetchNextEventMutation.isPending &&
-                activeGameId && // Garantir que a partida foi criada
-                car.isColliding(obs)
-              ) {
-                // Calcular distância atual para enviar à API
-                const distanciaAtual = (progressRef.current / 100) * totalDistance;
-
-                console.log("💥 COLISÃO DETECTADA! Buscando evento do backend...");
-                console.log("📍 Distância atual:", distanciaAtual.toFixed(2), "km");
-
-                obstacleSystemLockedRef.current = true;
-                processingEvent.current = true;
-                gamePaused.current = true;
-                obs.collided = true;
-                collidedObstacle.current = obs;
-
-                // Remover o obstáculo imediatamente
-                obs.destroy();
-                obstacles.splice(i, 1);
-
-                // Buscar evento da API com a localização atual
-                fetchNextEventMutation.mutate(distanciaAtual);
-                break;
-              }
-            }
-
-            const bgWidth = bg1.width * bgScale;
-
-            if (bg1.pos.x + bgWidth <= 0) {
-              bg1.pos.x = bg2.pos.x + bgWidth;
-            }
-            if (bg2.pos.x + bgWidth <= 0) {
-              bg2.pos.x = bg1.pos.x + bgWidth;
-            }
-
-            const progressPercent = calculatePathProgress(deltaTime);
-            const previousProgress = progressRef.current;
-            progressRef.current = progressPercent;
-            setProgress(progressPercent);
-
-            const routeDistance = totalDistance || 500;
-            const progressDelta = progressPercent - previousProgress;
-            const distanceInKm = (progressDelta / 100) * routeDistance;
-            const consumptionRate = vehicle.consumption?.asphalt || 10;
-            const fuelConsumption = Math.abs(distanceInKm) / consumptionRate;
-
-            if (fuelConsumption > 0.001) {
-              setCurrentFuel((prevFuel) => {
-                const updatedFuel = Math.max(0, prevFuel - fuelConsumption);
-                setGasoline((updatedFuel / vehicle.maxCapacity) * 100);
-
-                if (prevFuel > 0 && updatedFuel <= 0) {
-                  setTimeout(() => checkGameOver(), 100);
-                }
-
-                return updatedFuel;
-              });
-            }
-
-            if (progressPercent >= 100) {
-              setGameEnded(true);
-              gamePaused.current = true;
-            }
-
-          });
-
-        });
-
-        go("main");
-
-        setCurrentPathIndex(0);
-        currentPathIndexRef.current = 0;
-        pathProgressRef.current = 0;
-        progressRef.current = 0;
-        setProgress(0);
-        distanceTravelled.current = 0;
-
-        obstacleTimerRef.current = 0;
-        gamePaused.current = false;
-
-        setGameLoaded(true);
-
-        if (!location.state?.savedProgress) {
-          gameStartTime.current = Date.now();
-          manualTimeAdjustment.current = 0;
-          console.log("🕐 gameStartTime inicializado para novo jogo:", new Date(gameStartTime.current).toLocaleTimeString());
-        } else {
-          console.log("🕐 gameStartTime mantido do save carregado:", new Date(gameStartTime.current).toLocaleTimeString());
-        }
-
-        console.log("✅ Jogo inicializado com sucesso!");
-
-      } catch (error) {
-        console.error("Erro ao inicializar o jogo:", error);
-        setLoadingError(`Erro ao carregar o jogo: ${error}`);
-        setGameLoaded(false);
-        (window as any).__kaboom_initiated__ = false;
-      }
-    };
-
-    setTimeout(initializeGame, 50);
-
-    return () => {
-      console.log("🧹 Limpando GameScene completamente...");
-
-      // RESETAR TODAS AS TRAVAS E PROMESSAS
-      gameCreationPromise.current = null;
-      gameInitCompleted.current = false;
-      gameInitialized.current = false;
-
-      // Resetar estados críticos
-      setGameLoaded(false);
-      setActiveGameId(null);
-      setActiveEvent(null);
-      setIsResponding(false);
-
-      // Resetar refs de controle
-      processingEvent.current = false;
-      gamePaused.current = false;
-      obstacleSystemLockedRef.current = false;
-
-      // Limpar Kaboom
-      (window as any).__kaboom_initiated__ = false;
-
-      // Remover listener de resize
-      if (handleResizeRef.current) {
-        window.removeEventListener('resize', handleResizeRef.current);
-      }
-
-      console.log("✅ Limpeza completa realizada - pronto para novo jogo");
-    };
-
-  }, [vehicle.image, vehicle.name, vehicle.id]);
 
   useEffect(() => {
     if (gameEnded) {

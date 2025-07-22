@@ -1,4 +1,4 @@
-// src/api/gameService.ts
+// src/api/gameService.ts - VERSÃO CORRIGIDA
 import api from './config';
 import { Map } from '../types';
 
@@ -73,11 +73,23 @@ interface MapResponse {
 }
 
 export const GameService = {
+  // ✅ CORREÇÃO: Adicionar cache busting para garantir dados frescos
   async getMaps(): Promise<MapResponse[]> {
     console.log('🗺️ Buscando mapas da API...');
     try {
-      const response = await api.get('/jogo1/mapas/');
-      console.log('✅ Mapas recebidos:', response.data);
+      // Adiciona timestamp para evitar cache desatualizado
+      const timestamp = Date.now();
+      const response = await api.get(`/jogo1/mapas/?_t=${timestamp}`);
+      console.log('✅ Mapas recebidos:', response.data.length, 'mapas');
+
+      // Log detalhado dos IDs para debug
+      response.data.forEach((mapa: MapResponse) => {
+        console.log(`📍 Mapa "${mapa.nome}" (ID: ${mapa.id}) - ${mapa.rotas.length} rotas`);
+        mapa.rotas.forEach((rota: RouteResponse) => {
+          console.log(`  🛣️ Rota "${rota.nome}" (ID: ${rota.id})`);
+        });
+      });
+
       return response.data;
     } catch (error) {
       console.error('❌ Erro ao buscar mapas:', error);
@@ -89,7 +101,7 @@ export const GameService = {
     console.log('🚛 Buscando veículos da API...');
     try {
       const response = await api.get('/jogo1/veiculos/');
-      console.log('✅ Veículos recebidos:', response.data);
+      console.log('✅ Veículos recebidos:', response.data.length, 'veículos');
       return response.data;
     } catch (error) {
       console.error('❌ Erro ao buscar veículos:', error);
@@ -97,18 +109,39 @@ export const GameService = {
     }
   },
 
-  // FUNÇÃO ATUALIZADA: Agora é POST e recebe distancia_percorrida
+  // ✅ CORREÇÃO: Melhor tratamento de erros para eventos
   async getNextEvent(distancia_percorrida: number): Promise<EventResponse> {
-    console.log('🎲 Buscando próximo evento para distância:', distancia_percorrida, 'km');
+    console.log('🎲 Buscando próximo evento para distância:', distancia_percorrida.toFixed(2), 'km');
     try {
       const response = await api.post<EventResponse>('/jogo1/proximo-evento/', {
         distancia_percorrida
       });
-      console.log('✅ Evento recebido:', response.data?.evento?.nome || 'Nenhum evento');
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao buscar evento:', error);
-      throw error;
+
+      if (response.data && response.data.evento) {
+        console.log('✅ Evento recebido:', response.data.evento.nome, '(categoria:', response.data.evento.categoria + ')');
+        return response.data;
+      } else {
+        console.log('ℹ️ Resposta da API não contém evento válido:', response.data);
+        throw new Error('Resposta inválida da API de eventos');
+      }
+    } catch (error: any) {
+      // ✅ CORREÇÃO: Melhor tratamento de diferentes tipos de erro
+      if (error.response?.status === 204) {
+        console.log('ℹ️ Nenhum evento disponível (HTTP 204)');
+        throw new Error('NO_EVENT_AVAILABLE');
+      } else if (error.response?.status === 400) {
+        console.warn('⚠️ Bad Request ao buscar evento:', error.response?.data);
+        throw new Error('INVALID_REQUEST');
+      } else if (error.response?.status >= 500) {
+        console.error('💥 Erro interno do servidor:', error.response?.status);
+        throw new Error('SERVER_ERROR');
+      } else if (error.code === 'ERR_NETWORK') {
+        console.error('🔥 Erro de rede/conexão');
+        throw new Error('NETWORK_ERROR');
+      } else {
+        console.error('❌ Erro desconhecido ao buscar evento:', error);
+        throw error;
+      }
     }
   },
 
@@ -138,17 +171,28 @@ export const GameService = {
     }
   },
 
-  // FUNÇÃO ATUALIZADA: Usando o endpoint correto com logs detalhados
+  // ✅ CORREÇÃO: Validação mais robusta e logs detalhados
   async createGame(gameData: { mapa: number; rota: number; veiculo: number }): Promise<PartidaResponse> {
     console.log('🚀 Criando nova partida com dados:', gameData);
 
-    // Validação dos dados antes de enviar
+    // Validação rigorosa dos dados antes de enviar
     if (!gameData.mapa || !gameData.rota || !gameData.veiculo) {
       const error = new Error('Dados inválidos para criar partida');
       console.error('❌ Dados incompletos:', {
         mapa: gameData.mapa,
         rota: gameData.rota,
         veiculo: gameData.veiculo
+      });
+      throw error;
+    }
+
+    // Validação de tipos
+    if (typeof gameData.mapa !== 'number' || typeof gameData.rota !== 'number' || typeof gameData.veiculo !== 'number') {
+      const error = new Error('IDs devem ser números válidos');
+      console.error('❌ Tipos inválidos:', {
+        mapa: typeof gameData.mapa,
+        rota: typeof gameData.rota,
+        veiculo: typeof gameData.veiculo
       });
       throw error;
     }
@@ -162,10 +206,30 @@ export const GameService = {
     } catch (error: any) {
       console.error('❌ Erro ao criar partida:', error);
 
-      // Log detalhado do erro para debug
+      // Log detalhado do erro para debug aprimorado
       if (error.response) {
         console.error('📋 Status do erro:', error.response.status);
         console.error('📋 Dados do erro:', error.response.data);
+
+        // ✅ CORREÇÃO: Tratamento específico para erro 400 (IDs inválidos)
+        if (error.response.status === 400) {
+          const errorData = error.response.data;
+          console.error('🔍 ERRO DE VALIDAÇÃO DETECTADO:');
+
+          if (errorData.mapa) {
+            console.error('  ❌ Mapa ID', gameData.mapa, ':', errorData.mapa);
+          }
+          if (errorData.rota) {
+            console.error('  ❌ Rota ID', gameData.rota, ':', errorData.rota);
+          }
+          if (errorData.veiculo) {
+            console.error('  ❌ Veículo ID', gameData.veiculo, ':', errorData.veiculo);
+          }
+
+          // Lançar erro mais descritivo
+          throw new Error(`IDs inválidos: ${JSON.stringify(errorData)}`);
+        }
+
         console.error('📋 Headers do erro:', error.response.headers);
       } else if (error.request) {
         console.error('📋 Requisição não respondida:', error.request);
