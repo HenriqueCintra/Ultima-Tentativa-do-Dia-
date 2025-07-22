@@ -38,27 +38,27 @@ const mediumRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512
 const highRiskIcon = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/900/900532.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 
 // --- Ícones de velocidade ---
- const speedLimitIcon20 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1670/1670172.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon40 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/5124/5124881.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon50 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/752/752738.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon60 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/15674/15674424.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon80 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3897/3897785.png', iconSize: [30, 30], iconAnchor: [15, 15] });
- const speedLimitIcon100 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/10392/10392769.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const speedLimitIcon20 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1670/1670172.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const speedLimitIcon40 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/5124/5124881.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const speedLimitIcon50 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/752/752738.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const speedLimitIcon60 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/15674/15674424.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const speedLimitIcon80 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/3897/3897785.png', iconSize: [30, 30], iconAnchor: [15, 15] });
+const speedLimitIcon100 = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/10392/10392769.png', iconSize: [30, 30], iconAnchor: [15, 15] });
 
 
 
-  // logica para obter o ícone de limite de velocidade
-  const getSpeedLimitIcon = (speed: number): L.Icon => {
-    switch (speed) {
-      case 20: return speedLimitIcon20;
-      case 40: return speedLimitIcon40;
-      case 50: return speedLimitIcon50;
-      case 60: return speedLimitIcon60;
-      case 80: return speedLimitIcon80;
-      case 100: return speedLimitIcon100;
-      default: return speedLimitIcon60; // ícone padrão caso a velocidade não corresponda
-    }
-  };
+// logica para obter o ícone de limite de velocidade
+const getSpeedLimitIcon = (speed: number): L.Icon => {
+  switch (speed) {
+    case 20: return speedLimitIcon20;
+    case 40: return speedLimitIcon40;
+    case 50: return speedLimitIcon50;
+    case 60: return speedLimitIcon60;
+    case 80: return speedLimitIcon80;
+    case 100: return speedLimitIcon100;
+    default: return speedLimitIcon60; // ícone padrão caso a velocidade não corresponda
+  }
+};
 
 // NOVA INTERFACE PARA OS SEGMENTOS RENDERIZÁVEIS
 interface RenderSegment {
@@ -322,19 +322,19 @@ const StaticTruckMarker: React.FC<StaticTruckMarkerProps> = ({
     }
 
     const totalSegments = routePath.length - 1;
-    
+
     // Garantir que o índice esteja dentro dos limites
     const segmentIndex = Math.min(Math.max(0, currentPathIndex), totalSegments - 1);
     const nextIndex = Math.min(segmentIndex + 1, totalSegments);
-    
+
     const startPoint = routePath[segmentIndex];
     const endPoint = routePath[nextIndex];
-    
+
     // Interpolar entre os dois pontos
     const progress = Math.min(Math.max(0, pathProgress), 1);
     const lat = startPoint[0] + (endPoint[0] - startPoint[0]) * progress;
     const lng = startPoint[1] + (endPoint[1] - startPoint[1]) * progress;
-    
+
     return [lat, lng] as [number, number];
   }, [routePath, currentPathIndex, pathProgress]);
 
@@ -383,22 +383,33 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   const juazeiroCoordinates: [number, number] = [-9.44977115369502, -40.52422616182216];
   const salvadorCoordinates: [number, number] = [-12.954121960174133, -38.47128319030249];
 
-  // Dados recebidos da tela anterior ou props
-  const selectedRoute = preSelectedRoute || location.state?.selectedRoute || null;
+  // CORREÇÃO: Sempre priorizar a prop sobre location.state
+  const selectedRoute = useMemo(() => {
+    if (preSelectedRoute) {
+      console.log("📍 Usando rota da prop:", preSelectedRoute.name);
+      return preSelectedRoute;
+    }
+    if (location.state?.selectedRoute) {
+      console.log("📍 Usando rota do location.state:", location.state.selectedRoute.name);
+      return location.state.selectedRoute;
+    }
+    console.log("⚠️ Nenhuma rota selecionada");
+    return null;
+  }, [preSelectedRoute, location.state?.selectedRoute]);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
-  let interval: NodeJS.Timeout;
+    let interval: NodeJS.Timeout;
 
-  if (isPlaying) {
-    const start = Date.now();
-    interval = setInterval(() => {
-      const elapsedRealMs = Date.now() - start;
-      const accelerationFactor = 8 / 3;
-      const simulatedMinutes = (elapsedRealMs / 60000) * accelerationFactor;
-      setSimulatedTime(simulatedMinutes);
-    }, 1000);
-  }
+    if (isPlaying) {
+      const start = Date.now();
+      interval = setInterval(() => {
+        const elapsedRealMs = Date.now() - start;
+        const accelerationFactor = 8 / 3;
+        const simulatedMinutes = (elapsedRealMs / 60000) * accelerationFactor;
+        setSimulatedTime(simulatedMinutes);
+      }, 1000);
+    }
 
     return () => clearInterval(interval);
   }, [isPlaying]);
@@ -570,7 +581,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       )}
 
-              <div className={`flex-1 w-full relative bg-gray-200 rounded-lg shadow-inner border-4 border-black ${showControls ? 'mt-20' : ''}`}>
+      <div className={`flex-1 w-full relative bg-gray-200 rounded-lg shadow-inner border-4 border-black ${showControls ? 'mt-20' : ''}`}>
         {selectedRoute && showControls && (
           <div className="absolute top-4 right-4 flex space-x-2 z-[1000]">
             <button
@@ -582,11 +593,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             </button>
             <button
               className="px-4 py-2 bg-blue-500 text-white font-bold text-md rounded-md shadow-lg hover:bg-blue-600 transition-all duration-200 border-2 border-black"
-              onClick={() => navigate('/game', { 
-                state: { 
-                  vehicle, 
-                  availableMoney 
-                } 
+              onClick={() => navigate('/game', {
+                state: {
+                  vehicle,
+                  availableMoney
+                }
               })}
               disabled={!selectedRoute || vehicle.currentFuel <= 0}
             >
@@ -705,7 +716,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             <h2 className="text-xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">
               INFORMAÇÕES DA ROTA
             </h2>
-            
+
             {selectedRoute && (
               <div>
                 <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">
@@ -724,7 +735,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             )}
 
             <div className="bg-black h-px my-4"></div>
-            
+
             <h3 className="font-['Silkscreen'] text-lg font-bold text-black mb-2">
               VEÍCULO: {vehicle.name.toUpperCase()}
             </h3>

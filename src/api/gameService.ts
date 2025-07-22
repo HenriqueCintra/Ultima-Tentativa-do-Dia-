@@ -1,4 +1,4 @@
-// src/api/gameService.ts
+// src/api/gameService.ts - VERSÃO COMPLETA CORRIGIDA
 import api from './config';
 import { Map } from '../types';
 
@@ -11,6 +11,7 @@ interface EventResponse {
     descricao: string;
     tipo: 'positivo' | 'negativo';
     chance_base: number;
+    categoria: string;
     opcoes: Array<{
       id: number;
       descricao: string;
@@ -32,6 +33,9 @@ interface PartidaResponse {
   tempo_real: number;
   pontuacao: number;
   distancia_percorrida: number;
+  status: string;
+  resultado?: string;
+  motivo_finalizacao?: string;
 }
 
 interface RespondResponse {
@@ -39,51 +43,256 @@ interface RespondResponse {
   partida: PartidaResponse;
 }
 
+interface VehicleResponse {
+  id: number;
+  modelo: string;
+  capacidade_carga: number;
+  capacidade_combustivel: number;
+  velocidade: number;
+  preco: number;
+  autonomia: number;
+}
+
+interface RouteResponse {
+  id: number;
+  nome: string;
+  descricao: string;
+  distancia_km: number;
+  tempo_estimado_horas: number;
+  tipo_estrada: string;
+  velocidade_media_kmh: number;
+  danger_zones_data: any[];
+  dirt_segments_data: any[];
+}
+
+interface MapResponse {
+  id: number;
+  nome: string;
+  descricao: string;
+  rotas: RouteResponse[];
+}
+
 export const GameService = {
-  async getMaps(): Promise<Map[]> {
-    const response = await api.get('/jogo1/mapas/');
-    return response.data;
+  async getMaps(): Promise<MapResponse[]> {
+    console.log('🗺️ Buscando mapas da API...');
+    try {
+      const response = await api.get('/jogo1/mapas/');
+      console.log('✅ Mapas recebidos:', response.data.length, 'mapas');
+
+      // Log detalhado dos IDs para debug
+      response.data.forEach((mapa: MapResponse) => {
+        console.log(`📍 Mapa "${mapa.nome}" (ID: ${mapa.id}) - ${mapa.rotas.length} rotas`);
+        mapa.rotas.forEach((rota: RouteResponse) => {
+          console.log(`  🛣️ Rota "${rota.nome}" (ID: ${rota.id})`);
+        });
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar mapas:', error);
+      throw error;
+    }
   },
 
-  async getVehicles(): Promise<any[]> {
-    const response = await api.get('/jogo1/veiculos/');
-    return response.data;
+  async getVehicles(): Promise<VehicleResponse[]> {
+    console.log('🚛 Buscando veículos da API...');
+    try {
+      const response = await api.get('/jogo1/veiculos/');
+      console.log('✅ Veículos recebidos:', response.data.length, 'veículos');
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar veículos:', error);
+      throw error;
+    }
   },
 
-  async getNextEvent(): Promise<EventResponse> {
-    const response = await api.get<EventResponse>('/jogo1/proximo-evento/');
-    return response.data;
+  // ✅ CORREÇÃO CRÍTICA: Tratamento correto do HTTP 204 e categorização de erros
+  async getNextEvent(distancia_percorrida: number): Promise<EventResponse> {
+    console.log('🎲 Buscando próximo evento para distância:', distancia_percorrida.toFixed(2), 'km');
+
+    try {
+      const response = await api.post<EventResponse>('/jogo1/proximo-evento/', {
+        distancia_percorrida
+      });
+
+      // ✅ CORREÇÃO: Verificar status explicitamente
+      if (response.status === 200) {
+        if (response.data && response.data.evento) {
+          console.log('✅ Evento recebido:', response.data.evento.nome, '(categoria:', response.data.evento.categoria + ')');
+          return response.data;
+        } else {
+          // HTTP 200 mas dados inválidos - erro real da API
+          console.warn('⚠️ Resposta 200 mas dados inválidos:', response.data);
+          throw new Error('INVALID_API_RESPONSE');
+        }
+      }
+
+      // ✅ CORREÇÃO: Tratar HTTP 204 como caso especial
+      if (response.status === 204) {
+        console.log('✅ Nenhum evento desta vez (HTTP 204 - NORMAL)');
+        throw new Error('NO_EVENT_AVAILABLE');
+      }
+
+      // Outros códigos de status não esperados
+      console.warn('⚠️ Status não esperado:', response.status);
+      throw new Error('UNEXPECTED_STATUS');
+
+    } catch (error: any) {
+      // ✅ CORREÇÃO: Se o erro já é um dos nossos erros controlados, re-lança
+      if (error.message === 'NO_EVENT_AVAILABLE' ||
+        error.message === 'INVALID_API_RESPONSE' ||
+        error.message === 'UNEXPECTED_STATUS') {
+        throw error;
+      }
+
+      // ✅ CORREÇÃO: Trata erros HTTP baseados no status
+      if (error.response?.status === 204) {
+        console.log('✅ Nenhum evento desta vez (Erro 204 - NORMAL)');
+        throw new Error('NO_EVENT_AVAILABLE');
+      } else if (error.response?.status === 400) {
+        console.warn('⚠️ Bad Request ao buscar evento:', error.response?.data);
+        throw new Error('INVALID_REQUEST');
+      } else if (error.response?.status >= 500) {
+        console.error('💥 Erro interno do servidor:', error.response?.status);
+        throw new Error('SERVER_ERROR');
+      } else if (error.code === 'ERR_NETWORK') {
+        console.error('🔥 Erro de rede/conexão');
+        throw new Error('NETWORK_ERROR');
+      } else {
+        console.error('❌ Erro desconhecido ao buscar evento:', error);
+        throw new Error('UNKNOWN_ERROR');
+      }
+    }
   },
 
   async respondToEvent(optionId: number): Promise<RespondResponse> {
-    const response = await api.post<RespondResponse>('/jogo1/eventos/responder/', {
-      opcao_id: optionId
-    });
-    return response.data;
+    console.log('✋ Respondendo ao evento com opção ID:', optionId);
+    try {
+      const response = await api.post<RespondResponse>('/jogo1/eventos/responder/', {
+        opcao_id: optionId
+      });
+      console.log('✅ Resposta do evento processada:', response.data.detail);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao responder evento:', error);
+      throw error;
+    }
   },
 
   async getActiveGame(): Promise<PartidaResponse> {
-    const response = await api.get<PartidaResponse>('/jogo1/partidas/ativa/');
-    return response.data;
+    console.log('🎮 Buscando partida ativa...');
+    try {
+      const response = await api.get<PartidaResponse>('/jogo1/partidas/ativa/');
+      console.log('✅ Partida ativa encontrada:', response.data.id);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar partida ativa:', error);
+      throw error;
+    }
   },
 
   async createGame(gameData: { mapa: number; rota: number; veiculo: number }): Promise<PartidaResponse> {
-    const response = await api.post<PartidaResponse>('/jogo1/partidas/', gameData);
-    return response.data;
+    console.log('🚀 Criando nova partida com dados:', gameData);
+
+    // Validação rigorosa dos dados antes de enviar
+    if (!gameData.mapa || !gameData.rota || !gameData.veiculo) {
+      const error = new Error('Dados inválidos para criar partida');
+      console.error('❌ Dados incompletos:', {
+        mapa: gameData.mapa,
+        rota: gameData.rota,
+        veiculo: gameData.veiculo
+      });
+      throw error;
+    }
+
+    // Validação de tipos
+    if (typeof gameData.mapa !== 'number' || typeof gameData.rota !== 'number' || typeof gameData.veiculo !== 'number') {
+      const error = new Error('IDs devem ser números válidos');
+      console.error('❌ Tipos inválidos:', {
+        mapa: typeof gameData.mapa,
+        rota: typeof gameData.rota,
+        veiculo: typeof gameData.veiculo
+      });
+      throw error;
+    }
+
+    try {
+      const response = await api.post<PartidaResponse>('/jogo1/partidas/nova/', gameData);
+      console.log('✅ Partida criada com sucesso! ID:', response.data.id);
+      console.log('💰 Saldo inicial:', response.data.saldo);
+      console.log('⛽ Combustível inicial:', response.data.combustivel_atual);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Erro ao criar partida:', error);
+
+      // Log detalhado do erro para debug aprimorado
+      if (error.response) {
+        console.error('📋 Status do erro:', error.response.status);
+        console.error('📋 Dados do erro:', error.response.data);
+
+        // Tratamento específico para erro 400 (IDs inválidos)
+        if (error.response.status === 400) {
+          const errorData = error.response.data;
+          console.error('🔍 ERRO DE VALIDAÇÃO DETECTADO:');
+
+          if (errorData.mapa) {
+            console.error('  ❌ Mapa ID', gameData.mapa, ':', errorData.mapa);
+          }
+          if (errorData.rota) {
+            console.error('  ❌ Rota ID', gameData.rota, ':', errorData.rota);
+          }
+          if (errorData.veiculo) {
+            console.error('  ❌ Veículo ID', gameData.veiculo, ':', errorData.veiculo);
+          }
+
+          // Lançar erro mais descritivo
+          throw new Error(`IDs inválidos: ${JSON.stringify(errorData)}`);
+        }
+
+        console.error('📋 Headers do erro:', error.response.headers);
+      } else if (error.request) {
+        console.error('📋 Requisição não respondida:', error.request);
+      } else {
+        console.error('📋 Erro na configuração:', error.message);
+      }
+
+      throw error;
+    }
   },
 
   async pauseGame(): Promise<{ detail: string }> {
-    const response = await api.post<{ detail: string }>('/jogo1/partidas/pausar/');
-    return response.data;
+    console.log('⏸️ Pausando jogo...');
+    try {
+      const response = await api.post<{ detail: string }>('/jogo1/partidas/pausar/');
+      console.log('✅ Jogo pausado:', response.data.detail);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao pausar jogo:', error);
+      throw error;
+    }
   },
 
   async resumeGame(): Promise<{ detail: string }> {
-    const response = await api.post<{ detail: string }>('/jogo1/partidas/continuar/');
-    return response.data;
+    console.log('▶️ Retomando jogo...');
+    try {
+      const response = await api.post<{ detail: string }>('/jogo1/partidas/continuar/');
+      console.log('✅ Jogo retomado:', response.data.detail);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao retomar jogo:', error);
+      throw error;
+    }
   },
 
   async syncGameProgress(progressData: { tempo_decorrido_segundos: number }): Promise<PartidaResponse> {
-    const response = await api.post<PartidaResponse>('/jogo1/partidas/sincronizar/', progressData);
-    return response.data;
+    console.log('🔄 Sincronizando progresso do jogo...', progressData);
+    try {
+      const response = await api.post<PartidaResponse>('/jogo1/partidas/sincronizar/', progressData);
+      console.log('✅ Progresso sincronizado');
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar progresso:', error);
+      throw error;
+    }
   }
 };
