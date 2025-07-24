@@ -29,6 +29,7 @@ import { RoutesPage } from "./pages/RoutesPage/RoutesPage";
 
 import { PauseMenu } from "./pages/PauseMenu/PauseMenu.tsx";
 
+
 // Criar instância do QueryClient
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,7 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             <Route path="/tutorial" element={<TutorialPage />} /> 
 
             {/* Rotas protegidas */}
+            
             <Route path="/perfil" element={
              <ProtectedRoute>
                 <PerfilPage />

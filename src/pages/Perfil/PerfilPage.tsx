@@ -20,7 +20,7 @@ interface UserStats {
 export const PerfilPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
 
   // Buscar dados da equipe se o usuário estiver em uma
   const { data: teamData } = useQuery({
@@ -41,7 +41,7 @@ export const PerfilPage = () => {
   const [localAvatar, setLocalAvatar] = useState<string>("/mario.png");
 
   const handlePlayNow = () => {
-    navigate("/select-vehicle");
+    navigate("/desafio");
   };
 
   const handleContinueGame = () => {
@@ -77,7 +77,7 @@ export const PerfilPage = () => {
       // Se não há progresso salvo, mostrar opção de novo jogo
       const startNewGame = window.confirm('Não há jogo salvo. Deseja iniciar um novo jogo?');
       if (startNewGame) {
-        navigate("/select-vehicle");
+        navigate("/desafio");
       }
     }
   };
@@ -116,6 +116,17 @@ export const PerfilPage = () => {
   const handleChangePassword = () => {
     navigate("/mudar-senha");
   };
+  const handleGetOutTeam = async () => {
+    if (!user?.equipe) return;
+    try {
+      await TeamService.leaveTeam();
+      await refreshUser();
+      alert("Você saiu da equipe com sucesso!");
+    } catch (error) {
+      alert("Erro ao sair da equipe. Tente novamente.");
+    }
+  };
+
 
   const handleLogout = () => {
     logout();
@@ -143,12 +154,6 @@ export const PerfilPage = () => {
   const displayName = user.first_name && user.last_name
     ? `${user.first_name} ${user.last_name}`
     : user.nickname || user.username;
-
-  // Level e XP podem ser calculados baseado nas stats (implementação futura)
-  const level = 12;
-  const xp = 2450;
-  const maxXp = 3000;
-  const xpPercentage = Math.round((xp / maxXp) * 100);
 
   // Nome da equipe - agora dinâmico
   const teamDisplayName = teamData?.nome || "SEM EQUIPE";
@@ -199,12 +204,20 @@ export const PerfilPage = () => {
                     <div className="mt-3 flex justify-center">
                       <div className="relative">
                         <div className="w-24 h-24 rounded-full bg-teal-100 border-4 border-teal-500 flex items-center justify-center overflow-hidden relative group">
-                          <img
-                            src={localAvatar}
-                            alt="Avatar"
-                            className="w-20 h-20 object-cover"
-                          />
-
+                          {localAvatar === "/mario.png" && user.first_name ? (
+                            <span
+                              className="text-sm font-bold select-none  [font-family:'Silkscreen',Helvetica] text-white"
+                             
+                            >
+                              {<h1 className="text-5xl font-bold text-black content-center">{user.first_name.charAt(0).toUpperCase()}</h1>}
+                            </span>
+                          ) : (
+                            <img
+                              src={localAvatar}
+                              alt="Avatar"
+                              className="w-20 h-20 object-cover"
+                            />
+                          )}
                           {/* Upload overlay */}
                           <div
                             className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer rounded-full"
@@ -221,37 +234,28 @@ export const PerfilPage = () => {
                       {displayName.toUpperCase()}
                     </h3>
 
-                    {/* Level display */}
-                    <div className="flex items-center justify-center mt-1">
-                      <span className="text-yellow-500 mr-1">🏆</span>
-                      <span className="[font-family:'Silkscreen',Helvetica]">
-                        NÍVEL {level}
-                      </span>
-                    </div>
-
-                    {/* XP Progress bar */}
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs [font-family:'Silkscreen',Helvetica] mb-1">
-                        <span>XP: {xp}/{maxXp}</span>
-                        <span>{xpPercentage}%</span>
-                      </div>
-                      <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden border border-black">
-                        <div
-                          className="h-full bg-yellow-500"
-                          style={{ width: `${xpPercentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
                     {/* Team info - usando dados reais do backend */}
                     <div
-                      className="mt-4 [font-family:'Silkscreen',Helvetica] cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors"
+                      className="mt-4 [font-family:'Silkscreen',Helvetica] cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors flex items-center gap-2"
                       onClick={handleManageTeam}
                     >
                       <span className="font-bold">EQUIPE: </span>
                       <span className={`font-bold ${user.equipe ? 'text-orange-500' : 'text-gray-500'}`}>
                         {teamDisplayName}
                       </span>
+                      {user.equipe && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="ml-2 px-2 py-1 text-xs border-2 border-black"
+                            onClick={e => { e.stopPropagation(); handleGetOutTeam(); }}
+                          >
+                            SAIR
+                          </Button>
+                        
+                        </>
+                      )}
                       <div className="text-xs text-gray-600 mt-1">
                         {user.equipe ? 'Clique para gerenciar' : 'Clique para entrar em uma equipe'}
                       </div>

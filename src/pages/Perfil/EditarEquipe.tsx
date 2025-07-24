@@ -347,7 +347,7 @@ export const EditarEquipePage = () => {
               </div>
 
               {/* Save button */}
-              <div className="flex justify-center mt-8">
+              <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-8">
                 <Button
                   onClick={handleSaveChanges}
                   disabled={!teamName.trim() || updateTeamMutation.isPending}
@@ -364,6 +364,37 @@ export const EditarEquipePage = () => {
                       SALVAR ALTERAÇÕES
                     </>
                   )}
+                </Button>
+                {isLeader && (
+                  <Button
+                    variant="destructive"
+                    className="px-6 py-3 border-2 border-black bg-red-600 text-white hover:bg-red-700"
+                    onClick={() => navigate('/perfil/excluir-equipe')}
+                  >
+                    EXCLUIR EQUIPE
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="px-6 py-3 border-2 border-black bg-gray-200 text-black hover:bg-gray-300"
+                  onClick={async () => {
+                    if (confirm('Tem certeza que deseja sair da equipe?')) {
+                      try {
+                        await TeamService.leaveTeam();
+                        if (typeof window !== 'undefined' && window.location) {
+                          // Força refresh do usuário e redireciona
+                          await queryClient.invalidateQueries({ queryKey: ['teamDetails', teamId] });
+                          if (typeof window !== 'undefined') {
+                            window.location.href = '/perfil';
+                          }
+                        }
+                      } catch (error) {
+                        alert('Erro ao sair da equipe. Tente novamente.');
+                      }
+                    }
+                  }}
+                >
+                  SAIR DA EQUIPE
                 </Button>
               </div>
             </CardContent>

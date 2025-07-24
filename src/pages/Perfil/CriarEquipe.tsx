@@ -198,9 +198,7 @@ export const CriarEquipePage = () => {
                               {user?.nickname?.toUpperCase() || 'LÍDER'}
                             </span>
                           </div>
-                          <div className={`${silkscreenFont} text-xs text-gray-600`}>
-                            NÍVEL - • XP - (Você será o líder)
-                          </div>
+                          {/* Remover menção a nível e XP */}
                         </div>
                         <div className={`${silkscreenFont} text-xs text-yellow-600 font-bold`}>
                           LÍDER

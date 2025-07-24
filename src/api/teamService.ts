@@ -42,5 +42,11 @@ export const TeamService = {
   async joinTeam(code: string): Promise<{ detail: string }> {
     const response = await api.post<{ detail: string }>('/equipes/entrar/', { codigo: code });
     return response.data;
+  },
+
+  // Faz o usuário atual sair da equipe
+  async leaveTeam(): Promise<{ detail: string }> {
+    const response = await api.post<{ detail: string }>('/equipes/sair/');
+    return response.data;
   }
 };

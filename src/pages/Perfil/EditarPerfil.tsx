@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
 import AuthService from "../../api/authService";
+import { TeamService } from "../../api/teamService";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -43,16 +44,6 @@ export const EditarPerfilPage = () => {
 
   // Estado para avatar local (funcionalidade futura)
   const [localAvatar, setLocalAvatar] = useState<string>("/mario.png");
-
-  // Dados estáticos para exibição (level, XP, equipe)
-  const [displayData] = useState({
-    level: 12,
-    xp: 2450,
-    maxXp: 3000,
-    xpPercentage: 83,
-    team: "FRUIT VALE",
-    funcaoEquipe: "COORDENADOR",
-  });
 
   // Carrega dados do usuário quando componente monta
   useEffect(() => {
@@ -173,10 +164,17 @@ export const EditarPerfilPage = () => {
     navigate("/perfil/editar-equipe");
   };
 
-  const handleSairDaEquipe = () => {
-    console.log("Sair da equipe");
-    // TODO: Implementar API para sair da equipe
-    alert("Funcionalidade em desenvolvimento!");
+  const handleSairDaEquipe = async () => {
+    if (!user?.equipe) return;
+    if (!window.confirm("Tem certeza que deseja sair da equipe?")) return;
+    try {
+      await TeamService.leaveTeam();
+      await refreshUser();
+      alert("Você saiu da equipe com sucesso!");
+      navigate("/perfil");
+    } catch (error) {
+      alert("Erro ao sair da equipe. Tente novamente.");
+    }
   };
 
   const handleExcluirEquipe = () => {
@@ -247,11 +245,17 @@ export const EditarPerfilPage = () => {
                     <div className="mt-1 flex justify-center">
                       <div className="relative">
                         <div className="w-28 h-28 rounded-full bg-[#00FFFF] border-2 border-black flex items-center justify-center overflow-hidden relative group">
-                          <img
-                            src={localAvatar}
-                            alt="Avatar"
-                            className="w-24 h-24 object-cover rounded-full"
-                          />
+                          {localAvatar === "/mario.png" && user.first_name ? (
+                            <span className="text-5xl font-bold text-white select-none">
+                              {user.first_name.charAt(0).toUpperCase()}
+                            </span>
+                          ) : (
+                            <img
+                              src={localAvatar}
+                              alt="Avatar"
+                              className="w-24 h-24 object-cover rounded-full"
+                            />
+                          )}
                           <div
                             className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer rounded-full"
                             onClick={handleClickUpload}
@@ -266,26 +270,6 @@ export const EditarPerfilPage = () => {
                       {(user.nickname || user.username).toUpperCase()}
                     </h3>
 
-                    <div className="flex items-center justify-center mt-1">
-                      <span className="text-yellow-500 mr-1">🏆</span>
-                      <span className={`${silkscreenFont} text-black text-sm`}>
-                        NÍVEL {displayData.level}
-                      </span>
-                    </div>
-
-                    {/* XP Progress bar */}
-                    <div className="mt-3">
-                      <div className="flex justify-between text-xs text-black ${silkscreenFont} mb-1">
-                        <span>XP: {displayData.xp}/{displayData.maxXp}</span>
-                        <span>{displayData.xpPercentage}%</span>
-                      </div>
-                      <div className="w-full h-5 bg-gray-300 rounded-sm overflow-hidden border border-black">
-                        <div
-                          className="h-full bg-yellow-400 border-r border-black"
-                          style={{ width: `${displayData.xpPercentage}%` }}
-                        ></div>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Form fields */}
@@ -374,7 +358,7 @@ export const EditarPerfilPage = () => {
                       <div className="flex justify-between items-center mb-3">
                         <h3 className={`${silkscreenFont} text-base text-black`}>
                           EQUIPE : <span className="text-[#E3922A] font-bold">
-                            {user.equipe ? displayData.team.toUpperCase() : 'SEM EQUIPE'}
+                            {user.equipe ? 'FRUIT VALE' : 'SEM EQUIPE'}
                           </span>
                         </h3>
                         {/* Ícones de editar e excluir equipe */}
@@ -445,7 +429,7 @@ export const EditarPerfilPage = () => {
                             <select
                               name="funcaoEquipe"
                               id="funcaoEquipe"
-                              value={displayData.funcaoEquipe}
+                              value="MEMBRO" // Assuming a default role for now
                               onChange={() => { }} // TODO: Implementar mudança de função
                               className={`${inputStyle} appearance-none pr-8`}
                               disabled

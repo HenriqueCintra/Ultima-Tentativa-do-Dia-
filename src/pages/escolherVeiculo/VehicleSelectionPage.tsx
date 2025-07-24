@@ -34,9 +34,9 @@ const getVehicleImage = (modelName: string) => {
   switch (modelName.toLowerCase()) {
     case 'caminhonete':
       return camhionetePng;
-    case 'caminhao pequeno':
+    case 'caminhão pequeno':
       return camihaoPequenoPng;
-    case 'caminhao medio':
+    case 'caminhão médio':
       return caminhaoMedioPng;
     case 'carreta':
       return carretaPng;
@@ -192,6 +192,14 @@ export const VehicleSelectionPage = () => {
       {/* Saldo disponível */}
       <div className="absolute top-4 right-4 font-['Silkscreen'] bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 border border-black rounded-md shadow-md flex items-center justify-center h-10">
         R$ {availableMoney.toLocaleString()}
+      </div>
+
+      {/* Desafio de Entrega */}
+      <div className="flex flex-col items-center mb-2">
+        <h2 className="font-['Silkscreen'] text-2xl text-orange-700 font-bold text-center mb-1">DESAFIO DE ENTREGA: JUAZEIRO A SALVADOR!</h2>
+        <div className="flex items-center gap-2 text-lg text-gray-700 font-['Silkscreen']">
+          <span role="img" aria-label="carga">🧱</span> 1100kg
+        </div>
       </div>
 
       <h1 className="font-['Silkscreen'] text-3xl mb-8 text-center">
