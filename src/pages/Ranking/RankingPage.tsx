@@ -12,6 +12,7 @@ import {
   Package,
   Target,
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface TeamRanking {
   position: number;
@@ -32,6 +33,7 @@ interface UserStats {
 export const RankingPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'PONTOS' | 'ENTREGAS' | 'EFICIENCIA'>('PONTOS');
   
@@ -111,8 +113,12 @@ export const RankingPage = () => {
       // Se veio do perfil, volta para o perfil
       navigate("/perfil");
     } else {
-      // Caso contrário, vai para o perfil (não para home/login)
-      navigate("/choose-team");
+      // Se veio do login, decide para onde ir baseado na equipe
+      if (user?.equipe) {
+        navigate("/game-selection");
+      } else {
+        navigate("/choose-team");
+      }
     }
   };
 
