@@ -20,6 +20,9 @@ export interface Team {
     trucks?: number;
     tasks?: number;
   };
+
+  eficiencia_media?: number;
+
   color?: string;
   selected?: boolean;
   history?: TeamHistory[];

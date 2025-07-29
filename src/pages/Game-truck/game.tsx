@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import kaboom from "kaboom";
-import './game.css'
+import './game.css';
+import { PartidaData } from "../../types/ranking";
 import { Vehicle } from "../../types/vehicle";
 import { GameMiniMap } from "./GameMiniMap";
 import { MapComponent } from "../mapaRota/MapComponent";
@@ -89,6 +90,7 @@ export function GameScene() {
   const [gameTime, setGameTime] = useState(0);
   const gameStartTime = useRef<number>(Date.now());
   const manualTimeAdjustment = useRef<number>(0);
+  const [finalGameResults, setFinalGameResults] = useState<PartidaData | null>(null);
   const [currentFuel, setCurrentFuel] = useState<number>(() => {
     const vehicleData = location.state?.selectedVehicle || location.state?.vehicle;
     return vehicleData?.currentFuel || 0;
@@ -295,6 +297,25 @@ export function GameScene() {
   });
 
   // ============= FUNÇÕES ORIGINAIS MANTIDAS =============
+  const syncGameMutation = useMutation({
+    mutationFn: (progressData: { tempo_decorrido_segundos: number }) =>
+      GameService.syncGameProgress(progressData),
+    onSuccess: (updatedPartida: PartidaData) => {
+      console.log("✅ Progresso sincronizado!", updatedPartida);
+
+      if (updatedPartida.status === 'concluido') {
+        console.log("🏁 PARTIDA FINALIZADA! Resultados:", updatedPartida);
+        setFinalGameResults(updatedPartida);
+        setGameEnded(true);
+        setShowEndMessage(true);
+        gamePaused.current = true;
+      }
+    },
+    onError: (error) => {
+      console.error("❌ Erro ao sincronizar jogo:", error);
+      alert("Houve um erro ao finalizar a partida. Tente novamente.");
+    }
+  });
 
   const togglePause = () => {
     const nextPausedState = !gamePaused.current;
@@ -827,7 +848,14 @@ export function GameScene() {
     return () => clearInterval(interval);
   }, [gameEnded]);
 
-  // Verificar condições de game over
+  // useEffect para finalizar o jogo quando atingir 100%
+  useEffect(() => {
+    if (progress >= 100 && !gameEnded && !syncGameMutation.isPending) {
+      console.log("🏁 Finalizando jogo - progresso 100%");
+      syncGameMutation.mutate({ tempo_decorrido_segundos: gameTime });
+    }
+  }, [progress, gameEnded, gameTime, syncGameMutation]);
+
   const checkGameOver = () => {
     if (!gameLoaded || !gameInitialized.current) {
       console.log("Game Over check skipped - jogo não carregado ainda");
@@ -1349,76 +1377,132 @@ export function GameScene() {
       )}
 
       {/* Mensagem de fim de jogo */}
-      {showEndMessage && (
-        <div className="endMessage"
+      {/* Mensagem de fim de jogo */}
+      {showEndMessage && finalGameResults && (
+        <div
+          className="endMessage"
           style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "white",
-            padding: "30px",
-            borderRadius: "15px",
-            boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            border: '3px solid #000',
+            borderRadius: '15px',
+            padding: '30px',
+            textAlign: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
             zIndex: 2000,
-            textAlign: "center",
-            maxWidth: "400px",
-            minWidth: "350px"
+            maxWidth: '500px',
+            width: '90%'
           }}
         >
-          <h2 style={{ color: "#00cc66", marginBottom: "20px" }}>🏁 Parabéns!</h2>
-          <p style={{ fontSize: "18px", marginBottom: "20px" }}>Você completou a viagem com sucesso!</p>
-
-          <div style={{
-            backgroundColor: "#f8f9fa",
-            padding: "15px",
-            borderRadius: "8px",
+          {/* Título dinâmico */}
+          <h2 style={{
+            color: finalGameResults.resultado === 'vitoria' ? "#00cc66" : "#cc3300",
             marginBottom: "20px",
-            textAlign: "left"
+            fontFamily: "'Silkscreen', monospace"
           }}>
-            <h3 style={{ margin: "0 0 10px 0", color: "#333" }}>Resultados Finais:</h3>
-            <p style={{ margin: "5px 0" }}>🚛 Veículo: <strong>{vehicle.name}</strong></p>
-            {selectedRoute && (
-              <p style={{ margin: "5px 0" }}>🗺️ Rota: <strong>{selectedRoute.name}</strong></p>
-            )}
-            <p style={{ margin: "5px 0" }}>⏱️ Tempo total: <strong>{formatTime(gameTime)}</strong></p>
-            <p style={{ margin: "5px 0" }}>💰 Dinheiro final: <strong>R$ {money.toFixed(2)}</strong></p>
-            <p style={{ margin: "5px 0" }}>⛽ Combustível restante: <strong>{currentFuel.toFixed(1)}L ({gasoline.toFixed(1)}%)</strong></p>
-            {activeGameId && (
-              <p style={{ margin: "5px 0" }}>🎮 Partida: <strong>#{activeGameId}</strong></p>
-            )}
+            {finalGameResults.resultado === 'vitoria' ? '🏁 Viagem Concluída! 🏁' : '❌ Fim de Jogo ❌'}
+          </h2>
+
+          {/* Mensagem dinâmica */}
+          <p style={{ fontSize: "16px", marginBottom: "25px", fontWeight: "bold" }}>
+            {finalGameResults.motivo_finalizacao}
+          </p>
+
+          {/* Box de resultados */}
+          <div style={{
+            backgroundColor: "#f8f9fa", padding: "20px", borderRadius: "10px",
+            marginBottom: "25px", textAlign: "left", border: "2px solid #e9ecef"
+          }}>
+            <h3 style={{ margin: "0 0 15px 0", color: "#333", textAlign: "center", fontFamily: "'Silkscreen', monospace" }}>
+              📊 Resultados Finais
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div><strong>🎯 Eficiência:</strong><br /><span style={{ fontSize: "18px", color: "#0066cc" }}>{finalGameResults.eficiencia?.toFixed(1) || '0.0'}%</span></div>
+              <div><strong>💯 Pontuação:</strong><br /><span style={{ fontSize: "18px", color: "#0066cc" }}>{finalGameResults.pontuacao} pts</span></div>
+              <div><strong>💰 Saldo Final:</strong><br /><span style={{ fontSize: "16px" }}>R$ {finalGameResults.saldo.toFixed(2)}</span></div>
+              <div><strong>📦 Carga:</strong><br /><span style={{ fontSize: "16px" }}>{finalGameResults.quantidade_carga} / {finalGameResults.quantidade_carga_inicial} un.</span></div>
+            </div>
+            <div style={{ marginTop: "15px", textAlign: "center" }}>
+              <strong>⏱️ Tempo Total:</strong> {formatTime(finalGameResults.tempo_real * 60)}
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+          {/* Botões de ação */}
+          <div style={{ display: "flex", gap: "15px", justifyContent: "center", flexWrap: "wrap" }}>
             <button
-              onClick={() => navigate('/routes')}
+              onClick={() => navigate('/ranking')}
               style={{
-                padding: "12px 20px",
+                padding: "12px 24px",
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "bold"
+              }}
+            >
+              🏆 Ver Ranking
+            </button>
+            <button
+              onClick={() => navigate('/game-selection')}
+              style={{
+                padding: "12px 24px",
                 backgroundColor: "#0077cc",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
-                fontSize: "16px",
+                fontSize: "14px",
                 fontWeight: "bold"
               }}
             >
-              Nova Viagem
+              🚚 Nova Viagem
             </button>
             <button
-              onClick={() => navigate('/select-vehicle')}
+              onClick={() => navigate('/perfil')}
               style={{
-                padding: "12px 20px",
+                padding: "12px 24px",
                 backgroundColor: "#6c757d",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
-                fontSize: "16px"
+                fontSize: "14px"
               }}
             >
-              Trocar Veículo
+              👤 Perfil
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay de carregamento durante finalização */}
+      {syncGameMutation.isPending && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1999
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '20px',
+            borderRadius: '10px',
+            textAlign: 'center',
+            border: '2px solid #000'
+          }}>
+            <div style={{ marginBottom: '10px', fontSize: '24px' }}>⏳</div>
+            <p style={{ margin: 0, fontSize: '16px' }}>Finalizando partida...</p>
           </div>
         </div>
       )}
