@@ -135,6 +135,28 @@ export function GameScene() {
   }, []);
 
   // ============= MUTAÇÕES PARA COMUNICAÇÃO COM A API =============
+  
+  // Mutação para sincronizar o progresso final do jogo
+  const syncGameMutation = useMutation({
+    mutationFn: (data: { tempo_decorrido_segundos: number }) => GameService.syncGameProgress(data),
+    onSuccess: (partida) => {
+      console.log('✅ Progresso final sincronizado com sucesso!', partida);
+      // Atualiza os estados finais com os dados retornados pelo backend
+      setMoney(partida.saldo);
+      setCurrentFuel(partida.combustivel_atual);
+      setProgress(partida.progresso || 100);
+      
+      if (partida.status === 'concluido') {
+        console.log(`🏁 Jogo finalizado oficialmente no backend com resultado: ${partida.resultado}`);
+        setGameEnded(true); // Garante que o estado de "fim de jogo" seja ativado
+        setShowEndMessage(true); // Mostra a mensagem final
+      }
+    },
+    onError: (error) => {
+      console.error('❌ Erro ao sincronizar progresso final:', error);
+      alert('Erro ao salvar o resultado do jogo. Verifique sua conexão.');
+    },
+  });
 
   // Mutação para criar o jogo no backend
   const createGameMutation = useMutation({
@@ -629,7 +651,7 @@ export function GameScene() {
               }
               // ================================================================
 
-              if (progressPercent >= 100) {
+              if (progressPercent >= 100 && !gameEnded) {
                 setGameEnded(true);
                 gamePaused.current = true;
               }
@@ -842,6 +864,11 @@ export function GameScene() {
     if (currentFuel <= 0) {
       console.log("Game Over: Combustível esgotado - currentFuel:", currentFuel);
       gamePaused.current = true;
+
+      if (!gameEnded) {
+        setGameEnded(true); // Isso vai disparar o useEffect para salvar
+      }
+
       alert("Combustível esgotado! Jogo encerrado.");
       navigate('/routes');
       return true;
@@ -938,13 +965,19 @@ export function GameScene() {
     return '/assets/truck.png';
   };
 
-  useEffect(() => {
-    if (gameEnded) {
-      console.log("Jogo finalizado. Mostrando mensagem final.");
-      localStorage.removeItem('savedGameProgress');
-      setShowEndMessage(true);
+useEffect(() => {
+    // A condição !showEndMessage evita que a API seja chamada várias vezes
+    if (gameEnded && !showEndMessage) { 
+      console.log("🏁 Jogo finalizado no frontend. Enviando estado final para o backend...");
+
+      gamePaused.current = true;
+      localStorage.removeItem('savedGameProgress'); // Limpa o progresso salvo, pois o jogo terminou
+
+      const tempo_decorrido_segundos = 1;
+      
+      syncGameMutation.mutate({ tempo_decorrido_segundos });
     }
-  }, [gameEnded]);
+}, [gameEnded, showEndMessage]); // Adicione showEndMessage às dependências
 
   // ============= RENDER DO COMPONENTE =============
 
