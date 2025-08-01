@@ -1,6 +1,7 @@
-// src/api/gameService.ts - VERSÃO COMPLETA CORRIGIDA
+// src/api/gameService.ts - VERSÃO COMPLETA CORRIGIDA COM RANKING
 import api from './config';
-import { Map } from '../types';
+import { Map, Team } from '../types';
+import { TeamData, RankingApiResponse } from '../types/ranking';
 
 interface EventResponse {
   id: number;
@@ -36,6 +37,10 @@ interface PartidaResponse {
   status: string;
   resultado?: string;
   motivo_finalizacao?: string;
+  // Novos campos do sistema de eficiência
+  eficiencia?: number;
+  saldo_inicial?: number;
+  quantidade_carga_inicial?: number;
 }
 
 interface RespondResponse {
@@ -90,6 +95,66 @@ export const GameService = {
       return response.data;
     } catch (error) {
       console.error('❌ Erro ao buscar mapas:', error);
+      throw error;
+    }
+  },
+
+  // ✅ CORREÇÃO CRÍTICA: getRanking() agora retorna TeamData[] corretamente
+  async getRanking(): Promise<RankingApiResponse> {
+    console.log('🏆 Buscando ranking de eficiência da API...');
+    try {
+      const response = await api.get('/jogo1/ranking/'); // URL correta da API de ranking
+      console.log('✅ Ranking recebido:', response.data.length, 'equipes');
+
+      // Log das equipes para debug
+      if (Array.isArray(response.data)) {
+        response.data.forEach((equipe: TeamData) => {
+          console.log(`🏅 ${equipe.nome}: ${equipe.eficiencia_media.toFixed(1)}% eficiência, ${equipe.stats.vitorias} vitórias`);
+        });
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar ranking:', error);
+      throw error;
+    }
+  },
+
+  // ✅ FUNÇÃO AUXILIAR: Buscar equipe específica por ID
+  async getTeamById(teamId: number): Promise<TeamData | null> {
+    console.log('🔍 Buscando equipe por ID:', teamId);
+    try {
+      const ranking = await this.getRanking();
+      const team = ranking.find(t => t.id === teamId) || null;
+      if (team) {
+        console.log('✅ Equipe encontrada:', team.nome);
+      } else {
+        console.log('❌ Equipe não encontrada para ID:', teamId);
+      }
+      return team;
+    } catch (error) {
+      console.error('❌ Erro ao buscar equipe por ID:', error);
+      throw error;
+    }
+  },
+
+  // ✅ FUNÇÃO AUXILIAR: Buscar posição de uma equipe no ranking
+  async getTeamPosition(teamName: string): Promise<number | null> {
+    console.log('🔍 Buscando posição da equipe:', teamName);
+    try {
+      const ranking = await this.getRanking();
+      const index = ranking.findIndex(t => t.nome === teamName);
+      const position = index !== -1 ? index + 1 : null;
+
+      if (position) {
+        console.log('✅ Posição encontrada:', position);
+      } else {
+        console.log('❌ Equipe não encontrada no ranking:', teamName);
+      }
+
+      return position;
+    } catch (error) {
+      console.error('❌ Erro ao buscar posição da equipe:', error);
       throw error;
     }
   },
@@ -289,6 +354,17 @@ export const GameService = {
     try {
       const response = await api.post<PartidaResponse>('/jogo1/partidas/sincronizar/', progressData);
       console.log('✅ Progresso sincronizado');
+
+      // Log adicional se a partida foi finalizada
+      if (response.data.status === 'concluido') {
+        console.log('🏁 Partida finalizada!');
+        console.log('🏆 Resultado:', response.data.resultado);
+        if (response.data.eficiencia !== undefined) {
+          console.log('📊 Eficiência calculada:', response.data.eficiencia + '%');
+        }
+        console.log('💯 Pontuação final:', response.data.pontuacao);
+      }
+
       return response.data;
     } catch (error) {
       console.error('❌ Erro ao sincronizar progresso:', error);
