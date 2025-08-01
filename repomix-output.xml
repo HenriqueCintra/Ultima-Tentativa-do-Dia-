@@ -72,6 +72,7 @@ src/components/ui/input.tsx
 src/components/ui/separator.tsx
 src/constants/teams.ts
 src/contexts/AuthContext.tsx
+src/hooks/useRanking.ts
 src/index.css
 src/lib/utils.ts
 src/main.tsx
@@ -109,6 +110,7 @@ src/pages/RoutesPage/RoutesPage.tsx
 src/pages/Tutorial/TutorialPage.tsx
 src/styles/pixelArt.css
 src/types/index.ts
+src/types/ranking.ts
 src/types/vehicle.ts
 tsconfig.app.json
 tsconfig.json
@@ -652,6 +654,52 @@ export {
 }
 </file>
 
+<file path="src/hooks/useRanking.ts">
+// src/hooks/useRanking.ts
+
+import { useQuery } from '@tanstack/react-query';
+import { TeamData, RankingApiResponse } from '../types/ranking';
+import { GameService } from '../api/gameService';
+
+export const useRanking = () => {
+  // Busca os dados brutos da API usando react-query
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useQuery<RankingApiResponse>({
+    queryKey: ['ranking'],
+    queryFn: GameService.getRanking,
+    initialData: [], // Garante que sempre temos um array
+  });
+
+  // Garantir que data é sempre um array de TeamData
+  const teamData: TeamData[] = Array.isArray(data) ? data : [];
+
+  // Função para encontrar a posição de uma equipe pelo nome
+  const getUserPosition = (teamName: string): number | null => {
+    const index = teamData.findIndex((team: TeamData) => team.nome === teamName);
+    return index !== -1 ? index + 1 : null;
+  };
+
+  // Função para obter os dados completos de uma equipe pelo nome
+  const getUserTeamData = (teamName: string): TeamData | null => {
+    return teamData.find((team: TeamData) => team.nome === teamName) || null;
+  };
+
+  return {
+    teamData,
+    loading: isLoading,
+    error: isError ? (error as Error).message : null,
+    refetch,
+    getUserPosition,
+    getUserTeamData,
+  };
+};
+</file>
+
 <file path="src/pages/Game-truck/game.css">
 @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap');
 
@@ -701,6 +749,88 @@ export const k = kaboom({
   scale: 2,
   background: [0, 0, 0],
 });
+</file>
+
+<file path="src/types/ranking.ts">
+// src/types/ranking.ts - VERSÃO CORRIGIDA COM PartidaData
+
+/**
+ * Dados brutos de uma equipe como vêm da API de ranking.
+ */
+export interface TeamData {
+  id: number;
+  nome: string;
+  eficiencia_media: number;
+  partidas_contabilizadas: number;
+  soma_eficiencia: number;
+  stats: {
+    partidas_total: number;
+    partidas_concluidas: number;
+    vitorias: number;
+    derrotas: number;
+    taxa_vitoria: number;
+    eficiencia_media: number;
+    partidas_contabilizadas: number;
+    soma_eficiencia: number;
+  };
+}
+
+/**
+ * Dados formatados de uma equipe para uso na interface.
+ */
+export interface TeamRanking {
+  position: number;
+  name: string;
+  points: number;
+  victories: number;
+  efficiency: number;
+}
+
+/**
+ * Estatísticas resumidas da equipe do usuário logado.
+ */
+export interface UserStats {
+  position: number;
+  points: number;
+  victories: number;
+  efficiency: number;
+}
+
+/**
+ * ✅ NOVA INTERFACE: Dados de uma partida finalizada
+ */
+export interface PartidaData {
+  id: number;
+  saldo: number;
+  combustivel_atual: number;
+  quantidade_carga: number;
+  condicao_veiculo: number;
+  estresse_motorista: number;
+  tempo_real: number;
+  pontuacao: number;
+  distancia_percorrida: number;
+  status: 'em_andamento' | 'pausado' | 'cancelada' | 'concluido';
+  resultado?: 'vitoria' | 'derrota';
+  motivo_finalizacao?: string;
+  // Campos do sistema de eficiência
+  eficiencia?: number;
+  saldo_inicial?: number;
+  quantidade_carga_inicial?: number;
+  // Campos de tempo
+  tempo_jogo?: number;
+  ultima_atualizacao?: string;
+  progresso?: number;
+}
+
+/**
+ * Tabs disponíveis no ranking
+ */
+export type RankingTab = 'EFICIENCIA' | 'PONTOS' | 'VITORIAS';
+
+/**
+ * Resposta da API de ranking
+ */
+export type RankingApiResponse = TeamData[];
 </file>
 
 <file path="tsconfig.tsbuildinfo">
@@ -1256,106 +1386,6 @@ export const TEAMS: Team[] = [
     ]
   }
 ];
-</file>
-
-<file path="src/contexts/AuthContext.tsx">
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import AuthService from '../api/authService';
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  nickname: string;
-  first_name?: string;
-  last_name?: string;
-  data_nascimento?: string;
-  equipe?: number; // ID da equipe, pode ser null
-}
-
-interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
-  refreshUser: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  isAuthenticated: false,
-  login: async () => { },
-  logout: () => { },
-  refreshUser: async () => { },
-});
-
-export const useAuth = () => useContext(AuthContext);
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Carrega o usuário quando o componente é montado
-  useEffect(() => {
-    const loadUser = async () => {
-      if (AuthService.isAuthenticated()) {
-        try {
-          await refreshUser();
-        } catch (error) {
-          console.error("Erro ao carregar usuário:", error);
-          // Se houver erro, limpa os tokens
-          AuthService.logout();
-        }
-      }
-      setLoading(false);
-    };
-
-    loadUser();
-  }, []);
-
-  const refreshUser = async () => {
-    try {
-      const response = await AuthService.getProfile();
-      setUser(response.data);
-    } catch (error) {
-      console.error("Erro ao obter perfil do usuário:", error);
-      throw error;
-    }
-  };
-
-  const login = async (username: string, password: string) => {
-    await AuthService.login({ username, password });
-    await refreshUser();
-  };
-
-  const logout = () => {
-    AuthService.logout();
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated: !!user,
-        login,
-        logout,
-        refreshUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export default AuthContext;
 </file>
 
 <file path="src/index.css">
@@ -2810,106 +2840,6 @@ EXPOSE 5173
 CMD ["npm", "run", "dev"]
 </file>
 
-<file path="src/api/authService.ts">
-import api from './config';
-
-// Interface para login
-interface LoginCredentials {
-  username: string;
-  password: string;
-}
-
-// Interface para resposta do token
-interface TokenResponse {
-  access: string;
-  refresh: string;
-}
-
-// Interface para registro
-interface RegisterData {
-  username: string;
-  email: string;
-  password: string;
-  password_confirm: string;  // Confirmação de senha
-  nickname: string;
-  first_name?: string;
-  last_name?: string;
-  data_nascimento?: string;
-}
-
-// Interface para atualização de perfil
-interface UpdateProfileData {
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-  data_nascimento?: string;
-}
-
-// Interface para solicitação de redefinição de senha
-interface PasswordResetRequest {
-  email: string;
-}
-
-// Interface para confirmação de redefinição de senha
-interface PasswordResetConfirm {
-  password: string;
-  password2: string;
-  token: string;
-  uidb64: string;
-}
-
-export const AuthService = {
-  // Login do usuário
-  async login(credentials: LoginCredentials): Promise<TokenResponse> {
-    const response = await api.post<TokenResponse>('/auth/token/', credentials);
-
-    // Armazena os tokens no localStorage
-    localStorage.setItem('token', response.data.access);
-    localStorage.setItem('refreshToken', response.data.refresh);
-
-    return response.data;
-  },
-
-  // Registro de novo usuário
-  async register(userData: RegisterData) {
-    return await api.post('/auth/registro/', userData);
-  },
-
-  // Logout do usuário
-  logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-  },
-
-  // Verifica se o usuário está autenticado
-  isAuthenticated(): boolean {
-    return !!localStorage.getItem('token');
-  },
-
-  // Obter perfil do usuário
-  async getProfile() {
-    return await api.get('/auth/perfil/');
-  },
-
-  // Atualizar perfil do usuário - CORRIGIDO: PATCH em vez de PUT
-  async updateProfile(userData: UpdateProfileData) {
-    return await api.patch('/auth/perfil/', userData);
-  },
-
-  // Solicitar redefinição de senha
-  async requestPasswordReset(data: PasswordResetRequest) {
-    return await api.post('/auth/password-reset/', data);
-  },
-
-  // Confirmar redefinição de senha
-  async confirmPasswordReset(data: PasswordResetConfirm) {
-    return await api.post('/auth/password-reset/confirm/', data);
-  }
-};
-
-export default AuthService;
-</file>
-
 <file path="src/api/teamService.ts">
 // src/api/teamService.ts
 import api from './config';
@@ -3092,6 +3022,203 @@ const TeamCard = ({ team, onClick, selected }: TeamCardProps) => {
 };
 
 export default TeamCard;
+</file>
+
+<file path="src/contexts/AuthContext.tsx">
+// src/contexts/AuthContext.tsx - VERSÃO COMPLETA COM getAuthToken
+
+import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import AuthService from '../api/authService';
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  nickname: string;
+  first_name?: string;
+  last_name?: string;
+  data_nascimento?: string;
+  equipe?: number; // ID da equipe, pode ser null
+  // Dados adicionais que podem vir da API
+  data_cadastro?: string;
+  is_active?: boolean;
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
+  // ✅ MÉTODO OBRIGATÓRIO para o useRanking funcionar
+  getAuthToken: () => string | null;
+}
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  loading: true,
+  isAuthenticated: false,
+  login: async () => { },
+  logout: () => { },
+  refreshUser: async () => { },
+  getAuthToken: () => null, // ✅ ADICIONADO
+});
+
+export const useAuth = () => useContext(AuthContext);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // ✅ FUNÇÃO OBRIGATÓRIA: Retorna o token de autenticação
+  const getAuthToken = (): string | null => {
+    try {
+      // Tenta obter o token do localStorage primeiro
+      const token = localStorage.getItem('authToken') || localStorage.getItem('access_token');
+
+      if (token) {
+        console.log('🔑 Token encontrado no localStorage');
+        return token;
+      }
+
+      // Se não encontrar no localStorage, tenta do AuthService
+      if (AuthService.isAuthenticated && AuthService.isAuthenticated()) {
+        // Alguns AuthServices podem ter um método para obter o token atual
+        if (typeof (AuthService as any).getToken === 'function') {
+          const serviceToken = (AuthService as any).getToken();
+          console.log('🔑 Token obtido do AuthService');
+          return serviceToken;
+        }
+      }
+
+      console.warn('⚠️ Token não encontrado');
+      return null;
+    } catch (error) {
+      console.error('❌ Erro ao obter token:', error);
+      return null;
+    }
+  };
+
+  // Carrega o usuário quando o componente é montado
+  useEffect(() => {
+    const loadUser = async () => {
+      if (AuthService.isAuthenticated()) {
+        try {
+          console.log('🔄 Carregando usuário autenticado...');
+          await refreshUser();
+          console.log('✅ Usuário carregado com sucesso');
+        } catch (error) {
+          console.error("❌ Erro ao carregar usuário:", error);
+          // Se houver erro, limpa os tokens
+          AuthService.logout();
+        }
+      } else {
+        console.log('🚫 Usuário não está autenticado');
+      }
+      setLoading(false);
+    };
+
+    loadUser();
+  }, []);
+
+  const refreshUser = async () => {
+    try {
+      console.log('🔄 Atualizando dados do usuário...');
+      const response = await AuthService.getProfile();
+
+      // Log dos dados do usuário para debug
+      console.log('👤 Dados do usuário:', {
+        id: response.data.id,
+        username: response.data.username,
+        nickname: response.data.nickname,
+        equipe: response.data.equipe
+      });
+
+      setUser(response.data);
+    } catch (error) {
+      console.error("❌ Erro ao obter perfil do usuário:", error);
+      throw error;
+    }
+  };
+
+  const login = async (username: string, password: string) => {
+    try {
+      console.log('🔐 Fazendo login para:', username);
+
+      // Faz o login através do AuthService
+      await AuthService.login({ username, password });
+      console.log('✅ Login realizado com sucesso');
+
+      // Carrega os dados do usuário
+      await refreshUser();
+      console.log('✅ Dados do usuário carregados após login');
+
+    } catch (error) {
+      console.error('❌ Erro no login:', error);
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    try {
+      console.log('👋 Fazendo logout...');
+
+      // Limpa os dados do AuthService
+      AuthService.logout();
+
+      // Limpa o estado do usuário
+      setUser(null);
+
+      // Limpa tokens adicionais do localStorage (se houver)
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+
+      console.log('✅ Logout realizado com sucesso');
+    } catch (error) {
+      console.error('❌ Erro no logout:', error);
+    }
+  };
+
+  // ✅ VALOR DO CONTEXTO COM TODAS AS FUNÇÕES NECESSÁRIAS
+  const contextValue: AuthContextType = {
+    user,
+    loading,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    refreshUser,
+    getAuthToken, // ✅ OBRIGATÓRIO para o useRanking
+  };
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export default AuthContext;
+
+// ✅ HOOK AUXILIAR: Para facilitar o acesso ao token em outros lugares
+export const useAuthToken = (): string | null => {
+  const { getAuthToken } = useAuth();
+  return getAuthToken();
+};
+
+// ✅ HOOK AUXILIAR: Para verificar se o usuário tem equipe
+export const useUserTeam = (): { hasTeam: boolean; teamId: number | null } => {
+  const { user } = useAuth();
+  return {
+    hasTeam: !!user?.equipe,
+    teamId: user?.equipe || null
+  };
+};
 </file>
 
 <file path="src/pages/Desafio/ApresentacaoDesafio.tsx">
@@ -4099,6 +4226,138 @@ export default TutorialPage;
 </html>
 </file>
 
+<file path="src/api/authService.ts">
+import api from './config';
+
+// --- INTERFACES CORRETAS ---
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+// Interface que corresponde à resposta do backend (simple-jwt)
+interface TokenResponse {
+  access: string;
+  refresh: string;
+}
+
+// Interface para os dados do usuário que vêm da API
+interface UserProfileResponse {
+  id: number;
+  username: string;
+  email: string;
+  nickname: string;
+  first_name?: string;
+  last_name?: string;
+  data_nascimento?: string;
+  equipe?: number;
+}
+
+// Interface para atualização de perfil
+interface UpdateProfileData {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  data_nascimento?: string;
+}
+
+// --- CLASSE DE SERVIÇO COM URLS E LÓGICA CORRIGIDAS ---
+
+class AuthServiceClass {
+  private tokenKey = 'token';
+  private refreshTokenKey = 'refreshToken';
+
+  /**
+   * Realiza login do usuário.
+   */
+  async login(credentials: LoginCredentials): Promise<TokenResponse> {
+    try {
+      console.log('🔐 Tentando login com a URL correta...');
+
+      // ✅ CORREÇÃO APLICADA: URL correta para obter o token
+      const response = await api.post<TokenResponse>('/auth/token/', credentials);
+
+      const { access, refresh } = response.data;
+
+      if (access) {
+        localStorage.setItem(this.tokenKey, access);
+      }
+      if (refresh) {
+        localStorage.setItem(this.refreshTokenKey, refresh);
+      }
+
+      console.log('✅ Login bem-sucedido. Tokens armazenados.');
+      return response.data;
+
+    } catch (error: any) {
+      console.error('❌ Erro no login:', error);
+      this.logout(); // Limpa tokens em caso de falha
+      if (error.response?.status === 401) {
+        throw new Error('Usuário ou senha incorretos.');
+      }
+      throw new Error('Falha ao realizar login. Tente novamente mais tarde.');
+    }
+  }
+
+  /**
+   * Obtém o perfil do usuário logado.
+   */
+  async getProfile(): Promise<{ data: UserProfileResponse }> {
+    try {
+      console.log('👤 Buscando perfil com a URL correta...');
+
+      // ✅ CORREÇÃO APLICADA: URL correta para o perfil do usuário
+      const response = await api.get<UserProfileResponse>('/auth/perfil/');
+
+      console.log('✅ Perfil obtido com sucesso:', response.data.username);
+      return { data: response.data };
+
+    } catch (error: any) {
+      console.error('❌ Erro ao obter perfil:', error);
+      if (error.response?.status === 401) {
+        this.logout();
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Atualiza o perfil do usuário.
+   */
+  async updateProfile(userData: UpdateProfileData) {
+    // ✅ URL CORRETA JÁ ESTAVA SENDO USADA
+    return await api.patch('/auth/perfil/', userData);
+  }
+
+  /**
+   * Faz logout do usuário, limpando os tokens.
+   */
+  logout(): void {
+    console.log('👋 Fazendo logout e limpando tokens...');
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+  }
+
+  /**
+   * Verifica se há um token de acesso armazenado.
+   */
+  isAuthenticated(): boolean {
+    return !!localStorage.getItem(this.tokenKey);
+  }
+
+  /**
+   * Retorna o token de acesso.
+   */
+  getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+}
+
+// Exporta uma única instância da classe (Singleton Pattern)
+const AuthService = new AuthServiceClass();
+export default AuthService;
+</file>
+
 <file path="src/pages/auth/Cadastro/Cadastro.tsx">
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -4583,103 +4842,6 @@ const GameSelectionPage = () => {
 };
 
 export default GameSelectionPage;
-</file>
-
-<file path="src/api/config.ts">
-import axios from 'axios';
-
-// Base URL da API - ajuste conforme seu ambiente (usando o nome do serviço no Docker Compose)
-const API_URL = import.meta.env.VITE_API_URL || 'http://api:8000';
-
-// Instância do Axios para a API
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  // ✅ CORREÇÃO CRÍTICA: Configuração para HTTP 204
-  validateStatus: function (status) {
-    // Aceita status 200-299 E também 204 explicitamente
-    return (status >= 200 && status < 300) || status === 204;
-  },
-  // ✅ CORREÇÃO: Evita parsing JSON em respostas vazias (HTTP 204)
-  transformResponse: [function (data, headers) {
-    // Se é resposta vazia (HTTP 204) ou data está vazio, retorna null
-    if (!data || data === '' || headers['content-length'] === '0') {
-      return null;
-    }
-
-    // Caso contrário, tenta fazer o parsing normal
-    if (typeof data === 'string') {
-      try {
-        return JSON.parse(data);
-      } catch (e) {
-        // Se falhar no parsing, retorna a string original
-        return data;
-      }
-    }
-    return data;
-  }]
-});
-
-// Interceptor para adicionar o token JWT em todas as requisições autenticadas
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Interceptor para tratar respostas com erro 401 (não autorizado)
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    // ✅ CORREÇÃO: Não tratar HTTP 204 como erro
-    if (error.response && error.response.status === 204) {
-      // HTTP 204 é sucesso, não erro - deixa passar
-      return Promise.resolve(error.response);
-    }
-
-    // Se o token expirou (401), tenta renovar com refresh token
-    if (error.response && error.response.status === 401 && !error.config.url.includes('/auth/token/')) {
-      const refreshToken = localStorage.getItem('refreshToken');
-
-      if (refreshToken) {
-        try {
-          // Tenta obter um novo token
-          const response = await axios.post(`${API_URL}/api/auth/token/refresh/`, {
-            refresh: refreshToken
-          });
-
-          // Armazena os novos tokens
-          localStorage.setItem('token', response.data.access);
-
-          // Reexecuta a requisição original com o novo token
-          const originalRequest = error.config;
-          originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
-          return api(originalRequest);
-        } catch (refreshError) {
-          // Se não conseguir renovar, faz logout
-          localStorage.removeItem('token');
-          localStorage.removeItem('refreshToken');
-          console.error("Falha ao renovar token:", refreshError);
-          window.location.href = '/login';
-        }
-      } else {
-        // Se não tem refresh token, redireciona para login
-        window.location.href = '/login';
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-export default api;
 </file>
 
 <file path="src/pages/Perfil/EditarEquipe.tsx">
@@ -5569,351 +5731,6 @@ export const EditarPerfilPage = () => {
 export default EditarPerfilPage;
 </file>
 
-<file path="src/pages/Ranking/RankingPage.tsx">
-import { useNavigate, useLocation } from "react-router-dom";
-import { useState } from "react";
-import { Button } from "../../components/ui/button"; 
-import {
-  Card,
-  CardContent,
-} from "../../components/ui/card"; 
-import {
-  ArrowLeft,
-  Trophy,
-  TrendingUp,
-  Package,
-  Target,
-} from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-
-interface TeamRanking {
-  position: number;
-  name: string;
-  points: number;
-  deliveries: number;
-  efficiency: number;
-  icon: string;
-}
-
-interface UserStats {
-  position: number;
-  points: number;
-  deliveries: number;
-  efficiency: number;
-}
-
-export const RankingPage = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuth();
-  
-  const [activeTab, setActiveTab] = useState<'PONTOS' | 'ENTREGAS' | 'EFICIENCIA'>('PONTOS');
-  
-  // Verifica se veio da tela de perfil através do state da navegação
-  const cameFromProfile = location.state?.from === 'profile';
-  
-  const userStats: UserStats = {
-    position: 4,
-    points: 1000,
-    deliveries: 4,
-    efficiency: 95
-  };
-
-  const teamRankings: TeamRanking[] = [
-    {
-      position: 1,
-      name: "FRUIT VALE",
-      points: 1200,
-      deliveries: 126,
-      efficiency: 98,
-      icon: "🏆"
-    },
-    {
-      position: 2,
-      name: "DEU VALE",
-      points: 1000,
-      deliveries: 110,
-      efficiency: 92,
-      icon: "🥈"
-    },
-    {
-      position: 3,
-      name: "DEU MOLE",
-      points: 999,
-      deliveries: 99,
-      efficiency: 89,
-      icon: "🥉"
-    },
-    {
-      position: 4,
-      name: "É VAPO",
-      points: 935,
-      deliveries: 95,
-      efficiency: 100,
-      icon: "4"
-    },
-    {
-      position: 5,
-      name: "SCAN AI",
-      points: 940,
-      deliveries: 60,
-      efficiency: 100,
-      icon: "5"
-    },
-    {
-      position: 6,
-      name: "SACI",
-      points: 299,
-      deliveries: 10,
-      efficiency: 80,
-      icon: "6"
-    }
-  ];
-
-  const handleNavigateBack = () => {
-    if (cameFromProfile) {
-      // Se veio do perfil, volta para o perfil
-      navigate("/perfil");
-    } else {
-      // Caso contrário, usa a navegação padrão (voltar na história)
-      navigate(-1);
-    }
-  };
-
-  const handleOkClick = () => {
-    if (cameFromProfile) {
-      // Se veio do perfil, volta para o perfil
-      navigate("/perfil");
-    } else {
-      // Se veio do login, decide para onde ir baseado na equipe
-      if (user?.equipe) {
-        navigate("/game-selection");
-      } else {
-        navigate("/choose-team");
-      }
-    }
-  };
-
-  const getPositionIcon = (position: number) => {
-    switch (position) {
-      case 1:
-        return "🏆";
-      case 2:
-        return "🥈";
-      case 3:
-        return "🥉";
-      default:
-        return position.toString();
-    }
-  };
-
-  const getRowColor = (position: number) => {
-    switch (position) {
-      case 1:
-        return "bg-yellow-100 border-yellow-300";
-      case 2:
-        return "bg-gray-100 border-gray-300";
-      case 3:
-        return "bg-orange-100 border-orange-300";
-      default:
-        return "bg-white border-gray-200";
-    }
-  };
-
-  const getSortedData = () => {
-    switch (activeTab) {
-      case 'ENTREGAS':
-        return [...teamRankings].sort((a, b) => b.deliveries - a.deliveries);
-      case 'EFICIENCIA':
-        return [...teamRankings].sort((a, b) => b.efficiency - a.efficiency);
-      default:
-        return [...teamRankings].sort((a, b) => b.points - a.points);
-    }
-  };
-
-  const getValueByTab = (team: TeamRanking) => {
-    switch (activeTab) {
-      case 'ENTREGAS':
-        return team.deliveries;
-      case 'EFICIENCIA':
-        return `${team.efficiency}%`;
-      default:
-        return team.points;
-    }
-  };
-
-  const silkscreenFont = "[font-family:'Silkscreen',Helvetica]";
-  const buttonBaseStyle = `${silkscreenFont} border-2 border-black rounded-md px-4 py-2 text-xs font-bold flex items-center justify-center transition-all`;
-
-  return (
-    <div className="bg-white w-full h-screen overflow-hidden">
-      <div className={`w-full h-full [background:linear-gradient(180deg,rgba(57,189,248,1)_0%,rgba(154,102,248,1)_100%)] relative overflow-hidden ${silkscreenFont}`}>
-        {/* Decorative clouds */}
-        <img
-          className="w-[375px] h-[147px] absolute top-[80px] left-[calc(50%_-_650px)] object-cover animate-float-right opacity-80 z-0"
-          alt="Cloud decoration left"
-          src="/nuvemleft.png"
-        />
-        <img
-          className="w-[436px] h-[170px] absolute bottom-[30px] right-[calc(50%_-_700px)] object-cover animate-float-left opacity-75 scale-110 z-0"
-          alt="Cloud decoration right"
-          src="/nuvemright.png"
-        />
-
-        {/* Navigation buttons - só mostra se veio do perfil */}
-        {cameFromProfile && (
-          <div className="absolute top-4 left-4 z-20">
-            <Button onClick={handleNavigateBack} variant="outline" className="p-2 bg-white border-2 border-black rounded-md hover:bg-gray-200">
-              <ArrowLeft size={24} className="text-black" />
-            </Button>
-          </div>
-        )}
-        
-        {/* Main content */}
-        <div className="h-full flex items-center justify-center px-4 relative z-10">
-          <div className="max-w-4xl w-full">
-            <Card className="border-2 border-solid border-black rounded-lg overflow-hidden bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <CardContent className="p-4">
-                {/* Header */}
-                <div className="text-center mb-4">
-                  <h1 className={`${silkscreenFont} text-xl font-bold text-[#E3922A]`} style={{textShadow: "2px 3px 0.6px #000"}}>
-                    RANKING
-                  </h1>
-                </div>
-
-                {/* User position card */}
-                <div className="mb-4">
-                  <Card className="bg-yellow-50 border-2 border-yellow-400 rounded-lg">
-                    <CardContent className="p-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-yellow-400 border-2 border-black rounded-full flex items-center justify-center">
-                            <Trophy size={20} className="text-black" />
-                          </div>
-                          <div>
-                            <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>SUA POSIÇÃO</p>
-                            <p className={`${silkscreenFont} text-lg font-bold text-black`}>{userStats.position}°</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="grid grid-cols-3 gap-3 text-center">
-                            <div>
-                              <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>PONTOS</p>
-                              <p className={`${silkscreenFont} text-sm font-bold text-black`}>{userStats.points}</p>
-                            </div>
-                            <div>
-                              <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>ENTREGAS</p>
-                              <p className={`${silkscreenFont} text-sm font-bold text-black`}>{userStats.deliveries}</p>
-                            </div>
-                            <div>
-                              <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>EFICIÊNCIA</p>
-                              <p className={`${silkscreenFont} text-sm font-bold text-black`}>{userStats.efficiency}%</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Tab buttons */}
-                <div className="flex justify-center mb-4">
-                  <div className="flex border-2 border-black rounded-md overflow-hidden">
-                    <Button
-                      onClick={() => setActiveTab('PONTOS')}
-                      className={`${silkscreenFont} text-xs font-bold px-3 py-2 border-r-2 border-black rounded-none ${
-                        activeTab === 'PONTOS' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white text-black hover:bg-gray-100'
-                      }`}
-                    >
-                      <TrendingUp size={12} className="mr-1" />
-                      PONTOS
-                    </Button>
-                    <Button
-                      onClick={() => setActiveTab('ENTREGAS')}
-                      className={`${silkscreenFont} text-xs font-bold px-3 py-2 border-r-2 border-black rounded-none ${
-                        activeTab === 'ENTREGAS' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white text-black hover:bg-gray-100'
-                      }`}
-                    >
-                      <Package size={12} className="mr-1" />
-                      ENTREGAS
-                    </Button>
-                    <Button
-                      onClick={() => setActiveTab('EFICIENCIA')}
-                      className={`${silkscreenFont} text-xs font-bold px-3 py-2 rounded-none ${
-                        activeTab === 'EFICIENCIA' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white text-black hover:bg-gray-100'
-                      }`}
-                    >
-                      <Target size={12} className="mr-1" />
-                      EFICIÊNCIA
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Ranking table */}
-                <div className="overflow-hidden border-2 border-black rounded-lg mb-4">
-                  {/* Table header */}
-                  <div className="grid grid-cols-4 bg-gray-200 border-b-2 border-black">
-                    <div className={`${silkscreenFont} text-xs font-bold p-2 text-center border-r-2 border-black`}>#</div>
-                    <div className={`${silkscreenFont} text-xs font-bold p-2 text-center border-r-2 border-black`}>EQUIPE</div>
-                    <div className={`${silkscreenFont} text-xs font-bold p-2 text-center border-r-2 border-black`}>
-                      {activeTab === 'PONTOS' ? 'PONTOS' : activeTab === 'ENTREGAS' ? 'ENTREGAS' : 'EFICIÊNCIA'}
-                    </div>
-                    <div className={`${silkscreenFont} text-xs font-bold p-2 text-center`}>
-                      {activeTab === 'PONTOS' ? 'ENTREGAS' : activeTab === 'ENTREGAS' ? 'EFICIÊNCIA' : 'PONTOS'}
-                    </div>
-                  </div>
-
-                  {/* Table rows */}
-                  {getSortedData().map((team, index) => (
-                    <div 
-                      key={team.name} 
-                      className={`grid grid-cols-4 border-b border-gray-300 last:border-b-0 ${getRowColor(index + 1)}`}
-                    >
-                      <div className={`${silkscreenFont} text-sm font-bold p-2 text-center border-r border-gray-300 flex items-center justify-center`}>
-                        <span className="text-lg">{getPositionIcon(index + 1)}</span>
-                      </div>
-                      <div className={`${silkscreenFont} text-sm font-bold p-2 border-r border-gray-300 flex items-center`}>
-                        {team.name}
-                      </div>
-                      <div className={`${silkscreenFont} text-sm p-2 text-center border-r border-gray-300 flex items-center justify-center`}>
-                        {getValueByTab(team)}
-                      </div>
-                      <div className={`${silkscreenFont} text-sm p-2 text-center flex items-center justify-center`}>
-                        {activeTab === 'PONTOS' ? team.deliveries : 
-                         activeTab === 'ENTREGAS' ? `${team.efficiency}%` : 
-                         team.points}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* OK button */}
-                <div className="flex justify-center">
-                  <Button 
-                    onClick={handleOkClick}
-                    className={`${buttonBaseStyle} px-6 py-2 bg-[#E3922A] hover:bg-[#D4821A] text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]`}
-                  >
-                    OK
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default RankingPage;
-</file>
-
 <file path="src/pages/RoutesPage/RoutesPage.tsx">
 import React, { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -6324,369 +6141,156 @@ export const RoutesPage: React.FC = () => {
 };
 </file>
 
-<file path="src/types/index.ts">
-// src/types/index.ts
+<file path="src/api/config.ts">
+// src/api/config.ts - Configuração centralizada da API (TIPOS CORRIGIDOS)
 
-export interface TeamHistory {
-  id: string;
-  name: string;
-  stats: {
-    people: number;
-    trophy: number;
-    tasks?: number;
-  };
-  color: string;
-}
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-export interface Team {
-  id: number;
-  nome: string;
-  stats: {
-    people: number;
-    trophy: number;
-    trucks?: number;
-    tasks?: number;
-  };
-  color?: string;
-  selected?: boolean;
-  history?: TeamHistory[];
-}
+// Configuração base da API
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export interface Map {
-  id: number;
-  nome: string;
-  descricao: string;
-  rotas: any[]; // Pode ser tipado como Rota[] se necessário
-}
-
-// NOVAS INTERFACES PARA EQUIPES
-export interface TeamCreationData {
-  nome: string;
-  descricao?: string;
-}
-
-export interface TeamMember {
-  id: number;
-  nickname: string;
-  username?: string;
-  first_name?: string;
-  last_name?: string;
-  level?: number;
-  xp?: number;
-  avatar?: string;
-}
-
-export interface TeamDetails {
-  id: number;
-  nome: string;
-  codigo: string;
-  descricao?: string;
-  lider: TeamMember;
-  membros: TeamMember[];
-  created_at: string;
-  updated_at?: string;
-}
-</file>
-
-<file path="src/api/gameService.ts">
-// src/api/gameService.ts - VERSÃO COMPLETA CORRIGIDA
-import api from './config';
-import { Map } from '../types';
-
-interface EventResponse {
-  id: number;
-  partida: number;
-  evento: {
-    id: number;
-    nome: string;
-    descricao: string;
-    tipo: 'positivo' | 'negativo';
-    chance_base: number;
-    categoria: string;
-    opcoes: Array<{
-      id: number;
-      descricao: string;
-      efeitos: any;
-    }>;
-  };
-  momento: string;
-  ordem: number;
-  opcao_escolhida: null;
-}
-
-interface PartidaResponse {
-  id: number;
-  saldo: number;
-  combustivel_atual: number;
-  quantidade_carga: number;
-  condicao_veiculo: number;
-  estresse_motorista: number;
-  tempo_real: number;
-  pontuacao: number;
-  distancia_percorrida: number;
-  status: string;
-  resultado?: string;
-  motivo_finalizacao?: string;
-}
-
-interface RespondResponse {
-  detail: string;
-  partida: PartidaResponse;
-}
-
-interface VehicleResponse {
-  id: number;
-  modelo: string;
-  capacidade_carga: number;
-  capacidade_combustivel: number;
-  velocidade: number;
-  preco: number;
-  autonomia: number;
-}
-
-interface RouteResponse {
-  id: number;
-  nome: string;
-  descricao: string;
-  distancia_km: number;
-  tempo_estimado_horas: number;
-  tipo_estrada: string;
-  velocidade_media_kmh: number;
-  danger_zones_data: any[];
-  dirt_segments_data: any[];
-}
-
-interface MapResponse {
-  id: number;
-  nome: string;
-  descricao: string;
-  rotas: RouteResponse[];
-}
-
-export const GameService = {
-  async getMaps(): Promise<MapResponse[]> {
-    console.log('🗺️ Buscando mapas da API...');
-    try {
-      const response = await api.get('/jogo1/mapas/');
-      console.log('✅ Mapas recebidos:', response.data.length, 'mapas');
-
-      // Log detalhado dos IDs para debug
-      response.data.forEach((mapa: MapResponse) => {
-        console.log(`📍 Mapa "${mapa.nome}" (ID: ${mapa.id}) - ${mapa.rotas.length} rotas`);
-        mapa.rotas.forEach((rota: RouteResponse) => {
-          console.log(`  🛣️ Rota "${rota.nome}" (ID: ${rota.id})`);
-        });
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao buscar mapas:', error);
-      throw error;
-    }
+// Criar instância do axios com configurações padrão
+const api: AxiosInstance = axios.create({
+  baseURL,
+  timeout: 30000, // 30 segundos
+  headers: {
+    'Content-Type': 'application/json',
   },
+});
 
-  async getVehicles(): Promise<VehicleResponse[]> {
-    console.log('🚛 Buscando veículos da API...');
-    try {
-      const response = await api.get('/jogo1/veiculos/');
-      console.log('✅ Veículos recebidos:', response.data.length, 'veículos');
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao buscar veículos:', error);
-      throw error;
+// ✅ INTERCEPTOR DE REQUEST: Adiciona token automaticamente (TIPOS CORRIGIDOS)
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Buscar token do localStorage
+    const token = localStorage.getItem('token');
+
+    if (token) {
+      // Garantir que headers existe
+      if (!config.headers) {
+        config.headers = {} as any;
+      }
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🔑 Token adicionado à requisição:', config.url);
     }
+
+    // Log da requisição para debug
+    console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`, config.data ? config.data : '');
+
+    return config;
   },
+  (error) => {
+    console.error('❌ Erro no interceptor de request:', error);
+    return Promise.reject(error);
+  }
+);
 
-  // ✅ CORREÇÃO CRÍTICA: Tratamento correto do HTTP 204 e categorização de erros
-  async getNextEvent(distancia_percorrida: number): Promise<EventResponse> {
-    console.log('🎲 Buscando próximo evento para distância:', distancia_percorrida.toFixed(2), 'km');
+// ✅ INTERCEPTOR DE RESPONSE: Trata respostas e erros globalmente
+api.interceptors.response.use(
+  (response: AxiosResponse) => {
+    // Log da resposta para debug
+    console.log(`📥 ${response.status} ${response.config.url}`, response.data);
+    return response;
+  },
+  (error) => {
+    // Log detalhado do erro
+    if (error.response) {
+      // Erro HTTP (4xx, 5xx)
+      console.error(`❌ ${error.response.status} ${error.config?.url}:`, error.response.data);
 
-    try {
-      const response = await api.post<EventResponse>('/jogo1/proximo-evento/', {
-        distancia_percorrida
-      });
+      // Tratar erro 401 (não autorizado) globalmente
+      if (error.response.status === 401) {
+        console.warn('🚫 Token expirado ou inválido, redirecionando para login...');
 
-      // ✅ CORREÇÃO: Verificar status explicitamente
-      if (response.status === 200) {
-        if (response.data && response.data.evento) {
-          console.log('✅ Evento recebido:', response.data.evento.nome, '(categoria:', response.data.evento.categoria + ')');
-          return response.data;
-        } else {
-          // HTTP 200 mas dados inválidos - erro real da API
-          console.warn('⚠️ Resposta 200 mas dados inválidos:', response.data);
-          throw new Error('INVALID_API_RESPONSE');
+        // Limpar tokens
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+
+        // Redirecionar para login (se estiver no browser)
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
         }
       }
 
-      // ✅ CORREÇÃO: Tratar HTTP 204 como caso especial
-      if (response.status === 204) {
-        console.log('✅ Nenhum evento desta vez (HTTP 204 - NORMAL)');
-        throw new Error('NO_EVENT_AVAILABLE');
+      // Tratar erro 403 (acesso negado)
+      if (error.response.status === 403) {
+        console.warn('🚫 Acesso negado para:', error.config?.url);
       }
 
-      // Outros códigos de status não esperados
-      console.warn('⚠️ Status não esperado:', response.status);
-      throw new Error('UNEXPECTED_STATUS');
+      // Tratar erro 404 (não encontrado)
+      if (error.response.status === 404) {
+        console.warn('🔍 Recurso não encontrado:', error.config?.url);
+      }
 
+      // Tratar erros de servidor (5xx)
+      if (error.response.status >= 500) {
+        console.error('🔥 Erro interno do servidor:', error.response.status);
+      }
+
+    } else if (error.request) {
+      // Erro de rede (sem resposta)
+      console.error('🌐 Erro de rede ou timeout:', error.message);
+    } else {
+      // Erro de configuração
+      console.error('⚙️ Erro de configuração:', error.message);
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// ✅ FUNÇÃO AUXILIAR: Para fazer requisições com retry automático
+export const apiWithRetry = async <T>(
+  requestFn: () => Promise<AxiosResponse<T>>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<AxiosResponse<T>> => {
+  let lastError: any;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await requestFn();
     } catch (error: any) {
-      // ✅ CORREÇÃO: Se o erro já é um dos nossos erros controlados, re-lança
-      if (error.message === 'NO_EVENT_AVAILABLE' ||
-        error.message === 'INVALID_API_RESPONSE' ||
-        error.message === 'UNEXPECTED_STATUS') {
+      lastError = error;
+
+      // Não tentar novamente em erros 4xx (client errors)
+      if (error.response?.status >= 400 && error.response?.status < 500) {
         throw error;
       }
 
-      // ✅ CORREÇÃO: Trata erros HTTP baseados no status
-      if (error.response?.status === 204) {
-        console.log('✅ Nenhum evento desta vez (Erro 204 - NORMAL)');
-        throw new Error('NO_EVENT_AVAILABLE');
-      } else if (error.response?.status === 400) {
-        console.warn('⚠️ Bad Request ao buscar evento:', error.response?.data);
-        throw new Error('INVALID_REQUEST');
-      } else if (error.response?.status >= 500) {
-        console.error('💥 Erro interno do servidor:', error.response?.status);
-        throw new Error('SERVER_ERROR');
-      } else if (error.code === 'ERR_NETWORK') {
-        console.error('🔥 Erro de rede/conexão');
-        throw new Error('NETWORK_ERROR');
-      } else {
-        console.error('❌ Erro desconhecido ao buscar evento:', error);
-        throw new Error('UNKNOWN_ERROR');
+      // Se não for a última tentativa, aguarda e tenta novamente
+      if (attempt < maxRetries) {
+        console.log(`🔄 Tentativa ${attempt}/${maxRetries} falhou, tentando novamente em ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2; // Backoff exponencial
       }
-    }
-  },
-
-  async respondToEvent(optionId: number): Promise<RespondResponse> {
-    console.log('✋ Respondendo ao evento com opção ID:', optionId);
-    try {
-      const response = await api.post<RespondResponse>('/jogo1/eventos/responder/', {
-        opcao_id: optionId
-      });
-      console.log('✅ Resposta do evento processada:', response.data.detail);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao responder evento:', error);
-      throw error;
-    }
-  },
-
-  async getActiveGame(): Promise<PartidaResponse> {
-    console.log('🎮 Buscando partida ativa...');
-    try {
-      const response = await api.get<PartidaResponse>('/jogo1/partidas/ativa/');
-      console.log('✅ Partida ativa encontrada:', response.data.id);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao buscar partida ativa:', error);
-      throw error;
-    }
-  },
-
-  async createGame(gameData: { mapa: number; rota: number; veiculo: number }): Promise<PartidaResponse> {
-    console.log('🚀 Criando nova partida com dados:', gameData);
-
-    // Validação rigorosa dos dados antes de enviar
-    if (!gameData.mapa || !gameData.rota || !gameData.veiculo) {
-      const error = new Error('Dados inválidos para criar partida');
-      console.error('❌ Dados incompletos:', {
-        mapa: gameData.mapa,
-        rota: gameData.rota,
-        veiculo: gameData.veiculo
-      });
-      throw error;
-    }
-
-    // Validação de tipos
-    if (typeof gameData.mapa !== 'number' || typeof gameData.rota !== 'number' || typeof gameData.veiculo !== 'number') {
-      const error = new Error('IDs devem ser números válidos');
-      console.error('❌ Tipos inválidos:', {
-        mapa: typeof gameData.mapa,
-        rota: typeof gameData.rota,
-        veiculo: typeof gameData.veiculo
-      });
-      throw error;
-    }
-
-    try {
-      const response = await api.post<PartidaResponse>('/jogo1/partidas/nova/', gameData);
-      console.log('✅ Partida criada com sucesso! ID:', response.data.id);
-      console.log('💰 Saldo inicial:', response.data.saldo);
-      console.log('⛽ Combustível inicial:', response.data.combustivel_atual);
-      return response.data;
-    } catch (error: any) {
-      console.error('❌ Erro ao criar partida:', error);
-
-      // Log detalhado do erro para debug aprimorado
-      if (error.response) {
-        console.error('📋 Status do erro:', error.response.status);
-        console.error('📋 Dados do erro:', error.response.data);
-
-        // Tratamento específico para erro 400 (IDs inválidos)
-        if (error.response.status === 400) {
-          const errorData = error.response.data;
-          console.error('🔍 ERRO DE VALIDAÇÃO DETECTADO:');
-
-          if (errorData.mapa) {
-            console.error('  ❌ Mapa ID', gameData.mapa, ':', errorData.mapa);
-          }
-          if (errorData.rota) {
-            console.error('  ❌ Rota ID', gameData.rota, ':', errorData.rota);
-          }
-          if (errorData.veiculo) {
-            console.error('  ❌ Veículo ID', gameData.veiculo, ':', errorData.veiculo);
-          }
-
-          // Lançar erro mais descritivo
-          throw new Error(`IDs inválidos: ${JSON.stringify(errorData)}`);
-        }
-
-        console.error('📋 Headers do erro:', error.response.headers);
-      } else if (error.request) {
-        console.error('📋 Requisição não respondida:', error.request);
-      } else {
-        console.error('📋 Erro na configuração:', error.message);
-      }
-
-      throw error;
-    }
-  },
-
-  async pauseGame(): Promise<{ detail: string }> {
-    console.log('⏸️ Pausando jogo...');
-    try {
-      const response = await api.post<{ detail: string }>('/jogo1/partidas/pausar/');
-      console.log('✅ Jogo pausado:', response.data.detail);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao pausar jogo:', error);
-      throw error;
-    }
-  },
-
-  async resumeGame(): Promise<{ detail: string }> {
-    console.log('▶️ Retomando jogo...');
-    try {
-      const response = await api.post<{ detail: string }>('/jogo1/partidas/continuar/');
-      console.log('✅ Jogo retomado:', response.data.detail);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao retomar jogo:', error);
-      throw error;
-    }
-  },
-
-  async syncGameProgress(progressData: { tempo_decorrido_segundos: number }): Promise<PartidaResponse> {
-    console.log('🔄 Sincronizando progresso do jogo...', progressData);
-    try {
-      const response = await api.post<PartidaResponse>('/jogo1/partidas/sincronizar/', progressData);
-      console.log('✅ Progresso sincronizado');
-      return response.data;
-    } catch (error) {
-      console.error('❌ Erro ao sincronizar progresso:', error);
-      throw error;
     }
   }
+
+  throw lastError;
 };
+
+// ✅ FUNÇÃO AUXILIAR: Para verificar se a API está online
+export const checkApiHealth = async (): Promise<boolean> => {
+  try {
+    const response = await api.get('/health/', { timeout: 5000 });
+    return response.status === 200;
+  } catch (error) {
+    console.error('❌ API não está respondendo:', error);
+    return false;
+  }
+};
+
+// ✅ FUNÇÃO AUXILIAR: Para obter informações da API
+export const getApiInfo = () => {
+  return {
+    baseURL,
+    timeout: api.defaults.timeout,
+    hasToken: !!(localStorage.getItem('authToken') || localStorage.getItem('access_token'))
+  };
+};
+
+export default api;
 </file>
 
 <file path="src/pages/mapaRota/routesData.ts">
@@ -8095,12 +7699,12 @@ export const PerfilPage = () => {
   const handleContinueGame = () => {
     // Verificar se há progresso salvo
     const savedProgress = localStorage.getItem('savedGameProgress');
-    
+
     if (savedProgress) {
       try {
         const gameProgress = JSON.parse(savedProgress);
         console.log('Carregando progresso salvo:', gameProgress);
-        
+
         // Navegar para o jogo com o progresso salvo
         navigate('/game', {
           state: {
@@ -8255,7 +7859,7 @@ export const PerfilPage = () => {
                           {localAvatar === "/mario.png" && user.first_name ? (
                             <span
                               className="text-sm font-bold select-none  [font-family:'Silkscreen',Helvetica] text-white"
-                             
+
                             >
                               {<h1 className="text-5xl font-bold text-black content-center">{user.first_name.charAt(0).toUpperCase()}</h1>}
                             </span>
@@ -8301,7 +7905,7 @@ export const PerfilPage = () => {
                           >
                             SAIR
                           </Button>
-                        
+
                         </>
                       )}
                       <div className="text-xs text-gray-600 mt-1">
@@ -8458,8 +8062,8 @@ export const PerfilPage = () => {
                           {localStorage.getItem('savedGameProgress') ? 'CONTINUAR' : 'NOVO JOGO'}
                         </h3>
                         <p className="[font-family:'Silkscreen',Helvetica] text-xs">
-                          {localStorage.getItem('savedGameProgress') 
-                            ? 'RETOMAR A ÚLTIMA PARTIDA' 
+                          {localStorage.getItem('savedGameProgress')
+                            ? 'RETOMAR A ÚLTIMA PARTIDA'
                             : 'INICIAR NOVA AVENTURA'}
                         </p>
                       </div>
@@ -8476,6 +8080,766 @@ export const PerfilPage = () => {
 };
 
 export default PerfilPage;
+</file>
+
+<file path="src/pages/Ranking/RankingPage.tsx">
+// src/pages/Ranking/RankingPage.tsx
+
+import { useNavigate, useLocation } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import {
+  ArrowLeft,
+  Trophy,
+  TrendingUp,
+  Package,
+  Target,
+  Loader2,
+  RefreshCw
+} from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useRanking } from '../../hooks/useRanking';
+import { TeamRanking, UserStats, RankingTab, TeamData } from "../../types/ranking";
+
+export const RankingPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+
+  // Hook do ranking
+  const { teamData, loading, error, refetch, getUserPosition, getUserTeamData } = useRanking();
+
+  const [activeTab, setActiveTab] = useState<RankingTab>('EFICIENCIA');
+  const cameFromProfile = location.state?.from === 'profile';
+
+  // Converte dados da API para o formato que a UI precisa
+  const teamRankings = useMemo((): TeamRanking[] => {
+    return teamData.map((team: TeamData, index: number) => ({
+      position: index + 1,
+      name: team.nome,
+      points: Math.round(team.eficiencia_media * 10),
+      victories: team.stats.vitorias,
+      efficiency: Math.round(team.eficiencia_media * 100) / 100,
+    }));
+  }, [teamData]);
+
+  // Calcula as estatísticas da equipe do usuário logado
+  const userStats = useMemo((): UserStats | null => {
+    // Pegamos o ID da equipe do usuário logado
+    const userTeamId = user?.equipe;
+    if (!userTeamId) return null;
+
+    // Encontramos o objeto completo da equipe nos dados do ranking
+    const userTeamObject = teamData.find((team: TeamData) => team.id === userTeamId);
+    if (!userTeamObject) return null;
+
+    // Usamos o nome do objeto para buscar a posição
+    const position = getUserPosition(userTeamObject.nome);
+    if (!position) return null;
+
+    return {
+      position,
+      points: Math.round(userTeamObject.eficiencia_media * 10),
+      victories: userTeamObject.stats.vitorias,
+      efficiency: Math.round(userTeamObject.eficiencia_media * 100) / 100,
+    };
+  }, [user, teamData, getUserPosition]);
+
+  // Funções de navegação corrigidas
+  const handleNavigateBack = () => {
+    if (cameFromProfile) {
+      navigate("/perfil");
+    } else {
+      navigate(-1);
+    }
+  };
+
+  const handleOkClick = () => {
+    if (cameFromProfile) {
+      navigate("/perfil");
+    } else {
+      if (user?.equipe) {
+        navigate("/game-selection");
+      } else {
+        navigate("/choose-team");
+      }
+    }
+  };
+
+  const getPositionIcon = (position: number): string => {
+    if (position <= 3) {
+      const icons = ['🏆', '🥈', '🥉'];
+      return icons[position - 1];
+    }
+    return `${position}°`;
+  };
+
+  const getRowColor = (position: number): string => {
+    if (position === 1) return "bg-yellow-100 border-yellow-300";
+    if (position === 2) return "bg-gray-100 border-gray-300";
+    if (position === 3) return "bg-orange-100 border-orange-300";
+    return "bg-white border-gray-200";
+  };
+
+  const sortedData = useMemo(() => {
+    const data = [...teamRankings];
+    switch (activeTab) {
+      case 'VITORIAS':
+        return data.sort((a, b) => b.victories - a.victories);
+      case 'PONTOS':
+        return data.sort((a, b) => b.points - a.points);
+      case 'EFICIENCIA':
+      default:
+        return data; // A API já envia ordenado por eficiência
+    }
+  }, [activeTab, teamRankings]);
+
+  // ESTADOS DE CARREGAMENTO E ERRO
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center font-['Silkscreen'] bg-gradient-to-b from-blue-400 to-purple-500">
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto mb-4 text-white" size={32} />
+          <p className="text-white text-xl">Carregando Ranking...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center font-['Silkscreen'] bg-gradient-to-b from-blue-400 to-purple-500">
+        <div className="text-center">
+          <div className="bg-white p-6 rounded-lg border-2 border-black shadow-lg">
+            <p className="text-red-600 text-lg mb-4">Erro ao carregar ranking</p>
+            <p className="text-gray-600 text-sm mb-4">{error}</p>
+            <Button onClick={() => refetch()} className="bg-blue-500 text-white">
+              <RefreshCw className="mr-2" size={16} />
+              Tentar Novamente
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const silkscreenFont = "[font-family:'Silkscreen',Helvetica]";
+  const buttonBaseStyle = `${silkscreenFont} border-2 border-black rounded-md px-4 py-2 text-xs font-bold flex items-center justify-center transition-all`;
+
+  return (
+    <div className="bg-white w-full h-screen overflow-hidden">
+      <div className={`w-full h-full [background:linear-gradient(180deg,rgba(57,189,248,1)_0%,rgba(154,102,248,1)_100%)] relative overflow-hidden ${silkscreenFont}`}>
+        {/* Botões de navegação */}
+        <div className="absolute top-4 left-4 z-20">
+          <Button
+            onClick={handleNavigateBack}
+            variant="outline"
+            className="p-2 bg-white border-2 border-black rounded-md hover:bg-gray-200"
+          >
+            <ArrowLeft size={24} className="text-black" />
+          </Button>
+        </div>
+        <div className="absolute top-4 right-4 z-20">
+          <Button
+            onClick={() => refetch()}
+            disabled={loading}
+            variant="outline"
+            className="p-2 bg-white border-2 border-black rounded-md hover:bg-gray-200"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : <RefreshCw size={20} />}
+          </Button>
+        </div>
+
+        <div className="h-full flex items-center justify-center px-4 relative z-10">
+          <div className="max-w-4xl w-full">
+            <Card className="border-2 border-solid border-black rounded-lg overflow-hidden bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <CardContent className="p-4">
+                <div className="text-center mb-4">
+                  <h1
+                    className={`${silkscreenFont} text-xl font-bold text-[#E3922A]`}
+                    style={{ textShadow: "2px 3px 0.6px #000" }}
+                  >
+                    RANKING DE EFICIÊNCIA
+                  </h1>
+                  <p className={`${silkscreenFont} text-xs text-gray-600 mt-1`}>
+                    Baseado na média de desempenho logístico
+                  </p>
+                </div>
+
+                {userStats && (
+                  <div className="mb-4">
+                    <Card className="bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-yellow-400 border-2 border-black rounded-full flex items-center justify-center">
+                              <Trophy size={20} className="text-black" />
+                            </div>
+                            <div>
+                              <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>SUA POSIÇÃO</p>
+                              <p className={`${silkscreenFont} text-lg font-bold text-black`}>{userStats.position}°</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3 text-center">
+                            <div>
+                              <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>PONTOS</p>
+                              <p className={`${silkscreenFont} text-sm font-bold`}>{userStats.points}</p>
+                            </div>
+                            <div>
+                              <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>VITÓRIAS</p>
+                              <p className={`${silkscreenFont} text-sm font-bold`}>{userStats.victories}</p>
+                            </div>
+                            <div>
+                              <p className={`${silkscreenFont} text-xs text-gray-600 mb-1`}>EFICIÊNCIA</p>
+                              <p className={`${silkscreenFont} text-sm font-bold`}>{userStats.efficiency}%</p>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Tabs */}
+                <div className="flex justify-center mb-4">
+                  <div className="flex border-2 border-black rounded-md overflow-hidden">
+                    <Button
+                      onClick={() => setActiveTab('EFICIENCIA')}
+                      className={`${buttonBaseStyle} rounded-none ${activeTab === 'EFICIENCIA' ? 'bg-blue-500 text-white' : 'bg-white text-black'
+                        }`}
+                    >
+                      <Target size={12} className="mr-1" />
+                      EFICIÊNCIA
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('PONTOS')}
+                      className={`${buttonBaseStyle} rounded-none border-x-2 border-black ${activeTab === 'PONTOS' ? 'bg-blue-500 text-white' : 'bg-white text-black'
+                        }`}
+                    >
+                      <TrendingUp size={12} className="mr-1" />
+                      PONTOS
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('VITORIAS')}
+                      className={`${buttonBaseStyle} rounded-none ${activeTab === 'VITORIAS' ? 'bg-blue-500 text-white' : 'bg-white text-black'
+                        }`}
+                    >
+                      <Package size={12} className="mr-1" />
+                      VITÓRIAS
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Info sobre o sistema de eficiência */}
+                <div className="mb-4 p-3 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                  <p className={`${silkscreenFont} text-xs text-blue-800 text-center`}>
+                    📊 Eficiência = Carga Entregue (50%) + Tempo (30%) + Economia (20%)
+                  </p>
+                </div>
+
+                {/* Tabela de ranking */}
+                <div className="overflow-hidden border-2 border-black rounded-lg mb-4">
+                  <div className="grid grid-cols-4 bg-gray-200 border-b-2 border-black">
+                    <div className={`${silkscreenFont} p-2 text-center border-r-2 border-black text-xs font-bold`}>#</div>
+                    <div className={`${silkscreenFont} p-2 text-center border-r-2 border-black text-xs font-bold`}>EQUIPE</div>
+                    <div className={`${silkscreenFont} p-2 text-center border-r-2 border-black text-xs font-bold`}>
+                      {activeTab}
+                    </div>
+                    <div className={`${silkscreenFont} p-2 text-center text-xs font-bold`}>
+                      {activeTab === 'PONTOS' ? 'VITÓRIAS' : activeTab === 'VITORIAS' ? 'EFICIÊNCIA' : 'PONTOS'}
+                    </div>
+                  </div>
+
+                  {sortedData.map((team) => (
+                    <div
+                      key={team.name}
+                      className={`grid grid-cols-4 border-b last:border-b-0 ${getRowColor(team.position)} ${user?.equipe && teamData.find(t => t.id === user.equipe)?.nome === team.name
+                        ? 'ring-2 ring-yellow-400 ring-inset'
+                        : ''
+                        }`}
+                    >
+                      <div className={`${silkscreenFont} p-2 text-center border-r flex items-center justify-center`}>
+                        <span className="text-lg">{getPositionIcon(team.position)}</span>
+                      </div>
+                      <div className={`${silkscreenFont} p-2 border-r flex items-center`}>
+                        {team.name}
+                        {user?.equipe && teamData.find(t => t.id === user.equipe)?.nome === team.name && ' 👤'}
+                      </div>
+                      <div className={`${silkscreenFont} p-2 text-center border-r flex items-center justify-center`}>
+                        {activeTab === 'PONTOS' ? team.points :
+                          activeTab === 'VITORIAS' ? team.victories :
+                            `${team.efficiency}%`}
+                      </div>
+                      <div className={`${silkscreenFont} p-2 text-center flex items-center justify-center`}>
+                        {activeTab === 'PONTOS' ? team.victories :
+                          activeTab === 'VITORIAS' ? `${team.efficiency}%` :
+                            team.points}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-center">
+                  <Button
+                    onClick={handleOkClick}
+                    className={`${buttonBaseStyle} px-6 py-2 bg-[#E3922A] text-white hover:bg-[#D4821A] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]`}
+                  >
+                    OK
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+</file>
+
+<file path="src/types/index.ts">
+// src/types/index.ts
+
+export interface TeamHistory {
+  id: string;
+  name: string;
+  stats: {
+    people: number;
+    trophy: number;
+    tasks?: number;
+  };
+  color: string;
+}
+
+export interface Team {
+  id: number;
+  nome: string;
+  stats: {
+    people: number;
+    trophy: number;
+    trucks?: number;
+    tasks?: number;
+  };
+
+  eficiencia_media?: number;
+
+  color?: string;
+  selected?: boolean;
+  history?: TeamHistory[];
+}
+
+export interface Map {
+  id: number;
+  nome: string;
+  descricao: string;
+  rotas: any[]; // Pode ser tipado como Rota[] se necessário
+}
+
+// NOVAS INTERFACES PARA EQUIPES
+export interface TeamCreationData {
+  nome: string;
+  descricao?: string;
+}
+
+export interface TeamMember {
+  id: number;
+  nickname: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  level?: number;
+  xp?: number;
+  avatar?: string;
+}
+
+export interface TeamDetails {
+  id: number;
+  nome: string;
+  codigo: string;
+  descricao?: string;
+  lider: TeamMember;
+  membros: TeamMember[];
+  created_at: string;
+  updated_at?: string;
+}
+</file>
+
+<file path="src/api/gameService.ts">
+// src/api/gameService.ts - VERSÃO COMPLETA CORRIGIDA COM RANKING
+import api from './config';
+import { Map, Team } from '../types';
+import { TeamData, RankingApiResponse } from '../types/ranking';
+
+interface EventResponse {
+  id: number;
+  partida: number;
+  evento: {
+    id: number;
+    nome: string;
+    descricao: string;
+    tipo: 'positivo' | 'negativo';
+    chance_base: number;
+    categoria: string;
+    opcoes: Array<{
+      id: number;
+      descricao: string;
+      efeitos: any;
+    }>;
+  };
+  momento: string;
+  ordem: number;
+  opcao_escolhida: null;
+}
+
+interface PartidaResponse {
+  id: number;
+  saldo: number;
+  combustivel_atual: number;
+  quantidade_carga: number;
+  condicao_veiculo: number;
+  estresse_motorista: number;
+  tempo_real: number;
+  pontuacao: number;
+  distancia_percorrida: number;
+  status: string;
+  resultado?: string;
+  motivo_finalizacao?: string;
+  // Novos campos do sistema de eficiência
+  eficiencia?: number;
+  saldo_inicial?: number;
+  quantidade_carga_inicial?: number;
+}
+
+interface RespondResponse {
+  detail: string;
+  partida: PartidaResponse;
+}
+
+interface VehicleResponse {
+  id: number;
+  modelo: string;
+  capacidade_carga: number;
+  capacidade_combustivel: number;
+  velocidade: number;
+  preco: number;
+  autonomia: number;
+}
+
+interface RouteResponse {
+  id: number;
+  nome: string;
+  descricao: string;
+  distancia_km: number;
+  tempo_estimado_horas: number;
+  tipo_estrada: string;
+  velocidade_media_kmh: number;
+  danger_zones_data: any[];
+  dirt_segments_data: any[];
+}
+
+interface MapResponse {
+  id: number;
+  nome: string;
+  descricao: string;
+  rotas: RouteResponse[];
+}
+
+export const GameService = {
+  async getMaps(): Promise<MapResponse[]> {
+    console.log('🗺️ Buscando mapas da API...');
+    try {
+      const response = await api.get('/jogo1/mapas/');
+      console.log('✅ Mapas recebidos:', response.data.length, 'mapas');
+
+      // Log detalhado dos IDs para debug
+      response.data.forEach((mapa: MapResponse) => {
+        console.log(`📍 Mapa "${mapa.nome}" (ID: ${mapa.id}) - ${mapa.rotas.length} rotas`);
+        mapa.rotas.forEach((rota: RouteResponse) => {
+          console.log(`  🛣️ Rota "${rota.nome}" (ID: ${rota.id})`);
+        });
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar mapas:', error);
+      throw error;
+    }
+  },
+
+  // ✅ CORREÇÃO CRÍTICA: getRanking() agora retorna TeamData[] corretamente
+  async getRanking(): Promise<RankingApiResponse> {
+    console.log('🏆 Buscando ranking de eficiência da API...');
+    try {
+      const response = await api.get('/api/ranking/'); // URL correta da API de ranking
+      console.log('✅ Ranking recebido:', response.data.length, 'equipes');
+
+      // Log das equipes para debug
+      if (Array.isArray(response.data)) {
+        response.data.forEach((equipe: TeamData) => {
+          console.log(`🏅 ${equipe.nome}: ${equipe.eficiencia_media.toFixed(1)}% eficiência, ${equipe.stats.vitorias} vitórias`);
+        });
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar ranking:', error);
+      throw error;
+    }
+  },
+
+  // ✅ FUNÇÃO AUXILIAR: Buscar equipe específica por ID
+  async getTeamById(teamId: number): Promise<TeamData | null> {
+    console.log('🔍 Buscando equipe por ID:', teamId);
+    try {
+      const ranking = await this.getRanking();
+      const team = ranking.find(t => t.id === teamId) || null;
+      if (team) {
+        console.log('✅ Equipe encontrada:', team.nome);
+      } else {
+        console.log('❌ Equipe não encontrada para ID:', teamId);
+      }
+      return team;
+    } catch (error) {
+      console.error('❌ Erro ao buscar equipe por ID:', error);
+      throw error;
+    }
+  },
+
+  // ✅ FUNÇÃO AUXILIAR: Buscar posição de uma equipe no ranking
+  async getTeamPosition(teamName: string): Promise<number | null> {
+    console.log('🔍 Buscando posição da equipe:', teamName);
+    try {
+      const ranking = await this.getRanking();
+      const index = ranking.findIndex(t => t.nome === teamName);
+      const position = index !== -1 ? index + 1 : null;
+
+      if (position) {
+        console.log('✅ Posição encontrada:', position);
+      } else {
+        console.log('❌ Equipe não encontrada no ranking:', teamName);
+      }
+
+      return position;
+    } catch (error) {
+      console.error('❌ Erro ao buscar posição da equipe:', error);
+      throw error;
+    }
+  },
+
+  async getVehicles(): Promise<VehicleResponse[]> {
+    console.log('🚛 Buscando veículos da API...');
+    try {
+      const response = await api.get('/jogo1/veiculos/');
+      console.log('✅ Veículos recebidos:', response.data.length, 'veículos');
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar veículos:', error);
+      throw error;
+    }
+  },
+
+  // ✅ CORREÇÃO CRÍTICA: Tratamento correto do HTTP 204 e categorização de erros
+  async getNextEvent(distancia_percorrida: number): Promise<EventResponse> {
+    console.log('🎲 Buscando próximo evento para distância:', distancia_percorrida.toFixed(2), 'km');
+
+    try {
+      const response = await api.post<EventResponse>('/jogo1/proximo-evento/', {
+        distancia_percorrida
+      });
+
+      // ✅ CORREÇÃO: Verificar status explicitamente
+      if (response.status === 200) {
+        if (response.data && response.data.evento) {
+          console.log('✅ Evento recebido:', response.data.evento.nome, '(categoria:', response.data.evento.categoria + ')');
+          return response.data;
+        } else {
+          // HTTP 200 mas dados inválidos - erro real da API
+          console.warn('⚠️ Resposta 200 mas dados inválidos:', response.data);
+          throw new Error('INVALID_API_RESPONSE');
+        }
+      }
+
+      // ✅ CORREÇÃO: Tratar HTTP 204 como caso especial
+      if (response.status === 204) {
+        console.log('✅ Nenhum evento desta vez (HTTP 204 - NORMAL)');
+        throw new Error('NO_EVENT_AVAILABLE');
+      }
+
+      // Outros códigos de status não esperados
+      console.warn('⚠️ Status não esperado:', response.status);
+      throw new Error('UNEXPECTED_STATUS');
+
+    } catch (error: any) {
+      // ✅ CORREÇÃO: Se o erro já é um dos nossos erros controlados, re-lança
+      if (error.message === 'NO_EVENT_AVAILABLE' ||
+        error.message === 'INVALID_API_RESPONSE' ||
+        error.message === 'UNEXPECTED_STATUS') {
+        throw error;
+      }
+
+      // ✅ CORREÇÃO: Trata erros HTTP baseados no status
+      if (error.response?.status === 204) {
+        console.log('✅ Nenhum evento desta vez (Erro 204 - NORMAL)');
+        throw new Error('NO_EVENT_AVAILABLE');
+      } else if (error.response?.status === 400) {
+        console.warn('⚠️ Bad Request ao buscar evento:', error.response?.data);
+        throw new Error('INVALID_REQUEST');
+      } else if (error.response?.status >= 500) {
+        console.error('💥 Erro interno do servidor:', error.response?.status);
+        throw new Error('SERVER_ERROR');
+      } else if (error.code === 'ERR_NETWORK') {
+        console.error('🔥 Erro de rede/conexão');
+        throw new Error('NETWORK_ERROR');
+      } else {
+        console.error('❌ Erro desconhecido ao buscar evento:', error);
+        throw new Error('UNKNOWN_ERROR');
+      }
+    }
+  },
+
+  async respondToEvent(optionId: number): Promise<RespondResponse> {
+    console.log('✋ Respondendo ao evento com opção ID:', optionId);
+    try {
+      const response = await api.post<RespondResponse>('/jogo1/eventos/responder/', {
+        opcao_id: optionId
+      });
+      console.log('✅ Resposta do evento processada:', response.data.detail);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao responder evento:', error);
+      throw error;
+    }
+  },
+
+  async getActiveGame(): Promise<PartidaResponse> {
+    console.log('🎮 Buscando partida ativa...');
+    try {
+      const response = await api.get<PartidaResponse>('/jogo1/partidas/ativa/');
+      console.log('✅ Partida ativa encontrada:', response.data.id);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao buscar partida ativa:', error);
+      throw error;
+    }
+  },
+
+  async createGame(gameData: { mapa: number; rota: number; veiculo: number }): Promise<PartidaResponse> {
+    console.log('🚀 Criando nova partida com dados:', gameData);
+
+    // Validação rigorosa dos dados antes de enviar
+    if (!gameData.mapa || !gameData.rota || !gameData.veiculo) {
+      const error = new Error('Dados inválidos para criar partida');
+      console.error('❌ Dados incompletos:', {
+        mapa: gameData.mapa,
+        rota: gameData.rota,
+        veiculo: gameData.veiculo
+      });
+      throw error;
+    }
+
+    // Validação de tipos
+    if (typeof gameData.mapa !== 'number' || typeof gameData.rota !== 'number' || typeof gameData.veiculo !== 'number') {
+      const error = new Error('IDs devem ser números válidos');
+      console.error('❌ Tipos inválidos:', {
+        mapa: typeof gameData.mapa,
+        rota: typeof gameData.rota,
+        veiculo: typeof gameData.veiculo
+      });
+      throw error;
+    }
+
+    try {
+      const response = await api.post<PartidaResponse>('/jogo1/partidas/nova/', gameData);
+      console.log('✅ Partida criada com sucesso! ID:', response.data.id);
+      console.log('💰 Saldo inicial:', response.data.saldo);
+      console.log('⛽ Combustível inicial:', response.data.combustivel_atual);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Erro ao criar partida:', error);
+
+      // Log detalhado do erro para debug aprimorado
+      if (error.response) {
+        console.error('📋 Status do erro:', error.response.status);
+        console.error('📋 Dados do erro:', error.response.data);
+
+        // Tratamento específico para erro 400 (IDs inválidos)
+        if (error.response.status === 400) {
+          const errorData = error.response.data;
+          console.error('🔍 ERRO DE VALIDAÇÃO DETECTADO:');
+
+          if (errorData.mapa) {
+            console.error('  ❌ Mapa ID', gameData.mapa, ':', errorData.mapa);
+          }
+          if (errorData.rota) {
+            console.error('  ❌ Rota ID', gameData.rota, ':', errorData.rota);
+          }
+          if (errorData.veiculo) {
+            console.error('  ❌ Veículo ID', gameData.veiculo, ':', errorData.veiculo);
+          }
+
+          // Lançar erro mais descritivo
+          throw new Error(`IDs inválidos: ${JSON.stringify(errorData)}`);
+        }
+
+        console.error('📋 Headers do erro:', error.response.headers);
+      } else if (error.request) {
+        console.error('📋 Requisição não respondida:', error.request);
+      } else {
+        console.error('📋 Erro na configuração:', error.message);
+      }
+
+      throw error;
+    }
+  },
+
+  async pauseGame(): Promise<{ detail: string }> {
+    console.log('⏸️ Pausando jogo...');
+    try {
+      const response = await api.post<{ detail: string }>('/jogo1/partidas/pausar/');
+      console.log('✅ Jogo pausado:', response.data.detail);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao pausar jogo:', error);
+      throw error;
+    }
+  },
+
+  async resumeGame(): Promise<{ detail: string }> {
+    console.log('▶️ Retomando jogo...');
+    try {
+      const response = await api.post<{ detail: string }>('/jogo1/partidas/continuar/');
+      console.log('✅ Jogo retomado:', response.data.detail);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao retomar jogo:', error);
+      throw error;
+    }
+  },
+
+  async syncGameProgress(progressData: { tempo_decorrido_segundos: number }): Promise<PartidaResponse> {
+    console.log('🔄 Sincronizando progresso do jogo...', progressData);
+    try {
+      const response = await api.post<PartidaResponse>('/jogo1/partidas/sincronizar/', progressData);
+      console.log('✅ Progresso sincronizado');
+
+      // Log adicional se a partida foi finalizada
+      if (response.data.status === 'concluido') {
+        console.log('🏁 Partida finalizada!');
+        console.log('🏆 Resultado:', response.data.resultado);
+        if (response.data.eficiencia !== undefined) {
+          console.log('📊 Eficiência calculada:', response.data.eficiencia + '%');
+        }
+        console.log('💯 Pontuação final:', response.data.pontuacao);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erro ao sincronizar progresso:', error);
+      throw error;
+    }
+  }
+};
 </file>
 
 <file path="package.json">
@@ -8941,7 +9305,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import kaboom from "kaboom";
-import './game.css'
+import './game.css';
+import { PartidaData } from "../../types/ranking";
 import { Vehicle } from "../../types/vehicle";
 import { GameMiniMap } from "./GameMiniMap";
 import { MapComponent } from "../mapaRota/MapComponent";
@@ -9027,6 +9392,7 @@ export function GameScene() {
   const [gameTime, setGameTime] = useState(0);
   const gameStartTime = useRef<number>(Date.now());
   const manualTimeAdjustment = useRef<number>(0);
+  const [finalGameResults, setFinalGameResults] = useState<PartidaData | null>(null);
   const [currentFuel, setCurrentFuel] = useState<number>(() => {
     const vehicleData = location.state?.selectedVehicle || location.state?.vehicle;
     return vehicleData?.currentFuel || 0;
@@ -9233,6 +9599,25 @@ export function GameScene() {
   });
 
   // ============= FUNÇÕES ORIGINAIS MANTIDAS =============
+  const syncGameMutation = useMutation({
+    mutationFn: (progressData: { tempo_decorrido_segundos: number }) =>
+      GameService.syncGameProgress(progressData),
+    onSuccess: (updatedPartida: PartidaData) => {
+      console.log("✅ Progresso sincronizado!", updatedPartida);
+
+      if (updatedPartida.status === 'concluido') {
+        console.log("🏁 PARTIDA FINALIZADA! Resultados:", updatedPartida);
+        setFinalGameResults(updatedPartida);
+        setGameEnded(true);
+        setShowEndMessage(true);
+        gamePaused.current = true;
+      }
+    },
+    onError: (error) => {
+      console.error("❌ Erro ao sincronizar jogo:", error);
+      alert("Houve um erro ao finalizar a partida. Tente novamente.");
+    }
+  });
 
   const togglePause = () => {
     const nextPausedState = !gamePaused.current;
@@ -9765,7 +10150,14 @@ export function GameScene() {
     return () => clearInterval(interval);
   }, [gameEnded]);
 
-  // Verificar condições de game over
+  // useEffect para finalizar o jogo quando atingir 100%
+  useEffect(() => {
+    if (progress >= 100 && !gameEnded && !syncGameMutation.isPending) {
+      console.log("🏁 Finalizando jogo - progresso 100%");
+      syncGameMutation.mutate({ tempo_decorrido_segundos: gameTime });
+    }
+  }, [progress, gameEnded, gameTime, syncGameMutation]);
+
   const checkGameOver = () => {
     if (!gameLoaded || !gameInitialized.current) {
       console.log("Game Over check skipped - jogo não carregado ainda");
@@ -10287,76 +10679,132 @@ export function GameScene() {
       )}
 
       {/* Mensagem de fim de jogo */}
-      {showEndMessage && (
-        <div className="endMessage"
+      {/* Mensagem de fim de jogo */}
+      {showEndMessage && finalGameResults && (
+        <div
+          className="endMessage"
           style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "white",
-            padding: "30px",
-            borderRadius: "15px",
-            boxShadow: "0 8px 25px rgba(0,0,0,0.3)",
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'rgba(255, 255, 255, 0.98)',
+            border: '3px solid #000',
+            borderRadius: '15px',
+            padding: '30px',
+            textAlign: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
             zIndex: 2000,
-            textAlign: "center",
-            maxWidth: "400px",
-            minWidth: "350px"
+            maxWidth: '500px',
+            width: '90%'
           }}
         >
-          <h2 style={{ color: "#00cc66", marginBottom: "20px" }}>🏁 Parabéns!</h2>
-          <p style={{ fontSize: "18px", marginBottom: "20px" }}>Você completou a viagem com sucesso!</p>
-
-          <div style={{
-            backgroundColor: "#f8f9fa",
-            padding: "15px",
-            borderRadius: "8px",
+          {/* Título dinâmico */}
+          <h2 style={{
+            color: finalGameResults.resultado === 'vitoria' ? "#00cc66" : "#cc3300",
             marginBottom: "20px",
-            textAlign: "left"
+            fontFamily: "'Silkscreen', monospace"
           }}>
-            <h3 style={{ margin: "0 0 10px 0", color: "#333" }}>Resultados Finais:</h3>
-            <p style={{ margin: "5px 0" }}>🚛 Veículo: <strong>{vehicle.name}</strong></p>
-            {selectedRoute && (
-              <p style={{ margin: "5px 0" }}>🗺️ Rota: <strong>{selectedRoute.name}</strong></p>
-            )}
-            <p style={{ margin: "5px 0" }}>⏱️ Tempo total: <strong>{formatTime(gameTime)}</strong></p>
-            <p style={{ margin: "5px 0" }}>💰 Dinheiro final: <strong>R$ {money.toFixed(2)}</strong></p>
-            <p style={{ margin: "5px 0" }}>⛽ Combustível restante: <strong>{currentFuel.toFixed(1)}L ({gasoline.toFixed(1)}%)</strong></p>
-            {activeGameId && (
-              <p style={{ margin: "5px 0" }}>🎮 Partida: <strong>#{activeGameId}</strong></p>
-            )}
+            {finalGameResults.resultado === 'vitoria' ? '🏁 Viagem Concluída! 🏁' : '❌ Fim de Jogo ❌'}
+          </h2>
+
+          {/* Mensagem dinâmica */}
+          <p style={{ fontSize: "16px", marginBottom: "25px", fontWeight: "bold" }}>
+            {finalGameResults.motivo_finalizacao}
+          </p>
+
+          {/* Box de resultados */}
+          <div style={{
+            backgroundColor: "#f8f9fa", padding: "20px", borderRadius: "10px",
+            marginBottom: "25px", textAlign: "left", border: "2px solid #e9ecef"
+          }}>
+            <h3 style={{ margin: "0 0 15px 0", color: "#333", textAlign: "center", fontFamily: "'Silkscreen', monospace" }}>
+              📊 Resultados Finais
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div><strong>🎯 Eficiência:</strong><br /><span style={{ fontSize: "18px", color: "#0066cc" }}>{finalGameResults.eficiencia?.toFixed(1) || '0.0'}%</span></div>
+              <div><strong>💯 Pontuação:</strong><br /><span style={{ fontSize: "18px", color: "#0066cc" }}>{finalGameResults.pontuacao} pts</span></div>
+              <div><strong>💰 Saldo Final:</strong><br /><span style={{ fontSize: "16px" }}>R$ {finalGameResults.saldo.toFixed(2)}</span></div>
+              <div><strong>📦 Carga:</strong><br /><span style={{ fontSize: "16px" }}>{finalGameResults.quantidade_carga} / {finalGameResults.quantidade_carga_inicial} un.</span></div>
+            </div>
+            <div style={{ marginTop: "15px", textAlign: "center" }}>
+              <strong>⏱️ Tempo Total:</strong> {formatTime(finalGameResults.tempo_real * 60)}
+            </div>
           </div>
 
-          <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+          {/* Botões de ação */}
+          <div style={{ display: "flex", gap: "15px", justifyContent: "center", flexWrap: "wrap" }}>
             <button
-              onClick={() => navigate('/routes')}
+              onClick={() => navigate('/ranking')}
               style={{
-                padding: "12px 20px",
+                padding: "12px 24px",
+                backgroundColor: "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "bold"
+              }}
+            >
+              🏆 Ver Ranking
+            </button>
+            <button
+              onClick={() => navigate('/game-selection')}
+              style={{
+                padding: "12px 24px",
                 backgroundColor: "#0077cc",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
-                fontSize: "16px",
+                fontSize: "14px",
                 fontWeight: "bold"
               }}
             >
-              Nova Viagem
+              🚚 Nova Viagem
             </button>
             <button
-              onClick={() => navigate('/select-vehicle')}
+              onClick={() => navigate('/perfil')}
               style={{
-                padding: "12px 20px",
+                padding: "12px 24px",
                 backgroundColor: "#6c757d",
                 color: "white",
                 border: "none",
                 borderRadius: "8px",
                 cursor: "pointer",
-                fontSize: "16px"
+                fontSize: "14px"
               }}
             >
-              Trocar Veículo
+              👤 Perfil
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay de carregamento durante finalização */}
+      {syncGameMutation.isPending && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1999
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '20px',
+            borderRadius: '10px',
+            textAlign: 'center',
+            border: '2px solid #000'
+          }}>
+            <div style={{ marginBottom: '10px', fontSize: '24px' }}>⏳</div>
+            <p style={{ margin: 0, fontSize: '16px' }}>Finalizando partida...</p>
           </div>
         </div>
       )}
@@ -10763,7 +11211,7 @@ import { VehicleSelectionPage } from './pages/escolherVeiculo';
 import { Login } from "./pages/auth/Login/Login";
 import { Cadastro } from "./pages/auth/Cadastro/Cadastro";
 import { ForgotPassword } from "./pages/auth/ForgotPassword/ForgotPassword";
-import { ChangePassword } from "./pages/Perfil/ChangePassword"; 
+import { ChangePassword } from "./pages/Perfil/ChangePassword";
 import { TutorialPage } from "./pages/Tutorial/TutorialPage";
 import { PerfilPage } from "./pages/Perfil/PerfilPage";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -10773,10 +11221,10 @@ import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
 import { EditarEquipePage } from "./pages/Perfil/EditarEquipe";
 import { EntrarEquipePage } from "./pages/Perfil/EntrarEquipe";
-import { CriarEquipePage} from "./pages/Perfil/CriarEquipe";
+import { CriarEquipePage } from "./pages/Perfil/CriarEquipe";
 import { createRoot } from "react-dom/client";
 import GameSelectionPage from "./pages/GameSelection/GameSelectionPage";
-import { ApresentacaoDesafioPage} from "./pages/Desafio/ApresentacaoDesafio";
+import { ApresentacaoDesafioPage } from "./pages/Desafio/ApresentacaoDesafio";
 import { RankingPage } from "./pages/Ranking/RankingPage";
 import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam";
 import { GameScene } from "./pages/Game-truck/game";
@@ -10806,112 +11254,112 @@ createRoot(document.getElementById("app") as HTMLElement).render(
             <Route path="/" element={<HomePage />} />
             {/* <Route path="/select-vehicle" element={<HomePage />} />
             <Route path="/mapa-rota" element={<MapComponent />} /> */}
-            
+
             <Route path="/game" element={<GameScene />} />
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Cadastro />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:uidb64/:token" element={<ForgotPassword />} />
-            <Route path="/tutorial" element={<TutorialPage />} /> 
+            <Route path="/tutorial" element={<TutorialPage />} />
 
             {/* Rotas protegidas */}
-            
+
             <Route path="/perfil" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <PerfilPage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/perfil/editar" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <EditarPerfilPage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/perfil/excluir-equipe" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <ExcluirEquipePage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/perfil/editar-equipe" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <EditarEquipePage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/perfil/entrar-equipe" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <EntrarEquipePage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/mudar-senha" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <ChangePassword />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/ranking" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <RankingPage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/game" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <HomePage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/games" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <HomePage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/select-vehicle" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <VehicleSelectionPage />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/mapa-rota" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <MapComponent />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/mapa" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <MapComponent />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/choose-team" element={
-             <ProtectedRoute>
+              <ProtectedRoute>
                 <ChooseTeam />
-             </ProtectedRoute>
+              </ProtectedRoute>
             } />
             <Route path="/create-team" element={
               <ProtectedRoute>
-                <CriarEquipePage/>
-               </ProtectedRoute>
+                <CriarEquipePage />
+              </ProtectedRoute>
             } />
             <Route path="/join-team" element={
               <ProtectedRoute>
-                <EntrarEquipePage/>
-               </ProtectedRoute>
+                <EntrarEquipePage />
+              </ProtectedRoute>
             } />
             <Route path="/desafio" element={
-             <ProtectedRoute>
-               <ApresentacaoDesafioPage />
+              <ProtectedRoute>
+                <ApresentacaoDesafioPage />
               </ProtectedRoute>
-            } />  
+            } />
             <Route path="/game-selection" element={
-             <ProtectedRoute>
-               <GameSelectionPage />
-             </ProtectedRoute>
-            } /> 
-            
+              <ProtectedRoute>
+                <GameSelectionPage />
+              </ProtectedRoute>
+            } />
+
             {/* Rota para o PauseMenu para testes */}
             <Route path="/pause-menu" element={
-             <ProtectedRoute>
-               <PauseMenu 
-                 isVisible={true}
-                 onResume={() => console.log('Resume')}
-                 onGoToProfile={() => console.log('Go to Profile')}
-                 onRestart={() => console.log('Restart')}
-               />
-             </ProtectedRoute>
+              <ProtectedRoute>
+                <PauseMenu
+                  isVisible={true}
+                  onResume={() => console.log('Resume')}
+                  onGoToProfile={() => console.log('Go to Profile')}
+                  onRestart={() => console.log('Restart')}
+                />
+              </ProtectedRoute>
             } />
 
             <Route path="/routes" element={<RoutesPage />} />

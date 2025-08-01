@@ -103,7 +103,7 @@ export const GameService = {
   async getRanking(): Promise<RankingApiResponse> {
     console.log('🏆 Buscando ranking de eficiência da API...');
     try {
-      const response = await api.get('/api/ranking/'); // URL correta da API de ranking
+      const response = await api.get('/jogo1/ranking/'); // URL correta da API de ranking
       console.log('✅ Ranking recebido:', response.data.length, 'equipes');
 
       // Log das equipes para debug

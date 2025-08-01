@@ -3,7 +3,7 @@
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 // Configuração base da API
-const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // Criar instância do axios com configurações padrão
 const api: AxiosInstance = axios.create({
@@ -18,7 +18,7 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Buscar token do localStorage
-    const token = localStorage.getItem('authToken') || localStorage.getItem('access_token');
+    const token = localStorage.getItem('token');
 
     if (token) {
       // Garantir que headers existe

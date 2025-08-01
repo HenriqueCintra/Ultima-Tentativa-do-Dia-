@@ -182,7 +182,8 @@ export const RankingPage = () => {
                   </p>
                 </div>
 
-                {userStats && (
+                {userStats ? (
+                  // Se userStats existir, renderiza o card completo
                   <div className="mb-4">
                     <Card className="bg-yellow-50 border-2 border-yellow-400 rounded-lg">
                       <CardContent className="p-3">
@@ -210,6 +211,22 @@ export const RankingPage = () => {
                               <p className={`${silkscreenFont} text-sm font-bold`}>{userStats.efficiency}%</p>
                             </div>
                           </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  // Se userStats for nulo, renderiza a mensagem de fallback
+                  <div className="mb-4">
+                    <Card className="bg-gray-50 border-2 border-gray-300 rounded-lg">
+                      <CardContent className="p-4">
+                        <div className="text-center">
+                          <p className={`${silkscreenFont} text-sm text-gray-700`}>
+                            Sua equipe ainda não está no ranking.
+                          </p>
+                          <p className={`${silkscreenFont} text-xs text-gray-500 mt-1`}>
+                            Complete uma partida para ver suas estatísticas aqui!
+                          </p>
                         </div>
                       </CardContent>
                     </Card>

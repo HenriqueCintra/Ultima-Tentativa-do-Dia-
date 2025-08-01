@@ -88,8 +88,6 @@ export function GameScene() {
   const handleResizeRef = useRef<(() => void) | null>(null);
 
   const [gameTime, setGameTime] = useState(0);
-  const gameStartTime = useRef<number>(Date.now());
-  const manualTimeAdjustment = useRef<number>(0);
   const [finalGameResults, setFinalGameResults] = useState<PartidaData | null>(null);
   const [currentFuel, setCurrentFuel] = useState<number>(() => {
     const vehicleData = location.state?.selectedVehicle || location.state?.vehicle;
@@ -259,10 +257,12 @@ export function GameScene() {
       setCurrentFuel(updatedPartida.combustivel_atual);
 
       // Atualizar outros estados se necessário
-      if (updatedPartida.tempo_real !== undefined) {
-        const newGameTime = updatedPartida.tempo_real * 60; // Converter de minutos para segundos
-        setGameTime(newGameTime);
-        manualTimeAdjustment.current += (newGameTime - gameTime);
+      if (updatedPartida.tempo_jogo !== undefined) {
+        // O backend nos envia 'tempo_jogo' em minutos.
+        // Convertemos para segundos e garantimos que seja no mínimo 0.
+        const newTimeInSeconds = Math.max(0, Math.round(updatedPartida.tempo_jogo * 60));
+        setGameTime(newTimeInSeconds);
+        console.log(`⏱️ Tempo da partida atualizado pelo servidor para: ${formatTime(newTimeInSeconds)}`);
       }
 
       // Mostrar resultado do evento
@@ -650,10 +650,6 @@ export function GameScene() {
               }
               // ================================================================
 
-              if (progressPercent >= 100) {
-                setGameEnded(true);
-                gamePaused.current = true;
-              }
             });
 
           });
@@ -778,24 +774,25 @@ export function GameScene() {
       setCurrentFuel(savedProgressData.currentFuel);
       setProgress(savedProgressData.progress);
       setCurrentPathIndex(savedProgressData.currentPathIndex);
-      setGameTime(savedProgressData.gameTime);
+
+      // --- TEMPO CORRIGIDO PARA JOGOS SALVOS ---
+      const savedTime = Math.max(0, savedProgressData.gameTime || 0);
+      setGameTime(savedTime);
+      // --- FIM DA CORREÇÃO PARA JOGOS SALVOS ---
 
       progressRef.current = savedProgressData.progress;
       currentPathIndexRef.current = savedProgressData.currentPathIndex;
       pathProgressRef.current = savedProgressData.pathProgress;
 
-      gameStartTime.current = Date.now() - (savedProgressData.gameTime * 1000);
-      manualTimeAdjustment.current = savedProgressData.manualTimeAdjustment || 0;
-
       console.log("Estados restaurados do save:", {
         currentFuel: savedProgressData.currentFuel,
         progress: savedProgressData.progress,
         currentPathIndex: savedProgressData.currentPathIndex,
-        gameTime: savedProgressData.gameTime,
-        manualTimeAdjustment: manualTimeAdjustment.current
+        gameTime: savedTime // Valor corrigido
       });
     } else {
       setCurrentFuel(vehicle.currentFuel || vehicle.maxCapacity);
+      setGameTime(0); // Para jogos novos, inicializar com 0
     }
 
     if (selectedRoute) {
@@ -830,18 +827,12 @@ export function GameScene() {
   }, []);
 
   // Timer do jogo
+  // Timer do jogo (VERSÃO CORRIGIDA E SIMPLIFICADA)
   useEffect(() => {
     const interval = setInterval(() => {
       if (!gamePaused.current && !gameEnded && !processingEvent.current) {
-        const currentTime = Date.now();
-        const baseElapsedSeconds = Math.floor((currentTime - gameStartTime.current) / 1000);
-        const finalElapsedSeconds = baseElapsedSeconds + manualTimeAdjustment.current;
-
-        if (finalElapsedSeconds % 30 === 0 && finalElapsedSeconds > 0) {
-          console.log(`🕐 Timer: ${formatTime(finalElapsedSeconds)} (base: ${baseElapsedSeconds}s + ajuste: ${manualTimeAdjustment.current}s)`);
-        }
-
-        setGameTime(finalElapsedSeconds);
+        // Simplesmente adiciona 1 segundo ao estado de tempo existente
+        setGameTime(prevTime => Math.max(0, prevTime + 1));
       }
     }, 1000);
 
@@ -852,7 +843,13 @@ export function GameScene() {
   useEffect(() => {
     if (progress >= 100 && !gameEnded && !syncGameMutation.isPending) {
       console.log("🏁 Finalizando jogo - progresso 100%");
-      syncGameMutation.mutate({ tempo_decorrido_segundos: gameTime });
+      console.log(`⏱️ Tempo atual do jogo: ${gameTime} segundos`);
+
+      // Garantir que o tempo seja válido antes de enviar
+      const tempoFinal = Math.max(0, gameTime);
+      console.log(`⏱️ Tempo enviado para sincronização: ${tempoFinal} segundos`);
+
+      syncGameMutation.mutate({ tempo_decorrido_segundos: tempoFinal });
     }
   }, [progress, gameEnded, gameTime, syncGameMutation]);
 

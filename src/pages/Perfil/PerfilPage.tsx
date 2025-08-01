@@ -47,12 +47,12 @@ export const PerfilPage = () => {
   const handleContinueGame = () => {
     // Verificar se há progresso salvo
     const savedProgress = localStorage.getItem('savedGameProgress');
-    
+
     if (savedProgress) {
       try {
         const gameProgress = JSON.parse(savedProgress);
         console.log('Carregando progresso salvo:', gameProgress);
-        
+
         // Navegar para o jogo com o progresso salvo
         navigate('/game', {
           state: {
@@ -207,7 +207,7 @@ export const PerfilPage = () => {
                           {localAvatar === "/mario.png" && user.first_name ? (
                             <span
                               className="text-sm font-bold select-none  [font-family:'Silkscreen',Helvetica] text-white"
-                             
+
                             >
                               {<h1 className="text-5xl font-bold text-black content-center">{user.first_name.charAt(0).toUpperCase()}</h1>}
                             </span>
@@ -253,7 +253,7 @@ export const PerfilPage = () => {
                           >
                             SAIR
                           </Button>
-                        
+
                         </>
                       )}
                       <div className="text-xs text-gray-600 mt-1">
@@ -410,8 +410,8 @@ export const PerfilPage = () => {
                           {localStorage.getItem('savedGameProgress') ? 'CONTINUAR' : 'NOVO JOGO'}
                         </h3>
                         <p className="[font-family:'Silkscreen',Helvetica] text-xs">
-                          {localStorage.getItem('savedGameProgress') 
-                            ? 'RETOMAR A ÚLTIMA PARTIDA' 
+                          {localStorage.getItem('savedGameProgress')
+                            ? 'RETOMAR A ÚLTIMA PARTIDA'
                             : 'INICIAR NOVA AVENTURA'}
                         </p>
                       </div>

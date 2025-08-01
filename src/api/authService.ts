@@ -1,27 +1,19 @@
-// src/api/authService.ts - Serviço de autenticação
 
 import api from './config';
 
+// --- INTERFACES CORRETAS ---
 interface LoginCredentials {
   username: string;
   password: string;
 }
 
-interface LoginResponse {
-  access_token: string;
-  refresh_token?: string;
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    nickname: string;
-    first_name?: string;
-    last_name?: string;
-    data_nascimento?: string;
-    equipe?: number;
-  };
+// Interface que corresponde à resposta do backend (simple-jwt)
+interface TokenResponse {
+  access: string;
+  refresh: string;
 }
 
+// Interface para os dados do usuário que vêm da API
 interface UserProfileResponse {
   id: number;
   username: string;
@@ -31,236 +23,108 @@ interface UserProfileResponse {
   last_name?: string;
   data_nascimento?: string;
   equipe?: number;
-  data_cadastro?: string;
-  is_active?: boolean;
 }
 
+// Interface para atualização de perfil
+interface UpdateProfileData {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  data_nascimento?: string;
+}
+
+// --- CLASSE DE SERVIÇO COM URLS E LÓGICA CORRIGIDAS ---
+
 class AuthServiceClass {
-  private tokenKey = 'authToken';
-  private refreshTokenKey = 'refresh_token';
+  private tokenKey = 'token';
+  private refreshTokenKey = 'refreshToken';
 
   /**
-   * Realiza login do usuário
+   * Realiza login do usuário.
    */
-  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+  async login(credentials: LoginCredentials): Promise<TokenResponse> {
     try {
-      console.log('🔐 Fazendo login para:', credentials.username);
+      console.log('🔐 Tentando login com a URL correta...');
 
-      const response = await api.post<LoginResponse>('/auth/login/', credentials);
+      // ✅ CORREÇÃO APLICADA: URL correta para obter o token
+      const response = await api.post<TokenResponse>('/auth/token/', credentials);
 
-      // Salvar tokens no localStorage
-      if (response.data.access_token) {
-        localStorage.setItem(this.tokenKey, response.data.access_token);
-        console.log('✅ Token salvo no localStorage');
+      const { access, refresh } = response.data;
+
+      if (access) {
+        localStorage.setItem(this.tokenKey, access);
+      }
+      if (refresh) {
+        localStorage.setItem(this.refreshTokenKey, refresh);
       }
 
-      if (response.data.refresh_token) {
-        localStorage.setItem(this.refreshTokenKey, response.data.refresh_token);
-        console.log('✅ Refresh token salvo no localStorage');
-      }
-
-      console.log('✅ Login realizado com sucesso');
+      console.log('✅ Login bem-sucedido. Tokens armazenados.');
       return response.data;
 
     } catch (error: any) {
       console.error('❌ Erro no login:', error);
-
-      // Limpar tokens em caso de erro
-      this.clearTokens();
-
-      // Relançar erro com mensagem mais amigável
+      this.logout(); // Limpa tokens em caso de falha
       if (error.response?.status === 401) {
-        throw new Error('Usuário ou senha incorretos');
-      } else if (error.response?.status === 400) {
-        throw new Error('Dados de login inválidos');
-      } else if (error.code === 'ERR_NETWORK') {
-        throw new Error('Erro de conexão. Verifique sua internet.');
-      } else {
-        throw new Error('Erro interno do servidor. Tente novamente.');
+        throw new Error('Usuário ou senha incorretos.');
       }
+      throw new Error('Falha ao realizar login. Tente novamente mais tarde.');
     }
   }
 
   /**
-   * Faz logout do usuário
-   */
-  logout(): void {
-    try {
-      console.log('👋 Fazendo logout...');
-
-      // Limpar tokens
-      this.clearTokens();
-
-      // Opcional: Chamar endpoint de logout no servidor
-      // api.post('/auth/logout/').catch(() => {
-      //   // Ignorar erros do logout no servidor
-      // });
-
-      console.log('✅ Logout realizado com sucesso');
-    } catch (error) {
-      console.error('❌ Erro no logout:', error);
-    }
-  }
-
-  /**
-   * Obtém perfil do usuário logado
+   * Obtém o perfil do usuário logado.
    */
   async getProfile(): Promise<{ data: UserProfileResponse }> {
     try {
-      console.log('👤 Buscando perfil do usuário...');
+      console.log('👤 Buscando perfil com a URL correta...');
 
-      const response = await api.get<UserProfileResponse>('/auth/me/');
+      // ✅ CORREÇÃO APLICADA: URL correta para o perfil do usuário
+      const response = await api.get<UserProfileResponse>('/auth/perfil/');
 
-      console.log('✅ Perfil obtido:', response.data.username);
+      console.log('✅ Perfil obtido com sucesso:', response.data.username);
       return { data: response.data };
 
     } catch (error: any) {
       console.error('❌ Erro ao obter perfil:', error);
-
-      // Se token for inválido, fazer logout
       if (error.response?.status === 401) {
         this.logout();
       }
-
       throw error;
     }
   }
 
   /**
-   * Verifica se usuário está autenticado
+   * Atualiza o perfil do usuário.
    */
-  isAuthenticated(): boolean {
-    const token = localStorage.getItem(this.tokenKey);
-    const isAuth = !!token;
-
-    console.log('🔍 Verificando autenticação:', isAuth ? 'Autenticado' : 'Não autenticado');
-    return isAuth;
+  async updateProfile(userData: UpdateProfileData) {
+    // ✅ URL CORRETA JÁ ESTAVA SENDO USADA
+    return await api.patch('/auth/perfil/', userData);
   }
 
   /**
-   * Obtém token de acesso atual
+   * Faz logout do usuário, limpando os tokens.
+   */
+  logout(): void {
+    console.log('👋 Fazendo logout e limpando tokens...');
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+  }
+
+  /**
+   * Verifica se há um token de acesso armazenado.
+   */
+  isAuthenticated(): boolean {
+    return !!localStorage.getItem(this.tokenKey);
+  }
+
+  /**
+   * Retorna o token de acesso.
    */
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);
   }
-
-  /**
-   * Obtém refresh token atual
-   */
-  getRefreshToken(): string | null {
-    return localStorage.getItem(this.refreshTokenKey);
-  }
-
-  /**
-   * Atualiza token usando refresh token
-   */
-  async refreshAccessToken(): Promise<string | null> {
-    try {
-      const refreshToken = this.getRefreshToken();
-
-      if (!refreshToken) {
-        console.warn('⚠️ Refresh token não encontrado');
-        return null;
-      }
-
-      console.log('🔄 Atualizando token...');
-
-      const response = await api.post<{ access_token: string }>('/auth/refresh/', {
-        refresh_token: refreshToken
-      });
-
-      // Salvar novo token
-      localStorage.setItem(this.tokenKey, response.data.access_token);
-
-      console.log('✅ Token atualizado com sucesso');
-      return response.data.access_token;
-
-    } catch (error) {
-      console.error('❌ Erro ao atualizar token:', error);
-
-      // Se refresh falhar, fazer logout
-      this.logout();
-      return null;
-    }
-  }
-
-  /**
-   * Limpa todos os tokens
-   */
-  private clearTokens(): void {
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem(this.refreshTokenKey);
-    localStorage.removeItem('access_token'); // Compatibilidade
-  }
-
-  /**
-   * Registra novo usuário
-   */
-  async register(userData: {
-    username: string;
-    email: string;
-    password: string;
-    nickname: string;
-    first_name?: string;
-    last_name?: string;
-    data_nascimento?: string;
-  }): Promise<UserProfileResponse> {
-    try {
-      console.log('📝 Registrando novo usuário:', userData.username);
-
-      const response = await api.post<UserProfileResponse>('/auth/register/', userData);
-
-      console.log('✅ Usuário registrado com sucesso');
-      return response.data;
-
-    } catch (error: any) {
-      console.error('❌ Erro no registro:', error);
-
-      if (error.response?.status === 400) {
-        throw new Error('Dados de registro inválidos');
-      } else if (error.response?.status === 409) {
-        throw new Error('Usuário já existe');
-      } else {
-        throw new Error('Erro interno do servidor');
-      }
-    }
-  }
-
-  /**
-   * Solicita redefinição de senha
-   */
-  async requestPasswordReset(email: string): Promise<void> {
-    try {
-      console.log('📧 Solicitando redefinição de senha para:', email);
-
-      await api.post('/auth/password-reset/', { email });
-
-      console.log('✅ Email de redefinição enviado');
-    } catch (error) {
-      console.error('❌ Erro ao solicitar redefinição:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Confirma redefinição de senha
-   */
-  async confirmPasswordReset(token: string, newPassword: string): Promise<void> {
-    try {
-      console.log('🔑 Confirmando redefinição de senha...');
-
-      await api.post('/auth/password-reset-confirm/', {
-        token,
-        password: newPassword
-      });
-
-      console.log('✅ Senha redefinida com sucesso');
-    } catch (error) {
-      console.error('❌ Erro ao redefinir senha:', error);
-      throw error;
-    }
-  }
 }
 
+// Exporta uma única instância da classe (Singleton Pattern)
 const AuthService = new AuthServiceClass();
 export default AuthService;
