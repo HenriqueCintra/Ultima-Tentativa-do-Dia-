@@ -48,7 +48,8 @@ export function GameScene() {
 
   // REFs DE CONTROLE DE EVENTOS
   const lastEventCheckKm = useRef(0);
-  const activeGameIdRef = useRef<number | null>(null); // REF PARA STALE CLOSURE
+  const activeGameIdRef = useRef<number | null>(null);
+  const isFinishing = useRef(false);// REF PARA STALE CLOSURE
 
   const location = useLocation();
   const navigate = useNavigate();

@@ -2,9 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { TeamData, RankingApiResponse } from '../types/ranking';
-import { GameService } from '../api/gameService';
+import api from '../api/config';
+import { useAuth } from '../contexts/AuthContext'; // ✅ IMPORTAÇÃO ADICIONADA
 
 export const useRanking = () => {
+  // ✅ HOOK DO AUTH PARA VERIFICAR ESTADO DE CARREGAMENTO
+  const { user, loading: authLoading } = useAuth();
+
   // Busca os dados brutos da API usando react-query
   const {
     data,
@@ -14,8 +18,13 @@ export const useRanking = () => {
     refetch
   } = useQuery<RankingApiResponse>({
     queryKey: ['ranking'],
-    queryFn: GameService.getRanking,
+    queryFn: async () => {
+      const response = await api.get('/jogo1/ranking/');
+      return response.data;
+    },
     initialData: [], // Garante que sempre temos um array
+    // ✅ CONDIÇÃO CRÍTICA: Só busca dados quando o auth terminou de carregar E o usuário existe
+    enabled: !authLoading && !!user,
   });
 
   // Garantir que data é sempre um array de TeamData
@@ -34,7 +43,8 @@ export const useRanking = () => {
 
   return {
     teamData,
-    loading: isLoading,
+    // ✅ O loading agora reflete o estado real: auth loading OU query loading
+    loading: authLoading || isLoading,
     error: isError ? (error as Error).message : null,
     refetch,
     getUserPosition,
