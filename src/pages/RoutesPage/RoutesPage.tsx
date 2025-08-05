@@ -66,7 +66,7 @@ export const RoutesPage: React.FC = () => {
     console.log("📍 Rotas estáticas disponíveis:", staticRoutesData.map(r => r.name));
 
     // Focar apenas no mapa principal de entregas
-    const mapaPrincipal = mapsData.find(m => m.nome === "ENTREGA EFICIENTE");
+    const mapaPrincipal = mapsData[0];
     if (!mapaPrincipal) {
       console.warn("⚠️ Mapa principal 'ENTREGA EFICIENTE' não encontrado");
       console.log("🔍 Mapas disponíveis:", mapsData.map(m => `"${m.nome}" (ID: ${m.id})`));
