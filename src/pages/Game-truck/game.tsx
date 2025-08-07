@@ -1053,7 +1053,8 @@ export function GameScene() {
         display: "flex",
         flexDirection: "column",
         gap: "1vh",
-        alignItems: "flex-end"
+        alignItems: "flex-end",
+        fontFamily: "'Silkscreen', monospace"
       }}>
         {/* Minimapa */}
         {selectedRoute?.pathCoordinates && (
@@ -1064,7 +1065,8 @@ export function GameScene() {
               cursor: "pointer",
               transition: "transform 0.2s ease, box-shadow 0.2s ease",
               borderRadius: "50%",
-              overflow: "hidden"
+              overflow: "hidden",
+              fontFamily: "'Silkscreen', monospace"
             }}
             onClick={handleMapModalToggle}
             onMouseOver={(e) => {
@@ -1093,10 +1095,10 @@ export function GameScene() {
           padding: "min(2vh, 15px)",
           backgroundColor: "rgba(255, 255, 255, 0.9)",
           borderRadius: "12px",
-          fontFamily: "monospace",
           width: "min(18vw, 220px)",
           boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-          fontSize: "min(2vw, 16px)"
+          fontSize: "min(2vw, 16px)",
+          fontFamily: "'Silkscreen', monospace"
         }}>
           <div style={{ fontSize: "16px", marginBottom: "10px", color: "#333" }}>
             💰 <strong>R$ {money.toFixed(2)}</strong>
@@ -1184,7 +1186,8 @@ export function GameScene() {
             minWidth: "400px",
             maxWidth: "600px",
             zIndex: 2000,
-            border: "3px solid #333"
+            border: "3px solid #333",
+            fontFamily: "'Silkscreen', monospace"
           }}
         >
           {/* Indicador de categoria do evento */}
@@ -1204,7 +1207,7 @@ export function GameScene() {
           </div>
 
           {/* Texto e descrição */}
-          <div className="tittle" style={{ marginBottom: "10px" }}>
+          <div className="font-[Silkscreen]" style={{ marginBottom: "10px" }}>
             <p style={{
               fontSize: "28px",
               color: "#333",

@@ -8,6 +8,7 @@ import { Route } from './routesData';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Vehicle } from '../../types/vehicle';
 import { ArrowLeft } from 'lucide-react';
+import { GameService } from '../../api/gameService';
 
 // --- Correção para o ícone padrão do Leaflet ---
 import defaultIcon from 'leaflet/dist/images/marker-icon.png';
@@ -555,6 +556,26 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     });
   };
 
+  const handlePause = async () => {
+    try {
+      await GameService.pauseGame();
+      setIsPlaying(false);
+      console.log('Jogo pausado no backend');
+    } catch (error) {
+      console.error('Erro ao pausar jogo:', error);
+    }
+  };
+  
+  const handleResume = async () => {
+    try {
+      await GameService.resumeGame();
+      setIsPlaying(true);
+      console.log('Jogo retomado no backend');
+    } catch (error) {
+      console.error('Erro ao retomar jogo:', error);
+    }
+  };
+
   const handleFuelEmpty = useCallback(() => {
     setIsPlaying(false);
     setGameOverReason('combustível');
@@ -581,11 +602,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       )}
 
-      <div className={`flex-1 w-full relative bg-gray-200 rounded-lg shadow-inner border-4 border-black ${showControls ? 'mt-20' : ''}`}>
+      <div className={` font-[silkscreen] flex-1 w-full relative bg-gray-200 rounded-lg shadow-inner border-4 border-black ${showControls ? 'mt-20' : ''}`}>
         {selectedRoute && showControls && (
-          <div className="absolute top-4 right-4 flex space-x-2 z-[1000]">
+          <div className="font-[silkscreen] absolute top-4 right-4 flex space-x-2 z-[1000]">
             <button
-              className="px-4 py-2 bg-green-500 text-white font-bold text-md rounded-md shadow-lg hover:bg-green-600 transition-all duration-200 border-2 border-black"
+              className="font-[silkscreen]px-4 py-2 bg-green-500 text-white font-bold text-md rounded-md shadow-lg hover:bg-green-600 transition-all duration-200 border-2 border-black"
               onClick={() => setIsPlaying(true)}
               disabled={isPlaying || !selectedRoute.pathCoordinates || selectedRoute.pathCoordinates.length < 2 || vehicle.currentFuel <= 0}
             >
@@ -610,7 +631,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             )}
             <button
               className="px-4 py-2 bg-yellow-500 text-black font-bold text-md rounded-md shadow-lg hover:bg-yellow-600 transition-all duration-200 border-2 border-black"
-              onClick={() => setIsPlaying(false)}
+              onClick={handlePause}
               disabled={!isPlaying}
             >
               PAUSAR
@@ -711,7 +732,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         </MapContainer>
       </div>
       {showControls && (
-        <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20">
+        <div className="lg:w-1/4 w-full p-4 rounded-lg shadow-lg overflow-y-auto mb-4 lg:mb-0 lg:ml-4 mt-20 font-['Silkscreen']">
           <div className="bg-[#FFC06F] p-4 rounded-lg shadow-md border-2 border-black mb-6">
             <h2 className="text-xl font-['Silkscreen'] font-bold mb-3 text-black text-center border-b-2 border-black pb-2">
               INFORMAÇÕES DA ROTA
