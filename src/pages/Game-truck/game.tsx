@@ -481,10 +481,17 @@ export function GameScene() {
             console.log("Tentando carregar sprites...");
             loadSprite("background", "/assets/backgroundd.png");
 
-            const vehicleImageUrl = getVehicleImageUrl(vehicle.image);
+            const vehicleImageUrl = getVehicleImageUrl(vehicle.spriteSheet);
             console.log("Imagem original do veículo:", vehicle.image);
             console.log("URL convertida para kaboom:", vehicleImageUrl);
-            loadSprite("car", vehicleImageUrl);
+
+            loadSprite("car", vehicleImageUrl, {
+              sliceX: 2, // número de colunas (quadros) no spritesheet
+              sliceY: 1, // geralmente 1 linha
+              anims: {
+                run: { from: 0, to: 1, loop: true, speed: 8 },
+              },
+            });
 
             console.log("Todos os sprites carregados com sucesso");
           } catch (error) {
@@ -516,17 +523,20 @@ export function GameScene() {
               { speed },
             ]);
 
-            const roadYPosition = height() * 0.68;
-            const carScale = Math.min(width() / 1365, height() / 762) * 0.6;
+            const roadYPosition = height() * 0.48;
+            const baseWidth = 600; // largura de um frame do caminhão
+            const scaleFactor = (width() / baseWidth) * 0.3; // ajusta pelo tamanho da tela mantendo proporção
 
             const car = add([
-              sprite("car"),
-              pos(width() * 0.08, roadYPosition),
-              area(),
-              body(),
-              z(2),
-              scale(carScale),
+                sprite("car", { anim: "run" }),
+                pos(width() * 0.08, roadYPosition),
+                area(),
+                body(),
+                z(2),
+                scale(scaleFactor),
             ]);
+
+
 
             onUpdate(() => {
               if (gamePaused.current) {
