@@ -89,7 +89,7 @@ export const VehicleSelectionPage = () => {
 
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // Inicia como nulo
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [availableMoney] = useState(100000);
+  const [availableMoney] = useState(10000);
   const [api, setApi] = useState<CarouselApi>();
 
   // NOVO: useEffect para buscar os dados da API quando o componente for montado.
