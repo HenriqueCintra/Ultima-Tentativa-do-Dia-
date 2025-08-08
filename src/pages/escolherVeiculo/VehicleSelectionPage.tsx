@@ -30,18 +30,18 @@ import carretaPng from '@/assets/carreta.png';
 import camhionetePng from '@/assets/caminhonete.png';
 
 // FIXME: Ajustar imagens para cada tipo de veiculo (permitir o envio de imagens ou ter um conjunto de imagens selecionaveis via admin?)
-const getVehicleImage = (modelName: string) => {
+const getSpriteName = (modelName: string) => {
   switch (modelName.toLowerCase()) {
     case 'caminhonete':
-      return camhionetePng;
+      return 'caminhonete';
     case 'caminhão pequeno':
-      return camihaoPequenoPng;
+      return 'caminhao_pequeno';
     case 'caminhão médio':
-      return caminhaoMedioPng;
+      return 'caminhao_medio';
     case 'carreta':
-      return carretaPng;
+      return 'carreta';
     default:
-      return camihaoPequenoPng;
+      return 'caminhao_medio' ;
   }
 };
 
@@ -111,7 +111,9 @@ export const VehicleSelectionPage = () => {
             asphalt: parseFloat((apiVehicle.autonomia / apiVehicle.capacidade_combustivel).toFixed(2)),
             dirt: parseFloat(((apiVehicle.autonomia / apiVehicle.capacidade_combustivel) * 0.8).toFixed(2))
           },
-          image: getVehicleImage(apiVehicle.modelo),
+          image: `/assets/${getSpriteName(apiVehicle.modelo)}.png`,
+          spriteSheet:`/assets/${getSpriteName(apiVehicle.modelo)}_sheet.png`,
+          spriteName: getSpriteName(apiVehicle.modelo),
           maxCapacity: apiVehicle.capacidade_combustivel,
           currentFuel: 0, // Tanque sempre vazio - usuário deve abastecer
           cost: parseFloat(apiVehicle.preco),
