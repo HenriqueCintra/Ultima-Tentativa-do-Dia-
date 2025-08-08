@@ -8,6 +8,7 @@ import { Route } from './routesData';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Vehicle } from '../../types/vehicle';
 import { ArrowLeft } from 'lucide-react';
+import { GameService } from '../../api/gameService';
 
 // --- Correção para o ícone padrão do Leaflet ---
 import defaultIcon from 'leaflet/dist/images/marker-icon.png';
@@ -555,6 +556,26 @@ export const MapComponent: React.FC<MapComponentProps> = ({
     });
   };
 
+  const handlePause = async () => {
+    try {
+      await GameService.pauseGame();
+      setIsPlaying(false);
+      console.log('Jogo pausado no backend');
+    } catch (error) {
+      console.error('Erro ao pausar jogo:', error);
+    }
+  };
+  
+  const handleResume = async () => {
+    try {
+      await GameService.resumeGame();
+      setIsPlaying(true);
+      console.log('Jogo retomado no backend');
+    } catch (error) {
+      console.error('Erro ao retomar jogo:', error);
+    }
+  };
+
   const handleFuelEmpty = useCallback(() => {
     setIsPlaying(false);
     setGameOverReason('combustível');
@@ -610,7 +631,7 @@ export const MapComponent: React.FC<MapComponentProps> = ({
             )}
             <button
               className="px-4 py-2 bg-yellow-500 text-black font-bold text-md rounded-md shadow-lg hover:bg-yellow-600 transition-all duration-200 border-2 border-black"
-              onClick={() => setIsPlaying(false)}
+              onClick={handlePause}
               disabled={!isPlaying}
             >
               PAUSAR

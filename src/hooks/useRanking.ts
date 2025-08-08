@@ -22,8 +22,18 @@ export const useRanking = () => {
       const response = await api.get('/jogo1/ranking/');
       return response.data;
     },
-    initialData: [], // Garante que sempre temos um array
-    // ✅ CONDIÇÃO CRÍTICA: Só busca dados quando o auth terminou de carregar E o usuário existe
+    initialData: [],
+    // ✅ Atualização automática e agressiva para manter o ranking fresco
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
+    // ✅ Polling periódico (15s) mesmo em background para telas abertas
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
+    // ✅ Dados ficam "stale" rapidamente para permitir refetch em foco
+    staleTime: 10_000,
+    retry: 2,
+    // ✅ Só busca dados quando o auth terminou de carregar E o usuário existe
     enabled: !authLoading && !!user,
   });
 

@@ -312,5 +312,13 @@ export const GameService = {
       console.error('❌ Erro ao sincronizar progresso:', error);
       throw error;
     }
+  },
+
+  async saveGameState(gameState: any) {
+    return await api.post('/game/save-state/', gameState);
+  },
+  
+  async loadGameState(matchId: string) {
+    return await api.get(`/game/load-state/${matchId}/`);
   }
 };
