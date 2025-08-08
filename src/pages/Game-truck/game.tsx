@@ -529,8 +529,8 @@ export function GameScene() {
           const previousProgress = progressRef.current;
           progressRef.current = progressPercent;
 
-          // ✅ CORREÇÃO: Só atualiza o estado React se a mudança for significativa
-          if (Math.abs(progressPercent - progress) > 0.1) {
+          // Atualizar progresso mais frequentemente para sincronização suave
+          if (Math.abs(progressPercent - progress) > 0.05) {
             setProgress(progressPercent);
           }
 
@@ -826,6 +826,7 @@ export function GameScene() {
 
     pathProgressRef.current += segmentSpeed;
 
+    // Atualizar currentPathIndex em tempo real
     if (pathProgressRef.current >= 1.0 && currentPathIndexRef.current < totalSegments - 1) {
       currentPathIndexRef.current += 1;
       setCurrentPathIndex(currentPathIndexRef.current);
@@ -1081,7 +1082,7 @@ export function GameScene() {
           >
             <GameMiniMap
               pathCoordinates={selectedRoute.pathCoordinates}
-              currentPathIndex={currentPathIndex}
+              currentPathIndex={currentPathIndexRef.current}
               pathProgress={pathProgressRef.current}
               vehicle={vehicle}
               progress={progress}
@@ -1504,7 +1505,7 @@ export function GameScene() {
                 preAvailableMoney={money}
                 showControls={false}
                 externalProgress={{
-                  currentPathIndex: currentPathIndex,
+                  currentPathIndex: currentPathIndexRef.current,
                   pathProgress: pathProgressRef.current,
                   totalProgress: progress
                 }}

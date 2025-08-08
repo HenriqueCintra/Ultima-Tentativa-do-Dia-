@@ -69,12 +69,20 @@ const TruckMarker: React.FC<{
     const startPoint = pathCoordinates[segmentIndex];
     const endPoint = pathCoordinates[nextIndex];
     
-    // Interpolar entre os dois pontos
-    const lat = startPoint[0] + (endPoint[0] - startPoint[0]) * pathProgress;
-    const lng = startPoint[1] + (endPoint[1] - startPoint[1]) * pathProgress;
+    // Interpolar entre os dois pontos com progresso suavizado
+    const smoothProgress = Math.min(Math.max(0, pathProgress), 1);
+    const lat = startPoint[0] + (endPoint[0] - startPoint[0]) * smoothProgress;
+    const lng = startPoint[1] + (endPoint[1] - startPoint[1]) * smoothProgress;
     
     return [lat, lng] as [number, number];
   }, [pathCoordinates, currentPathIndex, pathProgress]);
+
+  // Atualizar posição do marcador com transição suave
+  useEffect(() => {
+    if (markerRef.current) {
+      markerRef.current.setLatLng(currentPosition);
+    }
+  }, [currentPosition]);
 
   return (
     <Marker
@@ -82,6 +90,57 @@ const TruckMarker: React.FC<{
       icon={vehicleIcon}
       ref={markerRef}
     />
+  );
+};
+
+// Componente para mostrar a direção do caminhão
+const TruckDirection: React.FC<{
+  pathCoordinates: [number, number][];
+  currentPathIndex: number;
+  pathProgress: number;
+}> = ({ pathCoordinates, currentPathIndex, pathProgress }) => {
+  const directionPosition = useMemo(() => {
+    if (!pathCoordinates || pathCoordinates.length < 2) {
+      return null;
+    }
+
+    const totalSegments = pathCoordinates.length - 1;
+    const segmentIndex = Math.min(currentPathIndex, totalSegments - 1);
+    const nextIndex = Math.min(segmentIndex + 1, totalSegments);
+    
+    const startPoint = pathCoordinates[segmentIndex];
+    const endPoint = pathCoordinates[nextIndex];
+    
+    // Calcular posição atual
+    const smoothProgress = Math.min(Math.max(0, pathProgress), 1);
+    const currentLat = startPoint[0] + (endPoint[0] - startPoint[0]) * smoothProgress;
+    const currentLng = startPoint[1] + (endPoint[1] - startPoint[1]) * smoothProgress;
+    
+    // Calcular direção (próximo ponto)
+    const directionLat = startPoint[0] + (endPoint[0] - startPoint[0]) * Math.min(smoothProgress + 0.1, 1);
+    const directionLng = startPoint[1] + (endPoint[1] - startPoint[1]) * Math.min(smoothProgress + 0.1, 1);
+    
+    return {
+      current: [currentLat, currentLng] as [number, number],
+      direction: [directionLat, directionLng] as [number, number]
+    };
+  }, [pathCoordinates, currentPathIndex, pathProgress]);
+
+  if (!directionPosition) return null;
+
+  return (
+    <>
+      {/* Linha de direção */}
+      <Polyline
+        positions={[directionPosition.current, directionPosition.direction]}
+        pathOptions={{
+          color: '#ff6b35',
+          weight: 3,
+          opacity: 0.8,
+          dashArray: '5,5'
+        }}
+      />
+    </>
   );
 };
 
@@ -125,8 +184,8 @@ export const GameMiniMap: React.FC<GameMiniMapProps> = ({
 
   return (
     <div className={className} style={{ position: 'relative' }}>
-      {/* Overlay com informações */}
-      {/* <div style={{
+      {/* ✅ MELHORIA: Overlay com informações de progresso */}
+      <div style={{
         position: 'absolute',
         top: '5px',
         left: '5px',
@@ -137,10 +196,11 @@ export const GameMiniMap: React.FC<GameMiniMapProps> = ({
         padding: '4px 8px',
         borderRadius: '4px',
         fontSize: '11px',
-        textAlign: 'center'
+        textAlign: 'center',
+        fontFamily: "'Silkscreen', monospace"
       }}>
         <div>{progress.toFixed(1)}% Concluído</div>
-      </div> */}
+      </div>
 
       <MapContainer
         center={startCoord}
@@ -205,6 +265,13 @@ export const GameMiniMap: React.FC<GameMiniMapProps> = ({
           currentPathIndex={currentPathIndex}
           pathProgress={pathProgress}
           vehicle={vehicle}
+        />
+
+        {/* Direção do caminhão */}
+        <TruckDirection
+          pathCoordinates={pathCoordinates}
+          currentPathIndex={currentPathIndex}
+          pathProgress={pathProgress}
         />
       </MapContainer>
     </div>
