@@ -45,7 +45,6 @@ export const PerfilPage = () => {
   };
 
   const handleContinueGame = () => {
-    // Verificar se há progresso salvo
     const savedProgress = localStorage.getItem('savedGameProgress');
 
     if (savedProgress) {
@@ -53,7 +52,6 @@ export const PerfilPage = () => {
         const gameProgress = JSON.parse(savedProgress);
         console.log('Carregando progresso salvo:', gameProgress);
 
-        // Navegar para o jogo com o progresso salvo
         navigate('/game', {
           state: {
             selectedVehicle: gameProgress.vehicle,
@@ -64,7 +62,8 @@ export const PerfilPage = () => {
               progress: gameProgress.progress,
               currentPathIndex: gameProgress.currentPathIndex,
               pathProgress: gameProgress.pathProgress,
-              gameTime: gameProgress.gameTime
+              gameTime: gameProgress.gameTime,
+              activeGameId: gameProgress.activeGameId // <-- ADICIONE ESTA LINHA
             }
           }
         });
@@ -74,7 +73,6 @@ export const PerfilPage = () => {
         navigate("/select-vehicle");
       }
     } else {
-      // Se não há progresso salvo, mostrar opção de novo jogo
       const startNewGame = window.confirm('Não há jogo salvo. Deseja iniciar um novo jogo?');
       if (startNewGame) {
         navigate("/desafio");
