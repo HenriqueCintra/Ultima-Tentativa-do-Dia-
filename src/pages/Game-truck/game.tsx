@@ -334,7 +334,8 @@ export function GameScene() {
       pathProgress: pathProgressRef.current,
       gameTime,
       // manualTimeAdjustment REMOVIDO
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      activeGameId: activeGameIdRef.current
     };
     localStorage.setItem('savedGameProgress', JSON.stringify(gameProgress));
     navigate('/perfil');
@@ -352,7 +353,8 @@ export function GameScene() {
       pathProgress: pathProgressRef.current,
       gameTime,
       // manualTimeAdjustment REMOVIDO
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      activeGameId: activeGameIdRef.current
     };
     localStorage.setItem('savedGameProgress', JSON.stringify(gameProgress));
     togglePause();
@@ -648,6 +650,20 @@ export function GameScene() {
       console.error("❌ Dados insuficientes para criar partida. Redirecionando...");
       alert("Erro: Dados do veículo ou rota incompletos.");
       navigate('/routes');
+      return;
+    }
+
+    // Se há savedProgress com activeGameId, reutiliza a partida sem criar nova
+    if (savedProgress && savedProgress.activeGameId) {
+      console.log("🟢 Restaurando partida existente com ID:", savedProgress.activeGameId);
+      setActiveGameId(savedProgress.activeGameId);
+      activeGameIdRef.current = savedProgress.activeGameId;
+
+      // opcional: notificar backend que estamos retomando
+      // await GameService.resumeGame(savedProgress.activeGameId);
+
+      // Agora só inicializa o kaboom com o progresso salvo
+      initializeGame(savedProgress);
       return;
     }
 
