@@ -10,7 +10,8 @@ import { GameMiniMap } from "./GameMiniMap";
 import { MapComponent } from "../mapaRota/MapComponent";
 import { PauseMenu } from "../PauseMenu/PauseMenu";
 import { GameService } from "../../api/gameService";
-
+import { PixelProgressBar } from "../../components/PixelProgressBar/PixelProgressBar";
+import '../../components/PixelProgressBar/PixelProgressBar.css';
 import type {
   GameObj,
   SpriteComp,
@@ -1026,49 +1027,9 @@ export function GameScene() {
         top: "2vh",
         left: "50%",
         transform: "translateX(-50%)",
-        width: "min(60vw, 800px)",
-        height: "min(4vh, 30px)",
-        backgroundColor: "#eee",
         zIndex: 1000,
-        overflow: "hidden",
-        borderRadius: "20px",
-        padding: "2px"
       }}>
-        <div style={{
-          width: `${progress}%`,
-          height: "100%",
-          backgroundColor: "#0077cc",
-          borderRadius: "20px 20px"
-        }}></div>
-
-        {[25, 50, 75].map((p) => (
-          <div key={p} style={{
-            position: "absolute",
-            left: `${p}%`,
-            top: "15%",
-            transform: "translateX(-50%)",
-            width: "20px",
-            height: "20px",
-            backgroundColor: "#fff",
-            border: "2px solid #999",
-            borderRadius: "50%",
-            zIndex: 101,
-          }}></div>
-        ))}
-
-        <span style={{
-          position: "absolute",
-          right: "10px",
-          top: "7px",
-          fontSize: "12px",
-          fontWeight: "bold",
-          color: "#333",
-          zIndex: 102,
-          display: "flex",
-          alignItems: "center"
-        }}>
-          {Math.floor(progress)}%
-        </span>
+        <PixelProgressBar progress={progress} />
       </div>
 
       {/* Container para minimapa e informações */}
