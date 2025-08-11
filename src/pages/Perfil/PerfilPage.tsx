@@ -397,7 +397,7 @@ export const PerfilPage = () => {
                 </Card>
 
                 {/* Continue game card */}
-                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 cursor-pointer hover:bg-gray-50 transition-colors">
+                <Card className="border-2 border-solid border-black rounded-lg overflow-hidden cursor-pointer hover:bg-gray-50 transition-colors">
                   <CardContent className="p-4" onClick={handleContinueGame}>
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-purple-700 rounded-full flex items-center justify-center">
