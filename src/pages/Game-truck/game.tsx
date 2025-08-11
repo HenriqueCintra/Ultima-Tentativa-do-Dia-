@@ -1098,8 +1098,6 @@ export function GameScene() {
           >
             <GameMiniMap
               pathCoordinates={selectedRoute.pathCoordinates}
-              currentPathIndex={currentPathIndexRef.current}
-              pathProgress={pathProgressRef.current}
               vehicle={vehicle}
               progress={progress}
               className="w-full h-full border-2 border-white rounded-full overflow-hidden"
@@ -1470,48 +1468,56 @@ export function GameScene() {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={handleMapModalToggle}
-              style={{
-                position: "absolute",
-                top: "15px",
-                right: "15px",
-                zIndex: 3001,
-                backgroundColor: "#e63946",
-                color: "white",
-                border: "none",
-                borderRadius: "50%",
-                width: "40px",
-                height: "40px",
-                fontSize: "20px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-              }}
-              title="Fechar mapa"
-            >
-              ×
-            </button>
-
             <div
               style={{
-                position: "absolute",
-                top: "15px",
-                left: "15px",
-                zIndex: 3001,
-                backgroundColor: "rgba(0, 0, 0, 0.7)",
-                color: "white",
-                padding: "10px 15px",
-                borderRadius: "5px",
-                fontFamily: '"Silkscreen", monospace',
-                fontSize: "16px",
-                fontWeight: "bold"
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                padding: '15px',
+                display: 'flex',
+                justifyContent: 'space-between', // Alinha itens nas extremidades
+                alignItems: 'center',             // Alinha itens verticalmente
+                boxSizing: 'border-box',          // Garante que o padding não quebre o layout
+                zIndex: 9999,                     // Mantém o cabeçalho na frente
               }}
             >
-              🗺️ {selectedRoute.name} - Posição Atual do Caminhão
+            <div
+              style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                color: 'white',
+                padding: '10px 15px',
+                borderRadius: '5px',
+                fontFamily: '"Silkscreen", monospace',
+                fontSize: '16px',
+                fontWeight: 'bold',
+              }}
+            >
+              🗺️ {selectedRoute.name}
+            </div>
+              <button
+                onClick={handleMapModalToggle}
+                style={{
+                  backgroundColor: '#e63946',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '50%',
+                  height: '45px',
+                  width: '25px',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                  flexShrink: 0,
+                  marginLeft: '15px',
+                }}
+                title="Fechar mapa"
+              >
+                ×
+              </button>
             </div>
 
             <div style={{ width: "100%", height: "100%" }}>
