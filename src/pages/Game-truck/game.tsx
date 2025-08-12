@@ -456,17 +456,17 @@ export function GameScene() {
         console.log("Tentando carregar sprites...");
         loadSprite("background", "/assets/backgroundd.png");
 
-            const vehicleImageUrl = getVehicleImageUrl(vehicle.spriteSheet);
-            console.log("Imagem original do veículo:", vehicle.image);
-            console.log("URL convertida para kaboom:", vehicleImageUrl);
+        const vehicleImageUrl = getVehicleImageUrl(vehicle.spriteSheet);
+        console.log("Imagem original do veículo:", vehicle.image);
+        console.log("URL convertida para kaboom:", vehicleImageUrl);
 
-            loadSprite("car", vehicleImageUrl, {
-              sliceX: 2, // número de colunas (quadros) no spritesheet
-              sliceY: 1, // geralmente 1 linha
-              anims: {
-                run: { from: 0, to: 1, loop: true, speed: 8 },
-              },
-            });
+        loadSprite("car", vehicleImageUrl, {
+          sliceX: 2, // número de colunas (quadros) no spritesheet
+          sliceY: 1, // geralmente 1 linha
+          anims: {
+            run: { from: 0, to: 1, loop: true, speed: 8 },
+          },
+        });
 
         console.log("Todos os sprites carregados com sucesso");
       } catch (error) {
@@ -498,18 +498,18 @@ export function GameScene() {
           { speed },
         ]);
 
-            const roadYPosition = height() * 0.48;
-            const baseWidth = 600; // largura de um frame do caminhão
-            const scaleFactor = (width() / baseWidth) * 0.3; // ajusta pelo tamanho da tela mantendo proporção
+        const roadYPosition = height() * 0.48;
+        const baseWidth = 600; // largura de um frame do caminhão
+        const scaleFactor = (width() / baseWidth) * 0.3; // ajusta pelo tamanho da tela mantendo proporção
 
-            const car = add([
-                sprite("car", { anim: "run" }),
-                pos(width() * 0.08, roadYPosition),
-                area(),
-                body(),
-                z(2),
-                scale(scaleFactor),
-            ]);
+        const car = add([
+          sprite("car", { anim: "run" }),
+          pos(width() * 0.08, roadYPosition),
+          area(),
+          body(),
+          z(2),
+          scale(scaleFactor),
+        ]);
 
 
 
@@ -573,8 +573,7 @@ export function GameScene() {
           // ============= LÓGICA CORRIGIDA DE GATILHO DE EVENTOS =============
 
           // ✅ CORREÇÃO: Configurações de evento mais robustas
-          const EVENT_CHECK_INTERVAL_KM = 20; // Aumentado para dar mais espaço
-          const EVENT_OCCURRENCE_CHANCE = 0.7; // 70% de chance (mais baixa para testes)
+          const EVENT_CHECK_INTERVAL_KM = 5 // Aumentado para dar mais espaço
 
           // ✅ CORREÇÃO: Use progressPercent (valor atualizado) consistentemente
           const distanciaAtualKm = (progressPercent / 100) * totalDistance;
@@ -591,26 +590,13 @@ export function GameScene() {
           );
 
           if (canTriggerEvent) {
-            // ✅ CRÍTICO: Atualiza o checkpoint ANTES do request para evitar duplicatas
             lastEventCheckKm.current = distanciaAtualKm;
 
-            console.log(`📍 Checkpoint de evento alcançado em ${distanciaAtualKm.toFixed(2)}km. Rolando dados...`);
-            console.log(`🎮 activeGameIdRef.current = ${activeGameIdRef.current}`);
-            console.log(`🔄 fetchNextEventMutation.isPending = ${fetchNextEventMutation.isPending}`);
+            console.log(`📍 Checkpoint em ${distanciaAtualKm.toFixed(2)}km. Perguntando ao backend por eventos...`);
 
-            // "Rola o dado" para ver se um evento realmente acontece
-            if (Math.random() < EVENT_OCCURRENCE_CHANCE) {
-              // ✅ CRÍTICO: Marcar como processando ANTES do request
-              processingEvent.current = true;
-              gamePaused.current = true; // Pausa o jogo para o jogador tomar a decisão
-
-              console.log(`🎲 Sorte! Evento irá ocorrer. Buscando no backend...`);
-
-              // ✅ CORREÇÃO: O onError da mutação agora trata adequadamente NO_EVENT_AVAILABLE
-              fetchNextEventMutation.mutate(distanciaAtualKm);
-            } else {
-              console.log(`🎲 Sem sorte desta vez. Nenhum evento ocorreu.`);
-            }
+            processingEvent.current = true;
+            gamePaused.current = true;
+            fetchNextEventMutation.mutate(distanciaAtualKm);
           }
           // ================================================================
 
@@ -1453,19 +1439,19 @@ export function GameScene() {
                 zIndex: 9999,                     // Mantém o cabeçalho na frente
               }}
             >
-            <div
-              style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                color: 'white',
-                padding: '10px 15px',
-                borderRadius: '5px',
-                fontFamily: '"Silkscreen", monospace',
-                fontSize: '16px',
-                fontWeight: 'bold',
-              }}
-            >
-              🗺️ {selectedRoute.name}
-            </div>
+              <div
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                  color: 'white',
+                  padding: '10px 15px',
+                  borderRadius: '5px',
+                  fontFamily: '"Silkscreen", monospace',
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                }}
+              >
+                🗺️ {selectedRoute.name}
+              </div>
               <button
                 onClick={handleMapModalToggle}
                 style={{
