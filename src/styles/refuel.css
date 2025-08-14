@@ -1,0 +1,432 @@
+/* src/styles/refuel.css */
+:root {
+  --font-family-pixel: "Press Start 2P", cursive;
+  --main-bg: #1e1e1e;
+  --header-bg: #3c2a6d;
+  --text-light: #ffffff;
+  --text-dark: #2c2c2c;
+  --panel-left-bg: linear-gradient(to bottom right, #f7b733, #fc4a1a);
+  --panel-right-bg: linear-gradient(to bottom right, #fc4a1a, #f7b733);
+  --card-bg: #a5d8f0;
+  --card-border: #2c2c2c;
+  --btn-yellow-bg: #f7b733;
+  --btn-orange-bg: #fc4a1a;
+  --btn-green-bg: #22a759;
+  --btn-red-bg: #d9534f;
+  --fuel-bar-bg: #d9d9d9;
+  --fuel-bar-progress: #4caf50;
+  --tank-bg: #333333;
+  --fuel-color: #f7b733;
+  --target-color: #ff0000;
+  --success-bg: rgba(4, 170, 109, 0.9);
+  --fail-bg: rgba(217, 83, 79, 0.9);
+}
+
+.refuel-container,
+.minigame-body {
+  font-family: var(--font-family-pixel);
+  background-color: var(--main-bg);
+  color: var(--text-light);
+  min-height: 100vh;
+  text-transform: uppercase;
+}
+.refuel-container {
+  padding: 20px;
+}
+.minigame-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  overflow: hidden;
+  height: 100vh;
+}
+.main-header {
+  background-color: var(--header-bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 3px solid var(--card-border);
+  margin-bottom: 20px;
+}
+.balance-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.9em;
+}
+.final-balance-display {
+  background-color: var(--card-border);
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-top: 5px;
+  font-size: 0.8em;
+}
+.main-container {
+  display: flex;
+  gap: 20px;
+  min-height: calc(100vh - 120px);
+}
+.panel {
+  flex: 1;
+  border-radius: 15px;
+  border: 4px solid var(--card-border);
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.left-panel {
+  background: var(--panel-left-bg);
+}
+.right-panel {
+  background: var(--panel-right-bg);
+}
+.panel-title {
+  text-align: center;
+  font-size: 1.2em;
+  margin-top: 10px;
+  color: var(--text-dark);
+}
+.vehicle-card {
+  background-color: var(--card-bg);
+  border: 3px solid var(--card-border);
+  border-radius: 10px;
+  margin-top: 20px;
+  padding: 15px;
+  color: var(--text-dark);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+.vehicle-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.vehicle-image-container {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 15px 0;
+}
+.truck-image {
+  max-width: 90%;
+  max-height: 160px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.vehicle-name {
+  background-color: var(--btn-green-bg);
+  color: var(--text-light);
+  padding: 5px;
+  border-radius: 5px;
+  border: 2px solid var(--card-border);
+  align-self: flex-start;
+}
+.vehicle-stats {
+  display: flex;
+  justify-content: space-around;
+  margin: 20px 0;
+  font-size: 0.8em;
+  text-align: center;
+}
+.vehicle-stats span {
+  font-weight: bold;
+  font-size: 1.1em;
+}
+.fuel-level {
+  font-size: 0.8em;
+}
+.fuel-level-bar {
+  width: 100%;
+  background-color: var(--fuel-bar-bg);
+  border: 2px solid var(--card-border);
+  border-radius: 20px;
+  padding: 2px;
+  margin-top: 5px;
+}
+.fuel-level-progress {
+  height: 20px;
+  background-color: var(--fuel-bar-progress);
+  border-radius: 20px;
+  transition: width 0.5s ease-in-out;
+}
+.fuel-station-header,
+.total-display {
+  background-color: var(--btn-orange-bg);
+  border: 3px solid var(--card-border);
+  color: var(--text-light);
+  text-align: center;
+  border-radius: 8px;
+}
+.fuel-station-header {
+  padding: 10px;
+  font-size: 1.1em;
+}
+.total-display {
+  padding: 20px;
+  font-size: 1.5em;
+  margin-bottom: 20px;
+  border-width: 4px;
+}
+.price-info {
+  background-color: var(--btn-red-bg);
+  border: 3px solid var(--card-border);
+  color: var(--text-light);
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.9em;
+}
+.quantity-selector {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-dark);
+}
+.quantity-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+.btn {
+  font-family: var(--font-family-pixel);
+  border: 3px solid var(--card-border);
+  padding: 15px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.6);
+  transition: all 0.1s ease-in-out;
+  color: var(--text-dark);
+  text-transform: uppercase;
+}
+.btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.6);
+}
+.btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+.btn:disabled {
+  background-color: #888;
+  color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+.btn-top-left,
+.btn-bottom-left {
+  background-color: var(--btn-yellow-bg);
+}
+.btn-top-left {
+  align-self: flex-start;
+}
+.btn-quantity,
+.btn-fuel-type {
+  background-color: var(--btn-yellow-bg);
+  font-size: 0.8em;
+}
+.btn-quantity.active,
+.btn-fuel-type.active {
+  background-color: var(--btn-green-bg);
+  color: var(--text-light);
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+.btn-refuel {
+  background-color: var(--btn-green-bg);
+  color: var(--text-light);
+  font-size: 1.2em;
+}
+.fuel-type-selector {
+  color: var(--text-dark);
+  text-align: center;
+  margin-top: 20px;
+}
+.fuel-type-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+#game-container {
+  text-align: center;
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  padding: 20px;
+}
+.game-title {
+  font-size: 1.5em;
+  color: var(--fuel-color);
+  text-shadow: 3px 3px 0px var(--text-dark);
+  margin-bottom: 10px;
+}
+.game-subtitle {
+  font-size: 0.8em;
+  margin-bottom: 50px;
+}
+#fuel-nozzle-container {
+  position: absolute;
+  top: 60px;
+  left: 55%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+#fuel-nozzle {
+  width: 150px;
+  transform-origin: 15% 50%;
+  transform: rotate(10deg);
+  transition: transform 0.3s ease;
+}
+#fuel-nozzle.pouring {
+  transform: rotate(80deg);
+}
+#fuel-tank {
+  width: 200px;
+  height: 400px;
+  background-color: var(--tank-bg);
+  border: 4px solid var(--text-dark);
+  border-radius: 10px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.7);
+}
+#current-fuel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  transition: height 0.1s linear;
+}
+#target-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background-color: var(--target-color);
+  border-bottom: 2px dashed var(--text-light);
+  box-shadow: 0 0 10px var(--target-color);
+  z-index: 5;
+}
+#target-line span {
+  position: absolute;
+  right: -70px;
+  top: -12px;
+  font-size: 0.8em;
+}
+#result-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  padding: 20px;
+}
+#result-message {
+  font-size: 2em;
+  padding: 20px;
+  border-radius: 10px;
+  border: 3px solid var(--text-dark);
+}
+#result-detail {
+  margin-top: 15px;
+  font-size: 0.8em;
+  line-height: 1.5;
+}
+#return-button {
+  font-family: var(--font-family-pixel);
+  background-color: var(--fuel-color);
+  color: var(--text-dark);
+  margin-top: 30px;
+  padding: 15px 30px;
+  font-size: 1em;
+  cursor: pointer;
+  border: 3px solid var(--text-dark);
+  border-radius: 8px;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.6);
+}
+.tolerance-zone {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background-color: rgba(76, 175, 80, 0.3);
+  z-index: 4;
+  border-top: 1px dashed rgba(255, 255, 255, 0.5);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.5);
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.modal-content {
+  background: var(--panel-left-bg);
+  padding: 30px;
+  border-radius: 15px;
+  border: 4px solid var(--card-border);
+  text-align: center;
+  color: var(--text-dark);
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.7);
+  max-width: 500px;
+}
+.modal-image {
+  max-width: 100px;
+  margin-bottom: 20px;
+  image-rendering: pixelated;
+}
+.penalty-title {
+  color: var(--btn-red-bg);
+  text-shadow: 2px 2px 0px var(--text-dark);
+  margin-bottom: 15px;
+}
+.penalty-message {
+  font-size: 0.9em;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+@media (max-width: 768px) {
+  .refuel-container {
+    padding: 10px;
+  }
+  .main-container {
+    flex-direction: column;
+    height: auto;
+    gap: 10px;
+  }
+  .main-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  .balance-info {
+    align-items: center;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+}
