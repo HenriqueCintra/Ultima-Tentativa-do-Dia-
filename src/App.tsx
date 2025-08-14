@@ -1,11 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { HomePage } from './pages/Home';
-import { VehicleSelectionPage } from './pages/escolherVeiculo';
-import { RoutesPage } from './pages/RoutesPage/RoutesPage';
-import { FuelPage } from './pages/fuel/FuelPage';
-import { MapComponent } from './pages/mapaRota/MapComponent';
-import { GameScene } from './pages/Game-truck/game';
-import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HomePage } from "./pages/Home";
+import { VehicleSelectionPage } from "./pages/escolherVeiculo";
+import { RoutesPage } from "./pages/RoutesPage/RoutesPage";
+import { FuelPage } from "./pages/fuel/FuelPage";
+import { MapComponent } from "./pages/mapaRota/MapComponent";
+import { GameScene } from "./pages/Game-truck/game";
+import "./App.css";
 
 function App() {
   return (
