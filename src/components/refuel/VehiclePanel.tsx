@@ -9,7 +9,7 @@ const VehiclePanel = () => {
   const fuelPercentage = (vehicle.currentFuel / vehicle.maxCapacity) * 100;
   return (
     <section className="panel left-panel">
-      <button className="btn btn-top-left" onClick={() => navigate('/routes')}>< VOLTAR</button>
+      <button className="btn btn-top-left" onClick={() => navigate('/routes')}>← VOLTAR</button>
       <div className="panel-title">ABASTECER VEÍCULO?</div>
       <div className="vehicle-card">
         <div className="vehicle-info">
