@@ -104,7 +104,7 @@ export const TutorialPage = () => {
               AGORA QUE VOCÊ CONHECE AS REGRAS, ESTÁ PRONTO PARA O DESAFIO BOA SORTE!
             </p>
             <div className="flex justify-center">
-              {/* ✅ BOTÃO CORRIGIDO: Navega para a rota estática /desafio */}
+              {/* Após tutorial, vai para o desafio */}
               <Button 
                 onClick={() => navigate("/desafio")}
                 className="w-[230px] px-36 h-[45px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[26px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105"

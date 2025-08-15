@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useGame } from "../../contexts/GameContext.tsx";
 import Header from "../../components/refuel/Header.tsx";
 import VehiclePanel from "../../components/refuel/VehiclePanel.tsx";
@@ -12,8 +12,29 @@ const WRONG_FUEL_PENALTY = 500.0;
 
 const RefuelScreen = () => {
   const navigate = useNavigate();
-  const { vehicle, playerBalance, setPlayerBalance, formatCurrency } =
-    useGame();
+  const location = useLocation();
+  
+  // Pegar dados do estado da navegação
+  const vehicleFromState = location.state?.selectedVehicle;
+  const moneyFromState = location.state?.availableMoney;
+  const routeFromState = location.state?.selectedRoute;
+  
+  const { formatCurrency } = useGame();
+  
+  // Usar dados do estado ou valores padrão
+  const vehicle = vehicleFromState || {
+    id: "default",
+    name: "VAN",
+    capacity: 20,
+    consumption: { asphalt: 9, dirt: 7 },
+    image: "/caminhao.png",
+    maxCapacity: 100,
+    currentFuel: 0,
+    cost: 10000,
+    spriteSheet: "",
+  };
+  
+  const [playerBalance, setPlayerBalance] = useState(moneyFromState || 20000);
 
   const [selectedFuel, setSelectedFuel] = useState("diesel");
   const [selectedFraction, setSelectedFraction] = useState(0.5);
@@ -32,6 +53,7 @@ const RefuelScreen = () => {
       setPlayerBalance(playerBalance - WRONG_FUEL_PENALTY);
       setShowPenaltyModal(true);
     } else {
+      // Vai para o minigame de abastecimento
       navigate("/minigame", {
         state: {
           refuelInfo: {
@@ -39,6 +61,9 @@ const RefuelScreen = () => {
             fraction: selectedFraction,
             cost: totalCost,
           },
+          selectedVehicle: vehicle,
+          availableMoney: playerBalance,
+          selectedRoute: location.state?.selectedRoute
         },
       });
     }

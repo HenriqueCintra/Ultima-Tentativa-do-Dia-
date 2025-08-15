@@ -151,30 +151,12 @@ export const RoutesPage: React.FC = () => {
         return;
       }
 
-      // ✅ CORREÇÃO: Logs detalhados antes de navegar
-      console.log("✅ Continuando com a rota:", selectedRoute.name);
-      console.log("📋 Dados completos enviados:", {
-        vehicle: vehicle.name,
-        money: availableMoney,
-        route: {
-          id: selectedRoute.id,
-          routeId: selectedRoute.routeId,
-          mapaId: selectedRoute.mapaId,
-          name: selectedRoute.name,
-          pathCoordinatesLength: selectedRoute.pathCoordinates.length
-        }
-      });
-
-      // Garantir que TODOS os dados necessários sejam passados
-      navigate('/fuel', {
+      // Após escolher rota, vai para tela de abastecimento
+      navigate('/refuel', {
         state: {
-          vehicle,
+          selectedVehicle: vehicle,
           availableMoney,
-          selectedRoute: {
-            ...selectedRoute,
-            // Garantir explicitamente que pathCoordinates seja incluído
-            pathCoordinates: selectedRoute.pathCoordinates
-          }
+          selectedRoute
         }
       });
     }

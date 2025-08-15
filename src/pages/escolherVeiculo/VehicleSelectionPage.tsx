@@ -81,6 +81,7 @@ const VehicleCard: React.FC<{
 
 export const VehicleSelectionPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // NOVO: Estados para guardar os veículos da API, o estado de loading e possíveis erros.
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -160,9 +161,10 @@ export const VehicleSelectionPage = () => {
     if (selectedIndex === null) return; // Proteção extra
     const selectedVehicle = vehicles[selectedIndex];
     if (selectedVehicle.cost <= availableMoney) {
+      // Após escolher veículo, vai para seleção de rotas
       navigate('/routes', {
         state: {
-          selectedVehicle: selectedVehicle,
+          selectedVehicle,
           availableMoney: availableMoney - selectedVehicle.cost
         }
       });

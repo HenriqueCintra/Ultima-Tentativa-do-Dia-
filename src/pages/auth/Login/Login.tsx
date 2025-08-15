@@ -1,166 +1,363 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "../../../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../../components/ui/card";
-import { Input } from "../../../components/ui/input";
-import { ArrowLeft, AlertCircle } from 'lucide-react';
-import { ButtonHomeBack } from "@/components/ButtonHomeBack";
-import { useAuth } from "../../../contexts/AuthContext";
+import React, { useState } from 'react';
+import { Vehicle } from '../../types/vehicle';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
-export const Login = () => {
+export const FuelPage: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleForgotPassword = (e: React.MouseEvent) => {
-    e.preventDefault();
-    navigate("/forgot-password");
+  // Verificar se temos todos os dados necessários
+  const receivedVehicle = location.state?.selectedVehicle;
+  const receivedMoney = location.state?.availableMoney;
+  const receivedRoute = location.state?.selectedRoute;
+
+  // Se não temos os dados necessários, redireciona
+  useEffect(() => {
+    if (!receivedVehicle || !receivedRoute || receivedMoney === undefined) {
+      console.error("Dados incompletos na tela de combustível:", {
+        vehicle: !!receivedVehicle,
+        route: !!receivedRoute,
+        money: receivedMoney
+      });
+      navigate('/select-vehicle');
+    }
+  }, [receivedVehicle, receivedRoute, receivedMoney, navigate]);
+
+  if (!receivedVehicle || !receivedRoute || receivedMoney === undefined) {
+    return <div>Redirecionando...</div>;
+  }
+
+  // Garantir que o veículo sempre comece com tanque vazio na página de combustível
+  const vehicle = {
+    ...receivedVehicle,
+    currentFuel: 0 // Tanque sempre vazio para forçar decisão do usuário
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const availableMoney = receivedMoney;
+  const selectedRoute = receivedRoute;
 
-    if (!username || !password) {
-      setError("Por favor, preencha todos os campos");
-      return;
+  // Debug dos dados recebidos
+  console.log("=== DEBUG FUEL PAGE ===");
+  console.log("Location state:", location.state);
+  console.log("Vehicle received:", vehicle);
+  console.log("Available money:", availableMoney);
+  console.log("Selected route:", selectedRoute);
+  console.log("======================");
+
+  const [selectedVehicle] = useState<Vehicle>({ ...vehicle });
+  const [fuelAmount, setFuelAmount] = useState<'full' | 'half' | 'quarter'>('full');
+  const [availableBalance] = useState(availableMoney);
+  const [previewFuel, setPreviewFuel] = useState<number>(vehicle.maxCapacity); // Preview inicia com a opção 'full' selecionada
+
+  const fuelCostPerLiter = 5.5;
+
+  const calculateFuelCost = (option: 'full' | 'half' | 'quarter') => {
+    const maxCapacity = selectedVehicle.maxCapacity;
+    let fuelToAdd = 0;
+
+    // Como o tanque sempre começa vazio, calculamos a quantidade total desejada
+    switch (option) {
+      case 'full':
+        fuelToAdd = maxCapacity;
+        break;
+      case 'half':
+        fuelToAdd = maxCapacity / 2;
+        break;
+      case 'quarter':
+        fuelToAdd = maxCapacity / 4;
+        break;
     }
 
-    setLoading(true);
-    setError("");
+    return fuelToAdd * fuelCostPerLiter;
+  };
 
-    try {
-      await login(username, password);
-      navigate("/ranking");
-    } catch (error: any) {
-      console.error("Erro completo de login:", error);
-      if (error.response && error.response.status === 401) {
-        setError("Nome de usuário ou senha inválidos");
-      } else if (error.response && error.response.data) {
-        if (error.response.data.detail) {
-          setError(error.response.data.detail);
-        } else if (typeof error.response.data === 'object') {
-          try {
-            const errorMessages = Object.entries(error.response.data)
-              .map(([key, value]) => Array.isArray(value) ? value.join(", ") : `${key}: ${value}`)
-              .join("; ");
-            setError(errorMessages);
-          } catch (e) {
-            setError("Falha ao realizar login. Verifique suas credenciais.");
-          }
-        } else {
-          setError("Falha ao realizar login. Verifique suas credenciais.");
+  const handleRefuel = () => {
+    const cost = calculateFuelCost(fuelAmount);
+
+    if (cost <= availableBalance) {
+      // Após login bem-sucedido, verificar se tem equipe
+      // O AuthContext já carrega os dados do usuário, então podemos navegar
+      navigate("/check-team-status");
+      const newCurrentFuel = fuelAmount === 'full'
+        ? selectedVehicle.maxCapacity
+        : fuelAmount === 'half'
+          ? selectedVehicle.maxCapacity / 2
+          : selectedVehicle.maxCapacity / 4;
+
+      const updatedVehicle = {
+        ...selectedVehicle,
+        currentFuel: newCurrentFuel
+      };
+
+      const newBalance = availableMoney - cost;
+
+      // ATUALIZADO: Passar dados completos incluindo selectedRoute para a GameScene
+      navigate('/game', {
+        state: {
+          selectedVehicle: updatedVehicle,
+          availableMoney: newBalance,
+          selectedRoute: selectedRoute  // GARANTIR QUE ESTE DADO SEJA PASSADO
         }
-      } else if (error.request) {
-        setError("O servidor não respondeu. Verifique sua conexão.");
-      } else {
-        setError("Erro de conexão. Tente novamente mais tarde.");
-      }
-    } finally {
-      setLoading(false);
+      });
+    } else {
+      alert('Saldo insuficiente para abastecer!');
     }
   };
+
+  const handleSkipFuel = () => {
+    // ATUALIZADO: Navegar para o jogo 2D sem abastecer, mas passando dados completos
+    navigate('/game', {
+      state: {
+        selectedVehicle: selectedVehicle,
+        availableMoney: availableBalance,
+        selectedRoute: selectedRoute  // GARANTIR QUE ESTE DADO SEJA PASSADO
+      }
+    });
+  };
+
+  const calculatePreviewFuel = (option: 'full' | 'half' | 'quarter'): number => {
+    const max = selectedVehicle.maxCapacity;
+
+    switch (option) {
+      case 'full':
+        return max;
+      case 'half':
+        return max / 2;
+      case 'quarter':
+        return max / 4;
+      default:
+        return 0; // Tanque vazio por padrão
+    }
+  };
+
+  const goBack = () => {
+    navigate('/routes');
+  };
+
+  // VALIDAÇÃO: Verificar se temos todos os dados necessários
+  if (!selectedRoute) {
+    console.error("ERRO: selectedRoute não encontrada! Redirecionando para seleção de rotas.");
+    navigate('/routes');
+    return null;
+  }
 
   return (
-    <div className="bg-white flex flex-row justify-center w-full">
-      <div className="w-full min-h-screen [background:linear-gradient(180deg,rgba(32,2,89,1)_0%,rgba(121,70,213,1)_100%)] relative overflow-hidden">
-        <img
-          className="w-[375px] h-[147px] absolute top-[120px] left-[157px] object-cover animate-float-right"
-          alt="Nuvem"
-          src="/nuvemleft.png"
-        />
-        <img
-          className="w-[436px] h-[170px] absolute bottom-[30px] right-[27px] object-cover animate-float-left opacity-75 scale-110"
-          alt="Nuvem"
-          src="/nuvemright.png"
-        />
+    <div className="min-h-screen bg-gradient-to-br from-[#200259] to-[#300369] font-['Silkscreen']">
+      {/* Header compacto */}
+      <div className="bg-[#200259] border-b-4 border-[#E3922A] px-3 py-2 shadow-lg">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <button
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#E3922A] text-black font-bold text-sm rounded-md shadow-lg
+                     hover:bg-[#FFC06F] transition-all duration-200 border-2 border-black"
+            onClick={goBack}
+          >
+            <ArrowLeft size={16} /> VOLTAR
+          </button>
 
-        <div className="absolute top-14 left-[33px]">
-          <ButtonHomeBack onClick={() => navigate("/")}><ArrowLeft /></ButtonHomeBack>
+          <h1 className="text-lg lg:text-xl font-bold text-[#E3922A] text-center flex items-center gap-2">
+            ⛽ ABASTECIMENTO
+          </h1>
+
+          <div className="bg-gradient-to-r from-[#E3922A] to-[#FFC06F] text-black text-sm lg:text-base font-bold px-3 py-1.5 rounded-md shadow-lg border-2 border-black">
+            R$ {availableBalance.toFixed(2)}
+          </div>
         </div>
+      </div>
 
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <Card className="w-[700px] h-auto rounded-[18px] border-2 border-solid border-black bg-white">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-[35px] text-center [font-family:'Silkscreen',Helvetica] font-bold">
-                LOGIN
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-1 px-[45px]">
-              <form className="space-y-2" onSubmit={handleSubmit}>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="username"
-                    className="block [font-family:'Silkscreen',Helvetica] font-bold text-black text-[25px]"
-                  >
-                    Usuário
-                  </label>
-                  <Input
-                    id="username"
-                    type="text"
-                    className="h-[55px] rounded-xl border border-solid border-black [font-family:'Silkscreen',Helvetica] text-[20px]"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                  />
-                </div>
+      {/* Conteúdo principal */}
+      <div className="h-[calc(100vh-60px)] max-h-[calc(100vh-60px)] overflow-hidden p-2">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg shadow-2xl border-2 border-[#E3922A] w-full h-full p-3 backdrop-blur-sm flex flex-col">
 
-                <div className="space-y-2">
-                  <label
-                    htmlFor="password"
-                    className="block [font-family:'Silkscreen',Helvetica] font-bold text-black text-[25px]"
-                  >
-                    Senha
-                  </label>
-                  <Input
-                    id="password"
-                    type="password"
-                    className="h-[55px] rounded-xl border border-solid border-black [font-family:'Silkscreen',Helvetica] text-[20px]"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
+          {/* Debug Info - mostrar rota selecionada */}
+          <div className="bg-blue-500 bg-opacity-20 p-2 rounded-lg mb-2 border border-blue-600">
+            <h4 className="font-['Silkscreen'] text-sm font-bold text-blue-100 mb-1">🗺️ ROTA SELECIONADA</h4>
+            <p className="text-xs text-blue-200">{selectedRoute?.name || 'Rota não identificada'}</p>
+            <p className="text-xs text-blue-200">ID: {selectedRoute?.routeId || 'N/A'} | Distância: {selectedRoute?.distance || 'N/A'}km</p>
+          </div>
 
-                {error && (
-                  <div className="text-red-500 flex items-center gap-2 my-2">
-                    <AlertCircle size={20} />
-                    <span>{error}</span>
+          {/* Header compacto da seção */}
+          <div className="bg-gradient-to-r from-[#E3922A] to-[#FFC06F] text-black p-2 rounded-lg mb-2 border border-black flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-['Silkscreen'] font-bold flex items-center gap-1">
+                🚛 ABASTECER VEÍCULO?
+              </h2>
+              <p className="font-['Silkscreen'] text-xs font-bold flex items-center gap-1">
+                💰 Saldo final: <span className="text-green-800">R$ {(availableBalance - calculateFuelCost(fuelAmount)).toFixed(2)}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Layout otimizado sem scroll */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {/* Seção principal em uma linha */}
+            <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
+
+              {/* Card do veículo elegante */}
+              <div className="lg:w-3/5 bg-gradient-to-br from-[#FFC06F] via-[#FFD700] to-[#FFA500] p-4 rounded-xl shadow-xl border-2 border-[#E3922A]">
+                <div className="bg-black bg-opacity-10 rounded-lg p-3 h-full flex flex-col">
+
+                  {/* Header do veículo */}
+                  <div className="flex items-center justify-center mb-3">
+                    <h3 className="text-lg font-['Silkscreen'] font-bold text-black bg-white bg-opacity-80 px-4 py-2 rounded-full border-2 border-black shadow-md">
+                      🚛 {selectedVehicle.name.toUpperCase()}
+                    </h3>
                   </div>
-                )}
 
-                <div className="flex justify-end">
-                  <a
-                    href="#"
-                    onClick={handleForgotPassword}
-                    className="[font-family:'Silkscreen',Helvetica] font-normal text-[#167dd2] underline text-[20px]"
-                  >
-                    Esqueci a senha
-                  </a>
-                </div>
+                  {/* Layout horizontal com imagem e informações */}
+                  <div className="flex gap-4 flex-1">
+                    {/* Imagem do veículo */}
+                    <div className="w-2/5 flex items-center justify-center bg-white bg-opacity-30 rounded-lg p-3 shadow-inner">
+                      <img
+                        src={selectedVehicle.image}
+                        alt={selectedVehicle.name}
+                        className="max-h-20 lg:max-h-24 object-contain filter drop-shadow-lg"
+                      />
+                    </div>
 
-                <div className="flex justify-between pt-4">
-                  <Button
-                    type="button"
-                    onClick={() => navigate("/cadastro")}
-                    className="w-[274px] h-[53px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[25px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105">
-                    Cadastro
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-[274px] h-[53px] bg-[#e3922a] rounded-md [font-family:'Silkscreen',Helvetica] font-bold text-black text-[25px] hover:bg-[#e3922a] transform transition-transform duration-300 hover:scale-105">
-                    {loading ? "Carregando..." : "Login"}
-                  </Button>
+                    {/* Informações técnicas */}
+                    <div className="w-3/5 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Consumo */}
+                        <div className="bg-green-500 bg-opacity-20 p-2 rounded-lg border border-green-600">
+                          <h4 className="font-['Silkscreen'] text-sm font-bold text-green-900 mb-1 text-center">⛽ CONSUMO</h4>
+                          <p className="text-xs text-green-800 text-center">🛣️ {selectedVehicle.consumption.asphalt} KM/L</p>
+                          <p className="text-xs text-green-800 text-center">🌄 {selectedVehicle.consumption.dirt} KM/L</p>
+                        </div>
+
+                        {/* Capacidade */}
+                        <div className="bg-blue-500 bg-opacity-20 p-2 rounded-lg border border-blue-600">
+                          <h4 className="font-['Silkscreen'] text-sm font-bold text-blue-900 mb-1 text-center">🗜️ TANQUE</h4>
+                          <p className="text-xs text-blue-800 text-center">📊 0L</p>
+                          <p className="text-xs text-blue-800 text-center">🏁 {selectedVehicle.maxCapacity}L</p>
+                        </div>
+                      </div>
+
+                      {/* Barra de combustível melhorada */}
+                      <div className="bg-white bg-opacity-40 p-2 rounded-lg">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="font-['Silkscreen'] text-black text-sm font-bold">⛽ NÍVEL DO TANQUE</p>
+                          <p className="text-sm font-bold text-black">0L → {previewFuel.toFixed(0)}L / {selectedVehicle.maxCapacity}L</p>
+                        </div>
+
+                        <div className="w-full bg-gray-200 rounded-full h-5 border-2 border-black relative overflow-hidden shadow-inner">
+                          {/* Barra vazia (fundo branco quando não há combustível) */}
+                          <div className="w-full h-full bg-white rounded-full"></div>
+
+                          {/* Barra de preview - quantidade que será abastecida (verde) */}
+                          <div
+                            className="bg-gradient-to-r from-green-400 via-green-500 to-green-600 h-full absolute top-0 left-0 transition-all duration-700 ease-out"
+                            style={{ width: `${(previewFuel / selectedVehicle.maxCapacity) * 100}%` }}
+                          ></div>
+
+                          {/* Marcadores de divisão */}
+                          <div className="absolute inset-0 flex justify-between items-center px-2">
+                            <div className="w-0.5 h-3 bg-gray-600 opacity-50"></div>
+                            <div className="w-0.5 h-3 bg-gray-600 opacity-50"></div>
+                            <div className="w-0.5 h-3 bg-gray-600 opacity-50"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
+              </div>
+
+              {/* Painel de abastecimento */}
+              <div className="lg:w-2/5 bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 p-4 rounded-xl shadow-xl border-2 border-orange-600">
+                <div className="bg-white bg-opacity-10 rounded-lg p-3 h-full flex flex-col">
+
+                  {/* Header */}
+                  <div className="text-center mb-3">
+                    <h4 className="font-['Silkscreen'] text-lg font-bold text-white bg-black bg-opacity-30 px-3 py-2 rounded-lg border border-white">
+                      ⛽ POSTO DE COMBUSTÍVEL
+                    </h4>
+                  </div>
+
+                  {/* Preço em destaque */}
+                  <div className="bg-red-600 text-white p-3 rounded-lg mb-3 text-center border-2 border-red-800 shadow-md">
+                    <p className="font-['Silkscreen'] text-sm font-bold">
+                      💵 DIESEL: R$ {fuelCostPerLiter.toFixed(2)}/LITRO
+                    </p>
+                  </div>
+
+                  {/* Opções de abastecimento */}
+                  <div className="space-y-2 mb-3">
+                    <p className="font-['Silkscreen'] text-white text-sm font-bold text-center">ESCOLHA A QUANTIDADE:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        onClick={() => {
+                          const newPreview = calculatePreviewFuel('quarter');
+                          setFuelAmount('quarter');
+                          setPreviewFuel(newPreview);
+                        }}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${fuelAmount === 'quarter'
+                          ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105'
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                          }`}
+                      >
+                        1/4 TANQUE
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newPreview = calculatePreviewFuel('half');
+                          setFuelAmount('half');
+                          setPreviewFuel(newPreview);
+                        }}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${fuelAmount === 'half'
+                          ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105'
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                          }`}
+                      >
+                        1/2 TANQUE
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newPreview = calculatePreviewFuel('full');
+                          setFuelAmount('full');
+                          setPreviewFuel(newPreview);
+                        }}
+                        className={`py-2 px-2 border-2 rounded-lg font-bold text-sm transition-all duration-200 ${fuelAmount === 'full'
+                          ? 'bg-[#E3922A] text-black border-black shadow-lg transform scale-105'
+                          : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'
+                          }`}
+                      >
+                        TANQUE CHEIO
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Custo total em destaque */}
+                  <div className="bg-green-600 text-white p-3 rounded-lg text-center border-2 border-green-800 shadow-md mt-auto">
+                    <p className="font-['Silkscreen'] text-lg font-bold">
+                      💰 TOTAL: R$ {calculateFuelCost(fuelAmount).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Botões de ação elegantes */}
+            <div className="flex justify-center gap-4 mt-4 flex-shrink-0">
+              <button
+                onClick={handleSkipFuel}
+                className="bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 text-white font-bold py-3 px-8 rounded-xl shadow-xl border-2 border-gray-600 
+                         hover:from-gray-600 hover:via-gray-700 hover:to-gray-800 transition-all duration-200 transform hover:scale-105 flex items-center gap-2"
+              >
+                ⏭️ PULAR ABASTECIMENTO
+              </button>
+              <button
+                onClick={handleRefuel}
+                disabled={calculateFuelCost(fuelAmount) > availableBalance}
+                className={`font-bold py-3 px-8 rounded-xl shadow-xl border-2 transition-all duration-200 transform hover:scale-105 flex items-center gap-2 ${calculateFuelCost(fuelAmount) > availableBalance
+                  ? 'bg-gray-400 text-gray-600 cursor-not-allowed border-gray-500'
+                  : 'bg-gradient-to-r from-[#E3922A] via-[#FFC06F] to-[#FFD700] text-black border-[#E3922A] hover:from-[#FFC06F] hover:via-[#FFD700] hover:to-[#FFED4E]'
+                  }`}
+              >
+                ⛽ ABASTECER AGORA
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

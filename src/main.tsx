@@ -19,10 +19,12 @@ import { ExcluirEquipePage } from "./pages/Perfil/ExcluirEquipe.tsx";
 import { MapComponent } from "./pages/mapaRota/MapComponent.tsx";
 import { EditarEquipePage } from "./pages/Perfil/EditarEquipe.tsx";
 import { CriarEquipePage } from "./pages/Perfil/CriarEquipe.tsx";
+import { CheckTeamStatus } from "./pages/CheckTeamStatus/CheckTeamStatus.tsx";
 import GameSelectionPage from "./pages/GameSelection/GameSelectionPage.tsx";
 import { ApresentacaoDesafioPage } from "./pages/Desafio/ApresentacaoDesafio.tsx";
 import { RankingPage } from "./pages/Ranking/RankingPage.tsx";
 import { ChooseTeam } from "./pages/ChooseTeam/ChooseTeam.tsx";
+import { RoutesPage } from "./pages/RoutesPage/RoutesPage.tsx";
 import { RefuelScreen, MinigameScreen } from "./pages/RefuelScreen/index.ts"; // Importa as novas páginas
 import "./index.css";
 
@@ -49,6 +51,16 @@ createRoot(document.getElementById("app") as HTMLElement).render(
                 element={<ForgotPassword />}
               />
               <Route path="/tutorial" element={<TutorialPage />} />
+
+              {/* Rota para verificar status da equipe após login */}
+              <Route
+                path="/check-team-status"
+                element={
+                  <ProtectedRoute>
+                    <CheckTeamStatus />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* ROTAS DO JOGO DE ABASTECIMENTO */}
               <Route
@@ -134,15 +146,15 @@ createRoot(document.getElementById("app") as HTMLElement).render(
                 }
               />
               <Route
-                path="/mapa-rota"
+                path="/routes"
                 element={
                   <ProtectedRoute>
-                    <MapComponent />
+                    <RoutesPage />
                   </ProtectedRoute>
                 }
               />
               <Route
-                path="/mapa"
+                path="/mapa-rota"
                 element={
                   <ProtectedRoute>
                     <MapComponent />

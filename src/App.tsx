@@ -2,9 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HomePage } from "./pages/Home";
 import { VehicleSelectionPage } from "./pages/escolherVeiculo";
 import { RoutesPage } from "./pages/RoutesPage/RoutesPage";
-import { FuelPage } from "./pages/fuel/FuelPage";
 import { MapComponent } from "./pages/mapaRota/MapComponent";
-import { GameScene } from "./pages/Game-truck/game";
 import "./App.css";
 
 function App() {
@@ -14,10 +12,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/select-vehicle" element={<VehicleSelectionPage />} />
         <Route path="/routes" element={<RoutesPage />} />
-        <Route path="/fuel" element={<FuelPage />} />
-        <Route path="/map" element={<MapComponent />} />
         <Route path="/mapa-rota" element={<MapComponent />} />
-        <Route path="/game" element={<GameScene />} />
         {/* Redirecionar para a página inicial por padrão */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

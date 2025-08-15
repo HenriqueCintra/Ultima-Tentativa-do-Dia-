@@ -27,8 +27,8 @@ export const ApresentacaoDesafioPage = () => {
     setCarregando(true);
     setTimeout(() => {
       setCarregando(false);
-      // Passa o desafio carregado da API para a próxima tela
-      navigate("/select-vehicle", { state: { desafio } });
+      // Após aceitar o desafio, vai para seleção de veículo
+      navigate("/select-vehicle");
     }, 1500);
   };
 

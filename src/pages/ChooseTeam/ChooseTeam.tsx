@@ -46,7 +46,7 @@ export const ChooseTeam = () => {
         onSuccess: async () => {
             queryClient.invalidateQueries({ queryKey: ['teams'] });
             alert("Você entrou na equipe com sucesso!");
-            navigate("/game-selection");
+            navigate("/desafio");
         },
         onError: (err: any) => {
             const errorMessage = err.response?.data?.detail ||

@@ -26,7 +26,7 @@ export const CriarEquipePage = () => {
       alert(`Equipe "${novaEquipe.nome}" criada com sucesso!`);
       await refreshUser();
       queryClient.invalidateQueries({ queryKey: ['teams'] });
-      navigate("/game-selection");
+      navigate("/desafio");
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.detail ||

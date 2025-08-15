@@ -30,6 +30,9 @@ const MinigameScreen = () => {
   } = useGame();
 
   const refuelInfo = state?.refuelInfo as RefuelInfo | undefined;
+  const vehicleFromState = state?.selectedVehicle;
+  const moneyFromState = state?.availableMoney;
+  const routeFromState = state?.selectedRoute;
   const targetLevel = refuelInfo ? refuelInfo.fraction * 100 : 0;
 
   const [currentLevel, setCurrentLevel] = useState(0);
@@ -172,8 +175,17 @@ const MinigameScreen = () => {
               {result.message}
             </h2>
             <p id="result-detail">{result.detail}</p>
-            <button id="return-button" onClick={() => navigate("/mapa-rota")}>
-              VOLTAR AO MAPA
+            <button id="return-button" onClick={() => {
+              // Após o minigame, vai para o jogo principal
+              navigate("/mapa-rota", {
+                state: {
+                  selectedVehicle: vehicleFromState,
+                  availableMoney: moneyFromState,
+                  selectedRoute: routeFromState
+                }
+              });
+            }}>
+              IR PARA O JOGO
             </button>
           </div>
         )}

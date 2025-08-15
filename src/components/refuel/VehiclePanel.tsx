@@ -1,13 +1,15 @@
 import React from "react";
 import { useGame } from "../../contexts/GameContext.tsx";
+import { useNavigate } from "react-router-dom";
 // CORREÇÃO: A linha de importação da imagem foi REMOVIDA.
 
 const VehiclePanel = () => {
   const { vehicle } = useGame();
+  const navigate = useNavigate();
   const fuelPercentage = (vehicle.currentFuel / vehicle.maxCapacity) * 100;
   return (
     <section className="panel left-panel">
-      <button className="btn btn-top-left">&lt; VOLTAR</button>
+      <button className="btn btn-top-left" onClick={() => navigate('/routes')}>< VOLTAR</button>
       <div className="panel-title">ABASTECER VEÍCULO?</div>
       <div className="vehicle-card">
         <div className="vehicle-info">
@@ -43,7 +45,16 @@ const VehiclePanel = () => {
           <img src="/caminhao.png" alt="Caminhão" className="truck-image" />
         </div>
       </div>
-      <button className="btn btn-bottom-left">PULAR ABASTECIMENTO</button>
+      <button className="btn btn-bottom-left" onClick={() => {
+        // Pular abastecimento e ir direto para o jogo
+        navigate('/mapa-rota', {
+          state: {
+            selectedVehicle: vehicle,
+            availableMoney: 10000, // valor padrão
+            selectedRoute: null // será definido no mapa
+          }
+        });
+      }}>PULAR ABASTECIMENTO</button>
     </section>
   );
 };

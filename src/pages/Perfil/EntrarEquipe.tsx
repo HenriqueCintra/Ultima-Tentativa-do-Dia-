@@ -46,7 +46,7 @@ export const EntrarEquipePage = () => {
       
       // Aguardar um pouco para mostrar a mensagem e depois navegar
       setTimeout(() => {
-        navigate("/game-selection");
+        navigate("/desafio");
       }, 2000);
     },
     onError: (error: any) => {

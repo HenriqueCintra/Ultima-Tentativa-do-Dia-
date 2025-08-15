@@ -1,6 +1,7 @@
 // arquivo: src/pages/GameSelection/GameSelectionPage.tsx
 
 import React from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useQuery } from '@tanstack/react-query';
 import GameCard from './components/GameCard';
@@ -10,6 +11,7 @@ import { ArrowLeft, ImageIcon, Loader, AlertTriangle } from 'lucide-react';
 import { ButtonHomeBack } from '@/components/ButtonHomeBack';
 import { GameService } from '@/api/gameService';
 import { Map as Desafio } from '@/types'; // O tipo Map representa um Desafio
+import { useAuth } from '@/contexts/AuthContext';
 
 // 1. DADOS ESTÁTICOS DOS JOGOS (mockado como você pediu)
 const gamesData = [
@@ -44,6 +46,16 @@ const gamesData = [
 
 const GameSelectionPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Verificar se o usuário tem equipe
+  React.useEffect(() => {
+    if (user && !user.equipe) {
+      // Se não tem equipe, redireciona para escolher equipe
+      navigate('/choose-team');
+      return;
+    }
+  }, [user, navigate]);
 
   // 2. A API continua buscando os DESAFIOS disponíveis nos bastidores.
   const { data: desafios, isLoading, isError } = useQuery<Desafio[]>({
@@ -55,14 +67,8 @@ const GameSelectionPage = () => {
   const handleGameClick = (gameId: string) => {
     // Verifica se o jogo clicado é o 'entrega_eficiente'
     if (gameId === 'entrega_eficiente') {
-      // Pega o primeiro (e único) desafio que veio da API
-      if (desafios && desafios.length > 0) {
-        const primeiroDesafio = desafios[0];
-        // Navega para o tutorial passando o ID do DESAFIO vindo do backend
-        navigate('/tutorial', { state: { mapaId: primeiroDesafio.id } });
-      } else if (!isLoading) {
-         alert("Nenhum desafio encontrado para este jogo. Verifique o backend.");
-      }
+      // Navega diretamente para a apresentação do desafio
+      navigate('/desafio');
     } else {
       // Para outros jogos, o comportamento é o mesmo
       const game = gamesData.find(g => g.id === gameId);

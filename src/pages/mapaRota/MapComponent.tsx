@@ -176,7 +176,8 @@ export const MapComponent: React.FC<MapComponentProps> = ({
       console.error(
         "Nenhum veículo selecionado. Redirecionando para a seleção de veículo."
       );
-      navigate("/select-vehicle");
+      // Se chegou aqui sem veículo, volta para o início do fluxo
+      navigate("/desafio");
     }
   }, [vehicle, showControls, navigate]);
 
@@ -193,7 +194,11 @@ export const MapComponent: React.FC<MapComponentProps> = ({
   if (showControls && !vehicle) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#200259] text-white font-['Silkscreen'] text-2xl">
-        Carregando dados do veículo...
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Carregando dados do veículo...</p>
+          <p className="text-sm mt-2">Redirecionando se necessário...</p>
+        </div>
       </div>
     );
   }
