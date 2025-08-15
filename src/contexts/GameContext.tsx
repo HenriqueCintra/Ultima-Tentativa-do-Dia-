@@ -7,18 +7,23 @@ const initialVehicle: Vehicle = {
   name: "VAN",
   capacity: 20, // Assumindo capacidade de carga, não de tanque
   consumption: { asphalt: 9, dirt: 7 },
-  image: "/src/assets/caminhao.png",
+  image: "/caminhao.png", // Usando o caminho a partir da pasta public
   maxCapacity: 100, // Capacidade máxima do tanque em Litros
   currentFuel: 50, // Combustível atual em Litros
   cost: 10000,
+
+  // CORREÇÃO APLICADA AQUI: Adicionamos a propriedade 'spriteSheet' que estava faltando.
+  // Coloquei um valor padrão vazio. Se necessário, você pode alterar para o caminho correto.
+  spriteSheet: "",
 };
+
+// O resto do arquivo permanece o mesmo...
 
 const initialGameState = {
   playerBalance: 20000.0,
   vehicle: initialVehicle,
 };
 
-// Interface para definir o formato do nosso contexto
 interface GameContextType {
   playerBalance: number;
   vehicle: Vehicle;
@@ -27,10 +32,8 @@ interface GameContextType {
   formatCurrency: (value: number) => string;
 }
 
-// Criando o contexto
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
-// Hook customizado para facilitar o uso do contexto
 export const useGame = () => {
   const context = useContext(GameContext);
   if (!context) {
@@ -39,7 +42,6 @@ export const useGame = () => {
   return context;
 };
 
-// Componente Provedor que vai envolver a aplicação
 export const GameProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
